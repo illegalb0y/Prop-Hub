@@ -1,0 +1,458 @@
+# PRD (Iteration 1): Real Estate Projects Aggregator Web App
+
+## 1) Product Summary
+A web-based real estate aggregator that indexes **new development projects** published by developers. Users can discover projects via **map + filters + listings**, browse **developers** and **banks**, and maintain **favorites** and **view history** via an account.
+
+This PRD defines the first iteration (MVP+) focusing on core browsing, filtering, project pages, favorites, and basic authentication.
+
+---
+
+## 2) Goals & Success Metrics
+
+### Goals
+1. Enable users to quickly find new projects by **location (map)** and **filters**.
+2. Provide structured browsing of **Projects**, **Developers**, and **Banks → cooperating Developers**.
+3. Support user-specific features: **Favorites** and **History**.
+4. Deliver a clean, fast UI with predictable navigation and sticky browsing layout.
+
+### Success Metrics (MVP)
+- Time-to-first-results (homepage) < 1.5s on broadband.
+- Map interaction responsiveness (pan/zoom) within 100ms input latency (typical).
+- Filter usage rate: % sessions using ≥1 filter.
+- Favorites conversion: % logged-in users favoriting ≥1 project.
+- Authentication completion rate.
+
+---
+
+## 3) Non-Goals (Iteration 1)
+- Payments, mortgage calculations, or lead submission forms.
+- Developer self-service portal for uploads (admin ingestion can be manual/API later).
+- Email verification, 2FA, social logins.
+- Full multilingual support (can be planned later).
+- Advanced recommendation engine.
+
+---
+
+## 4) Target Users & Primary Use Cases
+
+### Personas
+1. **Buyer / Investor**
+   - Wants to browse new projects quickly, compare, save favorites, track what they’ve viewed.
+2. **Market Researcher**
+   - Browses developers, banks, and cooperation networks.
+3. **Returning User**
+   - Wants quick access to favorite and recently viewed projects.
+
+---
+
+## 5) Information Architecture (IA)
+
+### Top-level navigation (Header)
+- Site name/logo (left)
+- Global search bar (center)
+- Right-side icon/buttons:
+  - **Favorites** (heart icon)
+  - **Map**
+  - **Sign up / My account** (depends on auth state)
+
+### Sidebar (left; open by default)
+- Sidebar search (optional; see Open Questions) at top
+- Nav buttons:
+  - Developers
+  - Banks
+  - Projects
+- Bottom:
+  - Settings button
+  - Light/Dark toggle
+
+**Sidebar behavior**
+- Default open (≈20% width on desktop; see layout specs)
+- Collapsible via open/close button:
+  - Collapsed state becomes a narrow icon rail showing only icons (tooltips on hover; labels on focus for accessibility).
+
+### Main content area (Home)
+- Sticky mini-map under header
+- Filters row (select boxes)
+- Scrollable project listings container
+- Sidebar and mini-map remain fixed while listings scroll
+
+---
+
+## 6) Core Pages & Functional Requirements
+
+6.1 Home (Projects Discovery)
+Global Search (Header + Sidebar)
+The header search bar and the sidebar search bar are the same function:
+They share a single search query state (mirrored input values).
+Search targets the same dataset (projects discovery).
+Typing in either updates:
+Listings results
+Map markers (filtered set)
+URL query params (recommended) for shareable state
+Behavior
+Debounced search (e.g., 300ms) to reduce API calls.
+Clear (✕) control to reset query.
+
+Filters — Multi-select
+Filters are multi-select select boxes:
+City (multi-select)
+District (multi-select, dependent on City selection)
+Bank (multi-select)
+Developer (multi-select)
+Behavior
+Filters apply as AND logic across filter groups, and OR logic within the same group:
+Example: (City = A OR B) AND (Bank = X OR Y) AND (Developer = D)
+District list is constrained to the selected cities:
+If multiple cities selected, district options become the union of those cities’ districts.
+Selected values shown as chips/tokens inside the input (best practice for multi-select clarity).
+Include “Clear filters” action (recommended for usability).
+
+Sorting (Added)
+Add a Sort control next to filters (dropdown/select):
+Default: Newest (most recently added projects)
+Options (Iteration 1):
+Newest
+Price: Low → High (if price data exists)
+Price: High → Low (if price data exists)
+Completion date: Soonest (if completion date exists)
+Name: A → Z
+Behavior
+Sorting affects listings order and (optionally) marker z-index/priority; map content remains the same filtered set.
+
+
+## 6.2 Projects Page
+- Shows “all listings available” (same component as home listings) with filters and optionally map mini-view.
+- For iteration 1: can reuse Home layout or provide a listings-first view.
+
+---
+
+## 6.3 Developers Page
+- Displays developer cards (listing component style).
+- Each card includes:
+  - Developer name, logo (if available), # of projects
+  - Short description snippet
+- Clicking a developer opens **Developer Detail**:
+  - Developer profile
+  - Developer’s projects list (reusing project card)
+  - Associated banks (optional in iteration 1; can be shown in Banks page only)
+
+---
+
+## 6.4 Banks Page
+- Shows bank cards list.
+- Clicking a bank opens **Bank Detail**:
+  - Bank profile
+  - List of developers cooperating with that bank (developer cards)
+  - From a developer card, user can navigate to developer detail.
+
+---
+
+## 6.5 Map Page (Full Map)
+- Opened by header “Map” button.
+- Requirements:
+  - **Large map** as primary content.
+  - Sidebar should be **closed by default** (collapsed icon rail).
+  - Map includes clickable project markers and basic filters (either same filters panel or a collapsible filter drawer).
+- Clicking marker opens Project Detail page.
+
+---
+
+## 6.6 Favorites
+- Opened by header heart icon.
+- If user **not logged in** → redirect to Auth page.
+- If logged in → show list of favorited projects using project card component.
+- Remove from favorites supported from this page.
+
+---
+
+## 6.7 Authentication Page
+- Opened by “Sign up” in header when logged out, or by gated actions (favorites).
+- Supports:
+  - Sign up with email + password
+  - Login with email + password
+- No double validation / no email confirmation in iteration 1.
+- UX best practice:
+  - Single page with tabs or segmented control: “Log in” / “Sign up”
+  - Clear password rules and inline validation
+  - Show password toggle
+  - Error messages that are specific and non-technical
+
+---
+
+## 6.8 My Account Page
+- Header button becomes “My account” when logged in.
+- Contains:
+  1) Watched listings history (projects user has opened)
+  2) Favorite listings
+- Provide:
+  - Ability to remove items from favorites
+  - Optional: clear history (iteration 1 can include if low effort)
+
+---
+
+## 6.9 Project Detail Page (Required for core flow)
+When user clicks a marker or listing card:
+- Show project details:
+  - Name, developer, location (city/district/address if available)
+  - Image gallery (or placeholder)
+  - Description
+  - Tags / attributes (completion date, prices, etc. as available)
+  - Associated banks (if applicable)
+  - “Add to favorites” button
+- Log a “view” event for history when page is opened (logged-in only; optionally store anonymous locally for later).
+
+---
+
+## 7) UX/UI Requirements & Design Best Practices
+
+### Layout & Sizing
+- Desktop sidebar width: **~20% of viewport width** with min/max:
+  - `min-width: 240px; max-width: 320px; width: 20vw;`
+- Collapsed sidebar width:
+  - `56px–72px` (icon rail)
+- Header height: 56–72px.
+- Mini-map height on Home:
+  - ~220–320px desktop; responsive on mobile.
+
+### Sticky/Scrolling Behavior (Key requirement)
+- Sidebar: fixed/sticky full height.
+- Mini-map: sticky under header within main column.
+- Listings: only listings container scrolls (`overflow: auto; height: calc(100vh - header - map - filters)`).
+
+### Navigation & State
+- Current section highlighted in sidebar.
+- Sidebar collapsed state persisted (localStorage) per user/device.
+- Filters persist when navigating between Home/Projects/Map (query params recommended).
+
+### Accessibility
+- WCAG 2.1 AA baseline:
+  - Keyboard navigation for sidebar, filter selects, cards.
+  - Visible focus states.
+  - Tooltips for collapsed sidebar icons.
+  - Proper ARIA labels for icon-only buttons (favorites, map, collapse).
+  - Color contrast maintained in both themes.
+
+### Empty/Loading/Error States
+- Skeleton loaders for cards and map loading.
+- Empty results message with suggestion to clear filters.
+- Network error banners with retry.
+
+---
+
+## 8) Map Requirements (Leaflet + “Cargo Light”)
+- Use **Leaflet JS** for both mini-map and full map.
+- Basemap layer: “Cargo/Carto Light” style **in both light and dark modes** (UI theme changes only).
+  - Example tile source (commonly used):
+    - `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png`
+- Marker styling:
+  - Dots/markers clustered at low zoom (recommended for performance if many projects).
+  - Hover/selection states:
+    - Hover: highlight marker
+    - Selected: persistent highlight + small preview (optional iteration 1)
+- Clicking marker navigates to project detail.
+- Map should re-render markers based on filters and viewport (optional in iteration 1: show all filtered markers).
+
+---
+
+## 9) Data Model (Iteration 1)
+Minimal recommended entities:
+
+### Project
+- id (UUID/int)
+- name
+- developerId
+- cityId
+- districtId
+- coordinates (lat, lng)
+- address (optional)
+- description (optional)
+- images[] (optional)
+- banks[] (bankIds) or separate join table
+- createdAt, updatedAt
+
+### Developer
+- id
+- name
+- logoUrl (optional)
+- description (optional)
+
+### Bank
+- id
+- name
+- logoUrl (optional)
+- description (optional)
+
+### User
+- id
+- email
+- passwordHash
+- createdAt
+
+### Favorite
+- userId
+- projectId
+- createdAt
+
+### ViewHistory
+- userId
+- projectId
+- viewedAt
+- (Optional) lastViewedAt + count to dedupe entries
+
+---
+
+## 10) API Requirements (High-Level)
+(REST or GraphQL acceptable; below assumes REST.)
+
+### Public
+- `GET /projects?cityId=&districtId=&developerId=&bankId=&q=&page=`
+- `GET /projects/:id`
+- `GET /developers`
+- `GET /developers/:id`
+- `GET /banks`
+- `GET /banks/:id`
+- `GET /banks/:id/developers` (or include in bank detail payload)
+
+### Auth
+- `POST /auth/signup` (email, password)
+- `POST /auth/login` (email, password)
+- `POST /auth/logout` (optional if using cookies)
+- Session: JWT (httpOnly cookie recommended) or token storage.
+
+### User scoped
+- `GET /me`
+- `GET /me/favorites`
+- `POST /me/favorites` (projectId)
+- `DELETE /me/favorites/:projectId`
+- `GET /me/history`
+- `POST /me/history` (projectId) or auto-log on project fetch server-side
+
+9) Data Model (Iteration 1) — Updates
+Project (Minimum required fields for Iteration 1)
+To support map, listing cards, filtering, and sorting, the minimum Project fields are:
+Required
+id
+name
+developerId
+cityId
+districtId
+coordinates (lat, lng)
+createdAt (for “Newest” sorting)
+Strongly recommended (to enable better UX + sorting options)
+coverImageUrl (or first image)
+priceFrom (number) and currency (string) (enables price sorting + clearer cards)
+completionDate (date) (enables completion date sorting)
+shortDescription (string, 140–220 chars)
+Optional
+address
+full description
+images[]
+banks[] (bankIds) or join table
+
+ViewHistory (Updated to match “stores every intentional click”)
+id
+userId
+projectId
+viewedAt (timestamp)
+source (enum: listing_card | map_marker | other) (recommended for analytics/debugging)
+Behavior
+A history entry is created each time a user intentionally opens a project (via card click or marker click).
+No deduping/aggregation in Iteration 1.
+
+10) API Requirements (High-Level) — Updates
+Public
+GET /projects
+Add/confirm support for:
+Multi-select params (either repeated keys or CSV; choose one standard)
+Example (repeated keys):
+/projects?cityId=1&cityId=2&bankId=3&bankId=5
+Example (CSV):
+/projects?cityId=1,2&bankId=3,5
+Sorting:
+sort=newest|price_asc|price_desc|completion_soonest|name_asc
+Search query:
+q=... (shared by header + sidebar)
+Full example:
+/projects?q=marina&cityId=1&cityId=2&districtId=10&bankId=3&sort=price_asc&page=1
+User scoped
+History creation should occur on intentional open:
+Either client explicitly logs:
+POST /me/history (projectId, source)
+Or server logs when project is fetched only if request includes a header/flag indicating intentional navigation (recommended to avoid logging prefetch):
+Example: GET /projects/:id with X-Intent: open
+(Implementation choice; requirement is “every intentional click”.)
+
+---
+
+## 11) Permissions & Security
+- Favorites and history require authentication.
+- Password storage: bcrypt/argon2.
+- Rate limiting for auth endpoints.
+- Input validation and escaping for search queries.
+- Use httpOnly secure cookies for JWT/session to reduce XSS token theft risk.
+
+---
+
+## 12) Performance Requirements
+- Listings should be virtualized if >200 items (recommended).
+- Map markers should be clustered beyond a threshold (e.g., >300 markers).
+- Use CDN + caching headers for images.
+- Server-side pagination for projects.
+
+---
+
+## 13) SEO & Sharing (Iteration 1)
+- Projects and Developers pages should have indexable URLs:
+  - `/projects/:id`, `/developers/:id`, `/banks/:id`
+- Add basic meta tags and OpenGraph for project pages.
+
+---
+
+## 14) Analytics / Event Tracking (Iteration 1)
+Track:
+- Search performed (query, result count)
+- Filter changed (which filter)
+- Project card click
+- Map marker click
+- Favorite added/removed
+- Auth success/failure
+- Viewed project (for funnel analysis)
+
+---
+
+## 15) Responsive Behavior
+- Desktop/tablet: sidebar visible by default.
+- Mobile:
+  - Sidebar defaults to collapsed or off-canvas drawer.
+  - Map height reduced; filters become collapsible panel.
+  - Keep header actions reachable (favorites/map/account).
+
+---
+
+## 16) Acceptance Criteria (Key)
+1. Sidebar opens by default; collapse button reduces it to icon rail with tooltips.
+2. Home shows mini-map + filters + listings; only listings scroll.
+3. Clicking project marker/card opens Project Detail.
+4. Map page opens with large map and sidebar collapsed.
+5. Favorites button:
+   - If logged out → Auth page
+   - If logged in → Favorites list
+6. “Sign up” becomes “My account” after login.
+7. My Account shows watched history and favorites.
+8. Leaflet map uses Cargo/Carto Light tiles in both light and dark modes.
+
+---
+
+## 17) Milestones (Suggested)
+1. **Foundation & Layout**
+   - Header, sidebar (collapse), routing, theme toggle
+2. **Projects Discovery**
+   - Projects API integration, filters, listings scroll container
+3. **Map Integration**
+   - Leaflet mini-map + full map page + markers
+4. **Entities Browsing**
+   - Developers & Banks pages + detail pages
+5. **Auth + User Features**
+   - Login/signup, favorites, history, account page
+6. **Polish**
+   - Empty states, loading, accessibility, performance, analytics

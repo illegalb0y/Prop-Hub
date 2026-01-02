@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { X, ChevronDown, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +56,7 @@ interface MultiSelectProps {
 }
 
 function MultiSelect({ label, items, selectedIds, onChange, testId }: MultiSelectProps) {
+  const { t } = useTranslation();
   const handleToggle = (id: number) => {
     if (selectedIds.includes(id)) {
       onChange(selectedIds.filter((i) => i !== id));
@@ -113,7 +115,7 @@ function MultiSelect({ label, items, selectedIds, onChange, testId }: MultiSelec
             ))}
             {items.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">
-                No options available
+                {t("common.noResults")}
               </p>
             )}
           </div>
@@ -140,6 +142,16 @@ export function ProjectFilters({
   onSortChange,
   onClearAll,
 }: ProjectFiltersProps) {
+  const { t } = useTranslation();
+
+  const sortOptions: { value: SortOption; label: string }[] = [
+    { value: "newest", label: t("projects.sort.newest") },
+    { value: "price_asc", label: t("projects.sort.priceAsc") },
+    { value: "price_desc", label: t("projects.sort.priceDesc") },
+    { value: "completion_soonest", label: t("projects.sort.completion") },
+    { value: "name_asc", label: t("projects.sort.nameAsc") },
+  ];
+
   const filteredDistricts = selectedCities.length > 0
     ? districts.filter((d) => selectedCities.includes(d.cityId))
     : districts;
@@ -154,11 +166,11 @@ export function ProjectFilters({
     <div className="flex flex-wrap items-center gap-3 p-4 border-b bg-background">
       <div className="flex items-center gap-1 text-sm text-muted-foreground">
         <Filter className="h-4 w-4" />
-        <span>Filters:</span>
+        <span>{t("filters.title")}:</span>
       </div>
 
       <MultiSelect
-        label="City"
+        label={t("filters.city")}
         items={cities}
         selectedIds={selectedCities}
         onChange={onCitiesChange}
@@ -166,7 +178,7 @@ export function ProjectFilters({
       />
 
       <MultiSelect
-        label="District"
+        label={t("filters.district")}
         items={filteredDistricts}
         selectedIds={selectedDistricts}
         onChange={onDistrictsChange}
@@ -174,7 +186,7 @@ export function ProjectFilters({
       />
 
       <MultiSelect
-        label="Developer"
+        label={t("filters.developer")}
         items={developers}
         selectedIds={selectedDevelopers}
         onChange={onDevelopersChange}
@@ -182,7 +194,7 @@ export function ProjectFilters({
       />
 
       <MultiSelect
-        label="Bank"
+        label={t("filters.bank")}
         items={banks}
         selectedIds={selectedBanks}
         onChange={onBanksChange}
@@ -198,14 +210,14 @@ export function ProjectFilters({
           data-testid="button-clear-filters"
         >
           <X className="h-4 w-4 mr-1" />
-          Clear all
+          {t("filters.clearFilters")}
         </Button>
       )}
 
       <div className="ml-auto">
         <Select value={sortBy} onValueChange={(v) => onSortChange(v as SortOption)}>
           <SelectTrigger className="w-48" data-testid="select-sort">
-            <SelectValue placeholder="Sort by" />
+            <SelectValue placeholder={t("projects.sort.title")} />
           </SelectTrigger>
           <SelectContent>
             {sortOptions.map((option) => (

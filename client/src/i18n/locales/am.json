@@ -2,52 +2,53 @@
   "common": {
     "loading": "Bernum e...",
     "error": "Inchvor ban sxal gnats",
-    "retry": "Krknel",
+    "retry": "Կրկնել",
     "noResults": "Ardyunkner chkan",
     "tryClearing": "Pokhek ztichnerey ev krknek",
-    "save": "Pahpanel",
-    "cancel": "Chegarkek",
-    "delete": "Jnchel",
+    "save": "Պահպանել",
+    "cancel": "Վերացնել",
+    "delete": "Հեռացնել",
     "edit": "Khmbagrel",
-    "close": "Phakel",
-    "back": "Hetev",
-    "next": "Hajev",
-    "viewAll": "Tesnel bolore"
+    "close": "Փակել",
+    "back": "Առաջ",
+    "next": "Ավելին",
+    "viewAll": "Դիտել բոլորը"
   },
   "nav": {
-    "home": "Glxavor",
-    "projects": "Naxagcer",
-    "developers": "Karutsapatoghner",
-    "banks": "Banker",
-    "map": "Kartez",
-    "favorites": "Naxntracner",
-    "account": "Im hashiv",
-    "settings": "Kargavorumner",
-    "login": "Mutk gortsel",
-    "signup": "Grancvel",
-    "logout": "Durs gal"
+    "home": "Գլխավոր",
+    "projects": "Նախագծեր",
+    "developers": "Կառուցապատողները",
+    "banks": "Բանկեր",
+    "map": "Քարտեզ",
+    "favorites": "նախընտրած",
+    "account": "Իմ Էջ",
+    "settings": "Կարգավորումներ",
+    "login": "Մուտք գործել",
+    "signup": "Գրանցվել",
+    "logout": "Դուրս գալ"
   },
   "header": {
-    "searchPlaceholder": "Oronum...",
-    "toggleSidebar": "Pokhel koghmayin panel"
+    "searchPlaceholder": "Որոնում...",
+    "toggleSidebar": "Կողային նշաձողը"
   },
   "theme": {
-    "light": "Lusavor rezhim",
-    "dark": "Mug rezhim",
-    "system": "Hamakargi"
+    "light": "Լուսավոր ռեժիմը",
+    "dark": "Մութ ռեժիմը",
+    "system": "Համակարգ"
   },
   "language": {
-    "select": "Lezu",
-    "en": "Angleren",
-    "ru": "Ruseren",
-    "hy": "Hayeren"
+    "select": "Լեզու",
+    "en": "Անգլերեն",
+    "ru": "Հայերեն",
+    "hy": "Հայերեն"
   },
   "filters": {
+    "title": "Ztichner",
     "city": "Kaghak",
     "district": "Shrjan",
     "bank": "Bank",
     "developer": "Karutsapatogh",
-    "clearFilters": "Makrel ztichnere",
+    "clearFilters": "Maqrel bolore",
     "activeFilters": "Aktiv ztichner",
     "selectCity": "Entrel kaghak",
     "selectDistrict": "Entrel shrjan",
@@ -59,6 +60,7 @@
     "allDevelopers": "Bolor karutsapatoghner"
   },
   "sort": {
+    "title": "Tesakavorel",
     "sortBy": "Tesakavorel",
     "newest": "Amenanorere",
     "priceLowHigh": "Gin: acman kargov",
@@ -67,6 +69,14 @@
     "nameAZ": "Anun: A-F"
   },
   "projects": {
+    "sort": {
+      "title": "Tesakavorel",
+      "newest": "Amenanorere",
+      "priceAsc": "Gin: acman kargov",
+      "priceDesc": "Gin: nvazman kargov",
+      "completion": "Avart: shut",
+      "nameAsc": "Anun: A-F"
+    },
     "title": "Naxagcer",
     "allProjects": "Bolor naxagcer",
     "projectCount": "{{count}} naxagic",
@@ -98,30 +108,30 @@
     "removed": "Heracvec naxntracnerits"
   },
   "account": {
-    "title": "Im hashiv",
+    "title": "Իմ էջ",
     "profile": "Profil",
-    "email": "El. post",
-    "name": "Anun",
+    "email": "Email",
+    "name": "Անուն",
     "viewHistory": "Ditman patmutyun",
     "recentlyViewed": "Verejin ditac naxagcer",
     "noHistory": "Ditman patmutyun datark e",
     "loginRequired": "Xndrum enk mutk gortsel tesnel hashiv"
   },
   "settings": {
-    "title": "Kargavorumner",
-    "appearance": "Artakin tesk",
-    "language": "Lezu",
-    "selectLanguage": "Entrel lezu",
-    "theme": "Tema"
+    "title": "Կառավարում",
+    "appearance": "Արտաքին տեսքը",
+    "language": "Լեզուն",
+    "selectLanguage": "Ընտրել լեզուն",
+    "theme": "Ռեժիմը"
   },
   "auth": {
-    "loginTitle": "Bari galust",
+    "loginTitle": "Բարի գալուստ",
     "loginDescription": "Mutk arek hasanelu naxntracnerin ev patmutyun",
     "signupTitle": "Steghcel hashiv",
     "signupDescription": "Grancvel pahepanek sirac naxagcer"
   },
   "map": {
-    "title": "Kartez",
-    "viewOnMap": "Tesnel kartezum"
+    "title": "Քարտեզ",
+    "viewOnMap": "Դիտել քարտեզի վրա"
   }
 }

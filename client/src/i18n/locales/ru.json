@@ -43,11 +43,12 @@
     "hy": "Армянский"
   },
   "filters": {
+    "title": "Фильтры",
     "city": "Город",
     "district": "Район",
     "bank": "Банк",
     "developer": "Застройщик",
-    "clearFilters": "Сбросить фильтры",
+    "clearFilters": "Очистить всё",
     "activeFilters": "Активные фильтры",
     "selectCity": "Выберите город",
     "selectDistrict": "Выберите район",
@@ -67,6 +68,14 @@
     "nameAZ": "Название: А — Я"
   },
   "projects": {
+    "sort": {
+      "title": "Сортировать",
+      "newest": "Сначала новые",
+      "priceAsc": "Цена: по возрастанию",
+      "priceDesc": "Цена: по убыванию",
+      "completion": "Сдача: раньше",
+      "nameAsc": "Название: А — Я"
+    },
     "title": "Проекты",
     "allProjects": "Все проекты",
     "projectCount": "{{count}} проектов",

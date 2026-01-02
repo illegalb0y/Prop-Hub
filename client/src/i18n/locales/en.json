@@ -43,11 +43,12 @@
     "hy": "Armenian"
   },
   "filters": {
+    "title": "Filters",
     "city": "City",
     "district": "District",
     "bank": "Bank",
     "developer": "Developer",
-    "clearFilters": "Clear filters",
+    "clearFilters": "Clear all",
     "activeFilters": "Active filters",
     "selectCity": "Select city",
     "selectDistrict": "Select district",
@@ -67,6 +68,14 @@
     "nameAZ": "Name: A to Z"
   },
   "projects": {
+    "sort": {
+      "title": "Sort by",
+      "newest": "Newest",
+      "priceAsc": "Price: Low to High",
+      "priceDesc": "Price: High to Low",
+      "completion": "Completion: Soonest",
+      "nameAsc": "Name: A to Z"
+    },
     "title": "Projects",
     "allProjects": "All Projects",
     "projectCount": "{{count}} projects",

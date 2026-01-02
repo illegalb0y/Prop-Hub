@@ -4,27 +4,27 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 
 import en from './locales/en.json';
 import ru from './locales/ru.json';
-import hy from './locales/hy.json';
+import am from './locales/am.json';
 
-export const SUPPORTED_LANGUAGES = ['en', 'ru', 'hy'] as const;
+export const SUPPORTED_LANGUAGES = ['en', 'ru', 'am'] as const;
 export type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number];
 
 export const LANGUAGE_NAMES: Record<SupportedLanguage, string> = {
   en: 'English',
   ru: 'Русский',
-  hy: 'Hayeren'
+  am: 'Hayeren'
 };
 
 export const LANGUAGE_FLAGS: Record<SupportedLanguage, string> = {
   en: 'EN',
   ru: 'RU',
-  hy: 'HY'
+  am: 'HY'
 };
 
 const resources = {
   en: { translation: en },
   ru: { translation: ru },
-  hy: { translation: hy }
+  am: { translation: am }
 };
 
 i18n

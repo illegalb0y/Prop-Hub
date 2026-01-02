@@ -1,18 +1,18 @@
 {
   "common": {
-    "loading": "Բdelays delays delays delays...",
-    "error": " Delays delays delays delays delays",
-    "retry": "Delays",
-    "noResults": "Delays delays delays delays",
-    "tryClearing": "Delays delays delays delays delays delays",
-    "save": "Delays",
-    "cancel": "Delays",
-    "delete": "Delays",
-    "edit": "Delays",
-    "close": "Delays",
-    "back": "Delays",
-    "next": "Delays",
-    "viewAll": "Delays delays"
+    "loading": "Bernum e...",
+    "error": "Inchvor ban sxal gnats",
+    "retry": "Krknel",
+    "noResults": "Ardyunkner chkan",
+    "tryClearing": "Pokhek ztichnerey ev krknek",
+    "save": "Pahpanel",
+    "cancel": "Chegarkek",
+    "delete": "Jnchel",
+    "edit": "Khmbagrel",
+    "close": "Phakel",
+    "back": "Hetev",
+    "next": "Hajev",
+    "viewAll": "Tesnel bolore"
   },
   "nav": {
     "home": "Glxavor",
@@ -93,7 +93,9 @@
     "empty": "Derevs naxntracner chkan",
     "emptyDescription": "Znnel naxagcer ev srtik avelacsnek ays ejum",
     "browseProjects": "Znnel naxagcer",
-    "loginRequired": "Xndrum enk mutk gortsel tesnel naxntracnere"
+    "loginRequired": "Xndrum enk mutk gortsel tesnel naxntracnere",
+    "added": "Avelacvec naxntracnerin",
+    "removed": "Heracvec naxntracnerits"
   },
   "account": {
     "title": "Im hashiv",

@@ -93,7 +93,9 @@
     "empty": "No favorites yet",
     "emptyDescription": "Browse projects and click the heart icon to add them here",
     "browseProjects": "Browse projects",
-    "loginRequired": "Please log in to view your favorites"
+    "loginRequired": "Please log in to view your favorites",
+    "added": "Added to favorites",
+    "removed": "Removed from favorites"
   },
   "account": {
     "title": "My Account",

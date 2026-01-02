@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { ProjectCard } from "@/components/project-card";
 import { ProjectFilters, type SortOption } from "@/components/project-filters";
 import { MiniMap } from "@/components/mini-map";
@@ -16,6 +17,7 @@ interface HomePageProps {
 }
 
 export default function HomePage({ searchQuery }: HomePageProps) {
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
@@ -76,10 +78,10 @@ export default function HomePage({ searchQuery }: HomePageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/me/favorites"] });
-      toast({ title: "Added to favorites" });
+      toast({ title: t("favorites.added") || "Added to favorites" });
     },
     onError: () => {
-      toast({ title: "Failed to add favorite", variant: "destructive" });
+      toast({ title: t("common.error"), variant: "destructive" });
     },
   });
 
@@ -89,10 +91,10 @@ export default function HomePage({ searchQuery }: HomePageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/me/favorites"] });
-      toast({ title: "Removed from favorites" });
+      toast({ title: t("favorites.removed") || "Removed from favorites" });
     },
     onError: () => {
-      toast({ title: "Failed to remove favorite", variant: "destructive" });
+      toast({ title: t("common.error"), variant: "destructive" });
     },
   });
 
@@ -165,10 +167,10 @@ export default function HomePage({ searchQuery }: HomePageProps) {
         ) : projects.length === 0 ? (
           <EmptyState
             icon="search"
-            title="No projects found"
-            description="Try adjusting your filters or search query to find more projects."
+            title={t("projects.noProjects")}
+            description={t("projects.adjustFilters")}
             action={{
-              label: "Clear filters",
+              label: t("filters.clearFilters"),
               onClick: handleClearFilters,
             }}
           />

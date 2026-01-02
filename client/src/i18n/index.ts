@@ -12,7 +12,7 @@ export type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number];
 export const LANGUAGE_NAMES: Record<SupportedLanguage, string> = {
   en: 'English',
   ru: 'Русский',
-  hy: 'Հայերdelays delays'
+  hy: 'Hayeren'
 };
 
 export const LANGUAGE_FLAGS: Record<SupportedLanguage, string> = {

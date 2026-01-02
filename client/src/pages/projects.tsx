@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { ProjectCard } from "@/components/project-card";
 import { ProjectFilters, type SortOption } from "@/components/project-filters";
 import { ProjectGridSkeleton, FiltersSkeleton } from "@/components/skeletons";
@@ -14,6 +15,7 @@ interface ProjectsPageProps {
 }
 
 export default function ProjectsPage({ searchQuery }: ProjectsPageProps) {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
   
@@ -72,7 +74,7 @@ export default function ProjectsPage({ searchQuery }: ProjectsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/me/favorites"] });
-      toast({ title: "Added to favorites" });
+      toast({ title: t("favorites.added") || "Added to favorites" });
     },
   });
 
@@ -82,7 +84,7 @@ export default function ProjectsPage({ searchQuery }: ProjectsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/me/favorites"] });
-      toast({ title: "Removed from favorites" });
+      toast({ title: t("favorites.removed") || "Removed from favorites" });
     },
   });
 
@@ -111,10 +113,10 @@ export default function ProjectsPage({ searchQuery }: ProjectsPageProps) {
     <div className="flex flex-col h-full">
       <div className="p-6 border-b">
         <h1 className="font-heading text-2xl font-bold" data-testid="text-page-title">
-          All Projects
+          {t("projects.allProjects")}
         </h1>
         <p className="text-muted-foreground mt-1">
-          Browse all available real estate projects
+          {t("projects.projectCount", { count: projects.length })}
         </p>
       </div>
 
@@ -146,17 +148,17 @@ export default function ProjectsPage({ searchQuery }: ProjectsPageProps) {
         ) : projects.length === 0 ? (
           <EmptyState
             icon="search"
-            title="No projects found"
-            description="Try adjusting your filters or search query to find more projects."
+            title={t("projects.noProjects")}
+            description={t("projects.adjustFilters")}
             action={{
-              label: "Clear filters",
+              label: t("filters.clearFilters"),
               onClick: handleClearFilters,
             }}
           />
         ) : (
           <>
             <p className="text-sm text-muted-foreground mb-4">
-              Showing {projects.length} {projects.length === 1 ? "project" : "projects"}
+              {t("projects.projectCount", { count: projects.length })}
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {projects.map((project) => (

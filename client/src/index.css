@@ -43,8 +43,8 @@
   --chart-3: 38 92% 40%;
   --chart-4: 280 87% 35%;
   --chart-5: 12 76% 40%;
-  --font-sans: Inter, sans-serif;
-  --font-heading: Manrope, sans-serif;
+  --font-sans: "Noto Sans", "Noto Sans Armenian", system-ui, sans-serif;
+  --font-heading: "Noto Sans", "Noto Sans Armenian", system-ui, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
   --radius: .5rem;

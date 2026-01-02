@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { BankCard } from "@/components/bank-card";
 import { BankGridSkeleton } from "@/components/skeletons";
 import { EmptyState } from "@/components/empty-state";
@@ -9,6 +10,7 @@ interface BanksPageProps {
 }
 
 export default function BanksPage({ searchQuery }: BanksPageProps) {
+  const { t } = useTranslation();
   const { data: banks = [], isLoading } = useQuery<Bank[]>({
     queryKey: ["/api/banks"],
   });
@@ -24,10 +26,10 @@ export default function BanksPage({ searchQuery }: BanksPageProps) {
     <div className="h-full overflow-auto p-6">
       <div className="mb-6">
         <h1 className="font-heading text-2xl font-bold" data-testid="text-page-title">
-          Banks
+          {t("banks.title")}
         </h1>
         <p className="text-muted-foreground mt-1">
-          Browse banks and their developer partnerships
+          {t("banks.partnerDevelopers")}
         </p>
       </div>
 
@@ -36,13 +38,13 @@ export default function BanksPage({ searchQuery }: BanksPageProps) {
       ) : filteredBanks.length === 0 ? (
         <EmptyState
           icon="building"
-          title="No banks found"
-          description={searchQuery ? "Try a different search term." : "No banks are available yet."}
+          title={t("banks.noBanks")}
+          description={t("common.tryClearing")}
         />
       ) : (
         <>
           <p className="text-sm text-muted-foreground mb-4">
-            Showing {filteredBanks.length} {filteredBanks.length === 1 ? "bank" : "banks"}
+            {filteredBanks.length} {t("banks.title").toLowerCase()}
           </p>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {filteredBanks.map((bank) => (

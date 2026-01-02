@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProjectCard } from "@/components/project-card";
 import { ProjectGridSkeleton } from "@/components/skeletons";
@@ -15,6 +16,7 @@ import { Heart, Clock, LogOut } from "lucide-react";
 import type { ProjectWithRelations, ViewHistory } from "@shared/schema";
 
 export default function AccountPage() {
+  const { t } = useTranslation();
   const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -42,7 +44,7 @@ export default function AccountPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/me/favorites"] });
       queryClient.invalidateQueries({ queryKey: ["/api/me/favorites/projects"] });
-      toast({ title: "Removed from favorites" });
+      toast({ title: t("favorites.removed") || "Removed from favorites" });
     },
   });
 
@@ -86,7 +88,7 @@ export default function AccountPage() {
           </div>
           <Button variant="outline" onClick={() => logout()} data-testid="button-logout">
             <LogOut className="h-4 w-4 mr-2" />
-            Log out
+            {t("nav.logout")}
           </Button>
         </div>
       </Card>
@@ -95,11 +97,11 @@ export default function AccountPage() {
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="favorites" className="gap-2" data-testid="tab-favorites">
             <Heart className="h-4 w-4" />
-            Favorites ({favoriteProjects.length})
+            {t("nav.favorites")} ({favoriteProjects.length})
           </TabsTrigger>
           <TabsTrigger value="history" className="gap-2" data-testid="tab-history">
             <Clock className="h-4 w-4" />
-            History ({history.length})
+            {t("account.viewHistory")} ({history.length})
           </TabsTrigger>
         </TabsList>
 
@@ -109,10 +111,10 @@ export default function AccountPage() {
           ) : favoriteProjects.length === 0 ? (
             <EmptyState
               icon="heart"
-              title="No favorites yet"
-              description="Start exploring projects and save your favorites."
+              title={t("favorites.empty")}
+              description={t("favorites.emptyDescription")}
               action={{
-                label: "Browse Projects",
+                label: t("favorites.browseProjects"),
                 onClick: () => navigate("/"),
               }}
             />
@@ -136,10 +138,10 @@ export default function AccountPage() {
           ) : history.length === 0 ? (
             <EmptyState
               icon="clock"
-              title="No history yet"
-              description="Projects you view will appear here."
+              title={t("account.noHistory")}
+              description={t("favorites.emptyDescription")}
               action={{
-                label: "Browse Projects",
+                label: t("favorites.browseProjects"),
                 onClick: () => navigate("/"),
               }}
             />

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
@@ -15,6 +16,7 @@ import { format } from "date-fns";
 import type { ProjectWithRelations, Bank } from "@shared/schema";
 
 export default function ProjectDetailPage() {
+  const { t } = useTranslation();
   const [match, params] = useRoute("/projects/:id");
   const projectId = params?.id ? parseInt(params.id) : null;
   const { user, isAuthenticated } = useAuth();
@@ -43,7 +45,7 @@ export default function ProjectDetailPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/me/favorites"] });
-      toast({ title: "Added to favorites" });
+      toast({ title: t("favorites.added") });
     },
   });
 
@@ -53,7 +55,7 @@ export default function ProjectDetailPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/me/favorites"] });
-      toast({ title: "Removed from favorites" });
+      toast({ title: t("favorites.removed") });
     },
   });
 
@@ -84,8 +86,8 @@ export default function ProjectDetailPage() {
       <div className="p-6">
         <EmptyState
           icon="error"
-          title="Project not found"
-          description="The project you're looking for doesn't exist or has been removed."
+          title={t("projects.noProjects")}
+          description={t("projects.adjustFilters")}
         />
       </div>
     );
@@ -113,9 +115,9 @@ export default function ProjectDetailPage() {
             </Link>
           </Button>
           <nav className="text-sm text-muted-foreground">
-            <Link href="/" className="hover:underline">Home</Link>
+            <Link href="/" className="hover:underline">{t("nav.home")}</Link>
             <span className="mx-2">/</span>
-            <Link href="/projects" className="hover:underline">Projects</Link>
+            <Link href="/projects" className="hover:underline">{t("nav.projects")}</Link>
             <span className="mx-2">/</span>
             <span className="text-foreground">{project.name}</span>
           </nav>
@@ -149,7 +151,7 @@ export default function ProjectDetailPage() {
                 {formattedDate && (
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
-                    <span>Completion: {formattedDate}</span>
+                    <span>{t("projects.completionDate")}: {formattedDate}</span>
                   </div>
                 )}
               </div>
@@ -157,7 +159,7 @@ export default function ProjectDetailPage() {
 
             {formattedPrice && (
               <div>
-                <p className="text-sm text-muted-foreground">Starting from</p>
+                <p className="text-sm text-muted-foreground">{t("projects.priceFrom")}</p>
                 <p className="text-3xl font-bold" data-testid="text-project-price">
                   {formattedPrice}
                 </p>
@@ -166,7 +168,7 @@ export default function ProjectDetailPage() {
 
             {project.description && (
               <div>
-                <h2 className="font-heading text-xl font-semibold mb-3">Description</h2>
+                <h2 className="font-heading text-xl font-semibold mb-3">{t("common.description")}</h2>
                 <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
                   {project.description}
                 </p>
@@ -175,7 +177,7 @@ export default function ProjectDetailPage() {
 
             {project.banks && project.banks.length > 0 && (
               <div>
-                <h2 className="font-heading text-xl font-semibold mb-3">Partner Banks</h2>
+                <h2 className="font-heading text-xl font-semibold mb-3">{t("banks.partnerDevelopers")}</h2>
                 <div className="flex flex-wrap gap-2">
                   {project.banks.map((bank: Bank) => (
                     <Link key={bank.id} href={`/banks/${bank.id}`}>
@@ -200,11 +202,11 @@ export default function ProjectDetailPage() {
               data-testid="button-toggle-favorite"
             >
               <Heart className={`mr-2 h-5 w-5 ${isFavorite ? "fill-current" : ""}`} />
-              {isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+              {isFavorite ? t("favorites.removed") : t("favorites.added")}
             </Button>
 
             <Card className="p-4 space-y-4">
-              <h3 className="font-heading font-semibold">Developer</h3>
+              <h3 className="font-heading font-semibold">{t("filters.developer")}</h3>
               <Link href={`/developers/${project.developer?.id}`}>
                 <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
                   <Avatar className="h-12 w-12">
@@ -218,7 +220,7 @@ export default function ProjectDetailPage() {
                       {project.developer?.name}
                     </p>
                     <p className="text-sm text-muted-foreground flex items-center gap-1">
-                      View profile <ExternalLink className="h-3 w-3" />
+                      {t("projects.viewDetails")} <ExternalLink className="h-3 w-3" />
                     </p>
                   </div>
                 </div>
@@ -226,7 +228,7 @@ export default function ProjectDetailPage() {
             </Card>
 
             <Card className="p-4 space-y-2">
-              <h3 className="font-heading font-semibold">Location</h3>
+              <h3 className="font-heading font-semibold">{t("map.location")}</h3>
               <p className="text-sm text-muted-foreground">
                 {project.district?.name}, {project.city?.name}
               </p>

@@ -1,9 +1,9 @@
 {
   "common": {
-    "loading": "Bernum e...",
-    "error": "Inchvor ban sxal gnats",
+    "loading": "Բեռնում...",
+    "error": "Ինչ-որ բան չի ստացվում",
     "retry": "Կրկնել",
-    "noResults": "Ardyunkner chkan",
+    "noResults": "Ոչ մի արդյունք",
     "tryClearing": "Pokhek ztichnerey ev krknek",
     "save": "Պահպանել",
     "cancel": "Վերացնել",
@@ -12,7 +12,8 @@
     "close": "Փակել",
     "back": "Առաջ",
     "next": "Ավելին",
-    "viewAll": "Դիտել բոլորը"
+    "viewAll": "Դիտել բոլորը",
+    "description": "Nkaragrutyun"
   },
   "nav": {
     "home": "Գլխավոր",
@@ -43,14 +44,14 @@
     "hy": "Հայերեն"
   },
   "filters": {
-    "title": "Ztichner",
-    "city": "Kaghak",
-    "district": "Shrjan",
-    "bank": "Bank",
-    "developer": "Karutsapatogh",
-    "clearFilters": "Maqrel bolore",
-    "activeFilters": "Aktiv ztichner",
-    "selectCity": "Entrel kaghak",
+    "title": "Զտիչներ",
+    "city": "Քաղաք",
+    "district": "Շրջան",
+    "bank": "Բանկ",
+    "developer": "Կառուցապատող",
+    "clearFilters": "Մաքրել բոլոր",
+    "activeFilters": "Ակտիվ զտիչներ",
+    "selectCity": "Ընտրեք քաղաքը",
     "selectDistrict": "Entrel shrjan",
     "selectBank": "Entrel bank",
     "selectDeveloper": "Entrel karutsapatogh",
@@ -62,7 +63,7 @@
   "sort": {
     "title": "Tesakavorel",
     "sortBy": "Tesakavorel",
-    "newest": "Amenanorere",
+    "newest": "Նորագույն",
     "priceLowHigh": "Gin: acman kargov",
     "priceHighLow": "Gin: nvazman kargov",
     "completionSoonest": "Avart: shut",
@@ -132,6 +133,7 @@
   },
   "map": {
     "title": "Քարտեզ",
-    "viewOnMap": "Դիտել քարտեզի վրա"
+    "viewOnMap": "Դիտել քարտեզի վրա",
+    "location": "Hasce"
   }
 }

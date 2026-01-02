@@ -12,7 +12,8 @@
     "close": "Close",
     "back": "Back",
     "next": "Next",
-    "viewAll": "View all"
+    "viewAll": "View all",
+    "description": "Description"
   },
   "nav": {
     "home": "Home",
@@ -131,6 +132,7 @@
   },
   "map": {
     "title": "Map",
-    "viewOnMap": "View on map"
+    "viewOnMap": "View on map",
+    "location": "Location"
   }
 }

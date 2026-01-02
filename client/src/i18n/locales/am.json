@@ -10,10 +10,10 @@
     "delete": "Հեռացնել",
     "edit": "Khmbagrel",
     "close": "Փակել",
-    "back": "Առաջ",
-    "next": "Ավելին",
+    "back": "Նախորդ ",
+    "next": "Հաջորդ",
     "viewAll": "Դիտել բոլորը",
-    "description": "Nkaragrutyun"
+    "description": "Նկարագրություն"
   },
   "nav": {
     "home": "Գլխավոր",
@@ -71,7 +71,7 @@
   },
   "projects": {
     "sort": {
-      "title": "Tesakavorel",
+      "title": "Տեսակավորել",
       "newest": "Amenanorere",
       "priceAsc": "Gin: acman kargov",
       "priceDesc": "Gin: nvazman kargov",
@@ -85,23 +85,23 @@
     "completionDate": "Avartum",
     "viewDetails": "Tesnel manramasner",
     "noProjects": "Naxagcer chkan gtvel",
-    "adjustFilters": "Pokhel ztichnere"
+    "adjustFilters": "Փոխել ztichnere"
   },
   "developers": {
-    "title": "Karutsapatoghner",
-    "projectCount": "{{count}} naxagic",
+    "title": "Կառուցապատողները",
+    "projectCount": "{{count}} նախագիծ",
     "viewProjects": "Tesnel naxagcer",
     "noDevelopers": "Karutsapatoghner chkan gtvel"
   },
   "banks": {
-    "title": "Banker",
-    "partnerDevelopers": "Gorcnkats karutsapatoghner",
-    "viewDetails": "Tesnel manramasner",
-    "noBanks": "Banker chkan gtvel"
+    "title": "Բանկերը",
+    "partnerDevelopers": "Բանկ գործընկեր",
+    "viewDetails": "Մանրամասն",
+    "noBanks": "Գործընկերներ չկան"
   },
   "favorites": {
-    "title": "Naxntracner",
-    "empty": "Derevs naxntracner chkan",
+    "title": "Նախընտրածները",
+    "empty": "Նախընտրածները չկան",
     "emptyDescription": "Znnel naxagcer ev srtik avelacsnek ays ejum",
     "browseProjects": "Znnel naxagcer",
     "loginRequired": "Xndrum enk mutk gortsel tesnel naxntracnere",
@@ -109,11 +109,11 @@
     "removed": "Heracvec naxntracnerits"
   },
   "account": {
-    "title": "Իմ էջ",
-    "profile": "Profil",
+    "title": "Իմ էջը",
+    "profile": "Իմ էջ",
     "email": "Email",
     "name": "Անուն",
-    "viewHistory": "Ditman patmutyun",
+    "viewHistory": "Դիտել պատմություն",
     "recentlyViewed": "Verejin ditac naxagcer",
     "noHistory": "Ditman patmutyun datark e",
     "loginRequired": "Xndrum enk mutk gortsel tesnel hashiv"
@@ -121,7 +121,7 @@
   "settings": {
     "title": "Կառավարում",
     "appearance": "Արտաքին տեսքը",
-    "language": "Լեզուն",
+    "language": "Լեզու",
     "selectLanguage": "Ընտրել լեզուն",
     "theme": "Ռեժիմը"
   },
@@ -134,6 +134,6 @@
   "map": {
     "title": "Քարտեզ",
     "viewOnMap": "Դիտել քարտեզի վրա",
-    "location": "Hasce"
+    "location": "Հասցե"
   }
 }

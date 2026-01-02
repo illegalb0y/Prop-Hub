@@ -12,13 +12,13 @@ export type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number];
 export const LANGUAGE_NAMES: Record<SupportedLanguage, string> = {
   en: 'English',
   ru: 'Русский',
-  am: 'Hayeren'
+  am: 'Հայերեն'
 };
 
 export const LANGUAGE_FLAGS: Record<SupportedLanguage, string> = {
   en: 'EN',
   ru: 'RU',
-  am: 'HY'
+  am: 'AM'
 };
 
 const resources = {

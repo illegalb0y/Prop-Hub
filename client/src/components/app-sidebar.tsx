@@ -76,8 +76,8 @@ export function AppSidebar({ searchQuery, onSearchChange }: AppSidebarProps) {
                       tooltip={item.title}
                     >
                       <Link href={item.url} data-testid={`link-nav-${item.title.toLowerCase()}`}>
-                        <item.icon className="h-5 w-5" />
-                        <span>{item.title}</span>
+                        <item.icon className="h-5 w-5 shrink-0" />
+                        <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

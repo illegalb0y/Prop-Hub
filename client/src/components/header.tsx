@@ -35,7 +35,7 @@ export function Header({ searchQuery, onSearchChange }: HeaderProps) {
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between gap-4 border-b bg-background px-4">
       <div className="flex items-center gap-2">
         <SidebarTrigger data-testid="button-sidebar-toggle">
-          <Menu className="h-5 w-5" />
+          <Menu className="h-6 w-6 stroke-[2.5px]" />
         </SidebarTrigger>
       </div>
 

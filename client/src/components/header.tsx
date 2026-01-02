@@ -1,4 +1,4 @@
-import { Heart, Map, User, Search, X, LogOut } from "lucide-react";
+import { Heart, Map, User, Search, X, LogOut, Menu } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +34,9 @@ export function Header({ searchQuery, onSearchChange }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between gap-4 border-b bg-background px-4">
       <div className="flex items-center gap-2">
-        <SidebarTrigger data-testid="button-sidebar-toggle" />
+        <SidebarTrigger data-testid="button-sidebar-toggle">
+          <Menu className="h-5 w-5" />
+        </SidebarTrigger>
       </div>
 
       <div className="flex-1 max-w-xl">

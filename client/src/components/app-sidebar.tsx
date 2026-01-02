@@ -32,21 +32,21 @@ export function AppSidebar({ searchQuery, onSearchChange }: AppSidebarProps) {
   const [location] = useLocation();
 
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
       <SidebarHeader className="p-4">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
+        <Link href="/" className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <Building2 className="h-5 w-5" />
           </div>
-          <span className="font-heading text-xl font-bold" data-testid="text-logo">
+          <span className="font-heading text-xl font-bold group-data-[collapsible=icon]:hidden" data-testid="text-logo">
             PropertyHub
           </span>
         </Link>
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent className="px-2">
+        <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+          <SidebarGroupContent className="px-2 pt-0 pb-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -90,14 +90,16 @@ export function AppSidebar({ searchQuery, onSearchChange }: AppSidebarProps) {
 
       <SidebarFooter className="p-2">
         <SidebarSeparator className="mb-2" />
-        <div className="flex items-center justify-between px-2">
-          <SidebarMenuButton asChild tooltip="Settings">
+        <div className="flex items-center justify-between px-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-4">
+          <SidebarMenuButton asChild tooltip="Settings" className="group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center">
             <Link href="/settings" data-testid="link-settings">
-              <Settings className="h-5 w-5" />
-              <span>Settings</span>
+              <Settings className="h-5 w-5 shrink-0" />
+              <span className="group-data-[collapsible=icon]:hidden">Settings</span>
             </Link>
           </SidebarMenuButton>
-          <ThemeToggle />
+          <div className="group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+            <ThemeToggle />
+          </div>
         </div>
       </SidebarFooter>
     </Sidebar>

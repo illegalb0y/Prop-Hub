@@ -1,0 +1,250 @@
+# PRD (Iteration 2): Security Hardening + Admin Console
+
+## 1) Overview
+Iteration 2 strengthens **security, abuse prevention, data integrity, and performance** and introduces an **Admin Console** (private back-office) for managing projects and users. Customer-facing product behavior remains unchanged unless explicitly noted here.
+
+---
+
+## 2) Goals
+1. Reduce abuse risks (credential stuffing, scraping, brute force, spam favorites/history).
+2. Improve resilience and observability (logging, audit, monitoring).
+3. Enable safe project ingestion and moderation through an Admin Console.
+4. Ensure data quality via robust validation for CSV/manual uploads.
+
+### Success Metrics
+- 0 critical security findings from baseline security review checklist.
+- Auth endpoints withstand brute-force attempts (rate limiting + lockout).
+- CSV imports validated with <1% invalid-row leakage into DB (blocked or quarantined).
+
+---
+
+## 3) Non-Goals (Iteration 2)
+- Public developer self-service portal.
+- Full moderation workflow (approvals, staging UI) beyond basic import + delete.
+- Payment/lead pipelines.
+
+---
+
+## 4) Security & Abuse Prevention Requirements
+
+### 4.1 Authentication & Session Security
+- Admin and user auth must use secure sessions:
+  - **httpOnly, Secure cookies**, `SameSite=Lax` (or `Strict` for admin).
+  - Short-lived access session + refresh (or server sessions).
+- Password storage: **Argon2id** (preferred) or bcrypt with strong parameters.
+- Login protections:
+  - Rate limit per IP + per identifier (email).
+  - Optional: incremental backoff on repeated failures.
+- Logout invalidates session server-side.
+
+### 4.2 Rate Limiting (Required)
+Apply rate limiting at edge (CDN/WAF) and/or API gateway + app-level fallback.
+
+**Suggested baseline limits**
+- `POST /auth/login`, `POST /auth/signup`:  
+  - 5 req/min per IP + 5 req/min per email
+- `GET /projects` (search + filters):  
+  - 60 req/min per IP (tune based on caching)
+- `GET /projects/:id`:  
+  - 120 req/min per IP
+- User-mutating endpoints (`/me/favorites`, `/me/history`):  
+  - 60 req/min per user
+- Admin endpoints:  
+  - 30 req/min per admin user + IP allowlisting option (recommended)
+
+**Behavior**
+- Return `429 Too Many Requests` with `Retry-After`.
+- Log rate limit triggers with IP, route, userId if available.
+
+### 4.3 Input Validation & Output Safety (Required)
+- Validate **all request inputs** server-side using a schema validator (e.g., Zod/Joi/class-validator).
+- Strictly validate:
+  - IDs (UUID/int), arrays for multi-select, numeric ranges (price), lat/lng bounds.
+  - Sorting keys allowlist (`newest`, `price_asc`, etc.).
+  - Search `q` length limit (e.g., 1–100 chars).
+- Prevent injection:
+  - Use parameterized queries/ORM.
+  - Sanitize any HTML content (project descriptions) or store as plain text.
+- File upload validation (CSV):
+  - Content-type + extension check (do not trust it alone).
+  - Max file size (e.g., 10MB).
+  - Parse with safe CSV parser; enforce column allowlist.
+- Output encoding:
+  - Escape user-controlled data in templates/components to mitigate XSS.
+
+### 4.4 Access Control (Required)
+- Introduce RBAC:
+  - Roles: `user`, `admin`.
+- Enforce authorization on server for all admin routes/APIs.  
+  **The URL path `../secret_admin` is not security**; it must be protected via auth + role checks.
+
+### 4.5 IP Banning (Required)
+- Admin can ban:
+  - Specific IP address (exact match) and optionally CIDR blocks (nice-to-have).
+- Enforcement:
+  - Check banned IPs at edge (preferred) and/or middleware before routing.
+  - Return `403` or `451` (policy-based) with generic message.
+- Maintain:
+  - ban reason, createdAt, expiresAt (optional), createdByAdminId.
+- Log blocked attempts.
+
+### 4.6 Additional Baseline Protections (Required)
+- CSRF protection for cookie-based auth (admin + user actions).
+- CORS strict allowlist (production domain only).
+- Security headers:
+  - CSP (baseline), HSTS, X-Frame-Options/Frame-ancestors, X-Content-Type-Options, Referrer-Policy.
+- Do not leak sensitive errors to clients; use generic messages + server logs.
+- Audit logs for admin actions (see Admin section).
+
+---
+
+## 5) Performance & Optimization Requirements
+
+### 5.1 Caching
+- Cache `GET /projects` responses keyed by query params for short TTL (e.g., 30–120s) to reduce load.
+- Use CDN caching for static assets and images.
+- ETag/Last-Modified for project detail responses where feasible.
+
+### 5.2 Database & Search
+- Add indexes:
+  - Projects: `(cityId)`, `(districtId)`, `(developerId)`, `(createdAt)`, `(priceFrom)`, coordinates (spatial index if supported).
+  - Join tables: `(bankId, developerId)` / `(projectId, bankId)`.
+- Consider full-text search (Iteration 2 optional) or basic `ILIKE` with constraints and indexing.
+
+### 5.3 Background Jobs (Recommended)
+- CSV import should be processed asynchronously:
+  - Upload → enqueue job → parse/validate → upsert → summary report.
+- Prevent request timeouts and allow progress tracking.
+
+### 5.4 Observability
+- Structured logging (JSON), correlation IDs per request.
+- Metrics: request latency, error rates, rate limit hits, import job status.
+- Admin actions and auth events logged to an audit sink.
+
+---
+
+## 6) Admin Console (Private Back Office)
+
+### 6.1 Access & Route
+- Admin UI located at: `/secret_admin`
+- Must require:
+  - Admin authentication (session)
+  - Role check (`admin`)
+- Optional hardening (recommended):
+  - IP allowlist for admin access
+  - Separate admin domain (later)
+
+### 6.2 Admin Navigation / Pages
+1. **Dashboard**
+   - Import status summary, recent admin actions, quick links.
+2. **Projects Management**
+   - View/search projects
+   - Delete projects (soft delete recommended)
+   - Manual CSV upload/import
+3. **Users Management**
+   - List/search users
+   - View user detail (email, createdAt, favorites count, history count)
+   - Ban user (account-level)
+   - Ban IP address (and view existing bans)
+4. **IP Bans**
+   - List/add/remove IP bans
+   - Reason + createdBy + timestamps
+
+### 6.3 Projects Management Requirements
+
+#### A) Delete Project
+- Admin can delete a project by:
+  - Selecting from list or by ID search
+- Deletion rules:
+  - Soft delete recommended (flag `deletedAt`) to preserve referential integrity
+  - Exclude deleted projects from public APIs by default
+- Audit log entry required.
+
+#### B) CSV Upload / Import (AND EXPORT CSV FOR ADMIN ONLY)
+- Admin can upload a CSV file to import projects into DB.
+- Import behavior:
+  - Validate header columns (strict allowlist).
+  - Validate each row; invalid rows must be rejected or quarantined.
+  - Upsert strategy (define one):
+    - Preferred: match by `externalId` or `(developerId + projectName + cityId)` if no externalId.
+- Required CSV fields (Iteration 2):
+  - project name, developer, city, district, lat, lng
+- Strongly recommended fields:
+  - priceFrom, currency, completionDate, description, coverImageUrl, banks
+- Output after import:
+  - Summary: total rows, inserted, updated, failed
+  - Downloadable error report (CSV) for failed rows
+
+**Security**
+- CSV upload endpoint protected by admin auth + CSRF.
+- Store uploaded file temporarily (private storage), delete after processing.
+- Max row count limit (e.g., 50k) to protect system.
+
+### 6.4 Users Management Requirements
+- List users with pagination.
+- Admin can ban a user:
+  - Effect: user cannot log in; active sessions invalidated.
+  - Return generic message on login attempt.
+- Admin can ban IP:
+  - Adds to IP ban list with optional expiry.
+- Audit log required for bans/unbans.
+
+### 6.5 Audit Logging (Required)
+Record immutable audit events:
+- adminId, actionType, targetType, targetId, timestamp, metadata (diff/summary), source IP.
+Actions include:
+- project_delete, csv_import_start, csv_import_complete, user_ban, user_unban, ip_ban_add, ip_ban_remove.
+
+---
+
+## 7) Data Model Additions (Iteration 2)
+
+### AdminRole / User.role
+- `User.role`: `user` | `admin`
+- `User.bannedAt` (nullable), `bannedReason` (optional)
+
+### IpBan
+- id
+- ip (string) and optionally cidr (string)
+- reason
+- createdAt
+- expiresAt (nullable)
+- createdByAdminId
+
+### Project Import
+- ImportJob: id, filename, status, totals, createdByAdminId, createdAt, completedAt
+- ImportJobError: importJobId, rowNumber, errorMessage, rawRowJson
+
+### AuditLog
+- id, adminId, actionType, targetType, targetId, ip, createdAt, metadataJson
+
+---
+
+## 8) API Additions (High-Level)
+
+### Admin (all require admin auth)
+- `GET /admin/projects`
+- `DELETE /admin/projects/:id`
+- `POST /admin/projects/import` (multipart CSV upload → returns importJobId)
+- `GET /admin/imports/:id` (status + summary)
+- `GET /admin/imports/:id/errors` (download/report)
+
+- `GET /admin/users`
+- `POST /admin/users/:id/ban`
+- `POST /admin/users/:id/unban`
+
+- `GET /admin/ip-bans`
+- `POST /admin/ip-bans`
+- `DELETE /admin/ip-bans/:id`
+
+---
+
+## 9) Acceptance Criteria (Iteration 2)
+1. Rate limiting enforced with correct `429` behavior on defined endpoints.
+2. Server-side validation blocks invalid query params, sort keys, and malformed multi-select arrays.
+3. Admin console at `/secret_admin` is inaccessible without admin role (server enforced).
+4. Admin can upload CSV; system processes asynchronously and returns import summary + errors report.
+5. Admin can delete projects (soft delete recommended) and they disappear from public results.
+6. Admin can ban users and ban IP addresses; bans are enforced globally.
+7. All admin actions produce audit log entries.
+8. Security headers + CSRF protection are enabled for cookie-auth flows.

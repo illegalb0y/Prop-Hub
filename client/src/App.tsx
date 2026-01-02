@@ -19,6 +19,7 @@ import BankDetailPage from "@/pages/bank-detail";
 import MapPage from "@/pages/map-page";
 import FavoritesPage from "@/pages/favorites";
 import AccountPage from "@/pages/account";
+import AdminPage from "@/pages/admin";
 
 function Router({ searchQuery }: { searchQuery: string }) {
   return (
@@ -33,6 +34,7 @@ function Router({ searchQuery }: { searchQuery: string }) {
       <Route path="/map" component={() => <MapPage searchQuery={searchQuery} />} />
       <Route path="/favorites" component={FavoritesPage} />
       <Route path="/account" component={AccountPage} />
+      <Route path="/secret_admin" component={AdminPage} />
       <Route component={NotFound} />
     </Switch>
   );

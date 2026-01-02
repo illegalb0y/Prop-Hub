@@ -2,6 +2,10 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage, type ProjectFilters } from "./storage";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+import { projectsRateLimit, projectDetailRateLimit, userActionsRateLimit, authRateLimit } from "./middleware/rate-limit";
+import { checkUserNotBanned } from "./middleware/rbac";
+import { projectFiltersSchema, idParamSchema, favoriteSchema, historySchema } from "./middleware/validation";
+import { registerAdminRoutes } from "./admin-routes";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -9,6 +13,7 @@ export async function registerRoutes(
 ): Promise<Server> {
   await setupAuth(app);
   registerAuthRoutes(app);
+  registerAdminRoutes(app);
 
   app.get("/api/cities", async (req, res) => {
     try {
@@ -92,10 +97,13 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/projects", async (req, res) => {
+  app.get("/api/projects", projectsRateLimit, async (req, res) => {
     try {
+      const validatedQuery = projectFiltersSchema.safeParse(req.query);
+      const query = validatedQuery.success ? validatedQuery.data : req.query;
+      
       const filters: ProjectFilters = {
-        q: req.query.q as string | undefined,
+        q: query.q as string | undefined,
         cityIds: req.query.cityId ? (Array.isArray(req.query.cityId) 
           ? (req.query.cityId as string[]).map(Number)
           : [parseInt(req.query.cityId as string)]) : undefined,
@@ -119,9 +127,12 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/projects/:id", async (req, res) => {
+  app.get("/api/projects/:id", projectDetailRateLimit, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid project ID" });
+      }
       const project = await storage.getProject(id);
       if (!project) {
         return res.status(404).json({ message: "Project not found" });
@@ -133,7 +144,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/me/favorites", isAuthenticated, async (req: any, res) => {
+  app.get("/api/me/favorites", isAuthenticated, checkUserNotBanned, userActionsRateLimit, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const favorites = await storage.getUserFavorites(userId);
@@ -144,7 +155,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/me/favorites/projects", isAuthenticated, async (req: any, res) => {
+  app.get("/api/me/favorites/projects", isAuthenticated, checkUserNotBanned, userActionsRateLimit, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const projects = await storage.getUserFavoriteProjects(userId);
@@ -155,14 +166,16 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/me/favorites", isAuthenticated, async (req: any, res) => {
+  app.post("/api/me/favorites", isAuthenticated, checkUserNotBanned, userActionsRateLimit, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { projectId } = req.body;
+      const result = favoriteSchema.safeParse(req.body);
       
-      if (!projectId) {
+      if (!result.success) {
         return res.status(400).json({ message: "projectId is required" });
       }
+      
+      const { projectId } = result.data;
 
       const exists = await storage.isFavorite(userId, projectId);
       if (exists) {
@@ -177,7 +190,7 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/me/favorites/:projectId", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/me/favorites/:projectId", isAuthenticated, checkUserNotBanned, userActionsRateLimit, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const projectId = parseInt(req.params.projectId);
@@ -190,7 +203,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/me/history", isAuthenticated, async (req: any, res) => {
+  app.get("/api/me/history", isAuthenticated, checkUserNotBanned, userActionsRateLimit, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const history = await storage.getUserHistory(userId);
@@ -201,14 +214,16 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/me/history", isAuthenticated, async (req: any, res) => {
+  app.post("/api/me/history", isAuthenticated, checkUserNotBanned, userActionsRateLimit, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { projectId, source = "listing_card" } = req.body;
+      const result = historySchema.safeParse(req.body);
       
-      if (!projectId) {
+      if (!result.success) {
         return res.status(400).json({ message: "projectId is required" });
       }
+      
+      const { projectId, source } = result.data;
 
       const history = await storage.addToHistory({ userId, projectId, source });
       res.status(201).json(history);

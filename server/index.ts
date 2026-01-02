@@ -2,6 +2,10 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import cookieParser from "cookie-parser";
+import { securityHeaders } from "./middleware/security-headers";
+import { checkIpBan } from "./middleware/ip-ban";
+import { csrfTokenEndpoint, csrfProtection } from "./middleware/csrf";
 
 const app = express();
 const httpServer = createServer(app);
@@ -12,15 +16,25 @@ declare module "http" {
   }
 }
 
+app.set("trust proxy", 1);
+
+app.use(cookieParser());
+app.use(securityHeaders);
+app.use(checkIpBan);
+
 app.use(
   express.json({
     verify: (req, _res, buf) => {
       req.rawBody = buf;
     },
+    limit: "1mb",
   }),
 );
 
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: false, limit: "1mb" }));
+
+app.get("/api/csrf-token", csrfTokenEndpoint);
+app.use("/api", csrfProtection);
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {

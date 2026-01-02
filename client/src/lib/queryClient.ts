@@ -7,14 +7,50 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+function getCsrfToken(): string | null {
+  const cookies = document.cookie.split(";");
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split("=");
+    if (name === "_csrf") {
+      return value;
+    }
+  }
+  return null;
+}
+
+async function ensureCsrfToken(): Promise<string> {
+  let token = getCsrfToken();
+  if (!token) {
+    const res = await fetch("/api/csrf-token", { credentials: "include" });
+    if (res.ok) {
+      const data = await res.json();
+      token = data.csrfToken;
+    }
+  }
+  return token || "";
+}
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const headers: Record<string, string> = {};
+  
+  if (data) {
+    headers["Content-Type"] = "application/json";
+  }
+  
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(method.toUpperCase())) {
+    const csrfToken = await ensureCsrfToken();
+    if (csrfToken) {
+      headers["x-csrf-token"] = csrfToken;
+    }
+  }
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });

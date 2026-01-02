@@ -100,6 +100,7 @@ export const projects = pgTable("projects", {
   priceFrom: integer("price_from"),
   currency: varchar("currency", { length: 10 }).default("USD"),
   completionDate: timestamp("completion_date"),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
@@ -107,6 +108,7 @@ export const projects = pgTable("projects", {
   index("idx_projects_district").on(table.districtId),
   index("idx_projects_developer").on(table.developerId),
   index("idx_projects_created").on(table.createdAt),
+  index("idx_projects_price").on(table.priceFrom),
 ]);
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({

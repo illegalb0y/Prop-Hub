@@ -1,0 +1,181 @@
+# PRD (Next Iteration): Internationalization (EN / RU / AM) + Language Switcher
+
+## 1) Summary
+Add a **language switcher** in the header supporting **English (default), Russian, and Armenian**. Language selection is shown as a **2–3 letter abbreviation** (EN / RU / AM or ARM). Selecting a language triggers a **full page refresh** and the entire UI renders in the chosen language.
+
+This iteration also standardizes **i18n architecture**, **font strategy** for Latin/Cyrillic/Armenian scripts, and **translation governance** to ensure consistency and accuracy.
+
+---
+
+## 2) Goals
+- Users can switch site language from the header in ≤2 clicks.
+- All UI text is translated consistently with a shared glossary.
+- Typography remains visually stable across languages (minimal layout shift).
+- Language preference persists across sessions and routes.
+
+## 3) Non-Goals
+- Auto-detect language from browser (optional later; can be added if desired).
+- Server-side localized SEO routes (e.g., `/ru/...`) unless explicitly requested later.
+- Content translation of externally sourced project descriptions beyond available data (see “Dynamic content”).
+
+---
+
+## 4) UX/UI Requirements
+
+### 4.1 Header Language Control
+- Add a language button in the header (near right controls; typically next to “My account”).
+- Default label: **EN**.
+- Button content:
+  - Abbreviation text (EN/RU/AM)
+  - Small chevron indicator
+- Interaction:
+  - Click opens dropdown listing all available languages:
+    - EN — English
+    - RU — Русский
+    - AM/ARM — Հայերեն
+  - Selecting a language:
+    1) saves preference
+    2) triggers **full page reload**
+    3) app renders with selected locale
+
+### 4.2 Dropdown Behavior & Accessibility (Best Practices)
+- Dropdown closes on:
+  - outside click
+  - Esc
+  - selection
+- Keyboard:
+  - Tab navigable, Arrow keys to move items, Enter to select
+- ARIA:
+  - `aria-haspopup="menu"`, `aria-expanded`, menu items with `role="menuitem"`
+
+### 4.3 Persistence
+- Persist language in **cookie** (preferred for future SSR) and/or `localStorage`.
+- Priority order:
+  1) stored preference
+  2) default **EN**
+
+### 4.4 Layout Stability
+- Expect RU/AM strings to be longer. Prevent header overflow by:
+  - defining min/max widths for buttons
+  - allowing truncation with tooltip in constrained areas
+  - avoiding fixed pixel widths where text varies
+- Keep abbreviations constant width (e.g., 2–3 chars) in header button to minimize shift.
+
+---
+
+## 5) Functional Requirements
+
+### 5.1 i18n Coverage
+- **No hard-coded UI strings** in components. All must come from translation keys.
+- Cover all existing UI areas:
+  - Header: search placeholder, favorites, map, sign up, my account
+  - Sidebar: developers, banks, projects, settings, theme toggle labels (if any)
+  - Filters: city, district, bank, developer, clear filters, active filter labels
+  - Sorting options
+  - Pages: developers, banks, projects, favorites, auth, account, project details
+  - States: loading, empty results, errors, retry, validation messages
+
+### 5.2 Dynamic Content
+- Project/developer/bank names: **do not translate** (proper nouns).
+- Structured attributes (e.g., “Completion date”, “Price from”) must be translated labels.
+- If project descriptions are stored only in one language, show as-is; optionally mark language later (out of scope here).
+
+### 5.3 Refresh Requirement
+- On language selection, the app must reload (e.g., `window.location.reload()` after saving locale) to meet the requirement.
+
+---
+
+## 6) Translation Quality & Governance (Required)
+Because “precise translation for every word” must be guaranteed operationally:
+- Maintain a **glossary** for key domain terms (e.g., “developer” consistently as “Застройщик” / “Կառուցապատող”).
+- Use translation files as the single source of truth.
+- Mandatory review:
+  - RU: native/pro translator review
+  - HY (Armenian): native/pro translator review  
+(Implementation should not rely solely on machine translation; final approval requires human verification.)
+
+---
+
+## 7) Fonts & Typography (EN/RU/HY)
+### 7.1 Font Requirement
+Use a font family that supports **Latin + Cyrillic + Armenian** with consistent rendering.
+
+**Recommended approach (safe and stable):**
+- Primary family: **Noto Sans** (covers Latin/Cyrillic/Armenian broadly)
+- Fallback stack:
+```css
+font-family: "Noto Sans", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+```
+
+### 7.2 Font Delivery (Optimization)
+- Self-host fonts (preferred) with `woff2`.
+- Subset by script if needed later (Latin/Cyrillic/Armenian) to reduce payload; for this iteration keep simple unless performance requires.
+- Use `font-display: swap` to avoid invisible text, while minimizing layout shift with consistent metrics.
+
+---
+
+## 8) Tech Requirements (Implementation)
+- Introduce an i18n library (example choices):
+  - React: `react-i18next` / `i18next`
+  - Vue: `vue-i18n`
+  - Vanilla: simple dictionary module + formatter utilities
+- Translation files:
+  - `en.json`, `ru.json`, `hy.json` (locale code for Armenian is typically `hy`; UI label can be AM/ARM)
+- Ensure formatting:
+  - Dates/numbers/currency via `Intl.NumberFormat` and `Intl.DateTimeFormat` using selected locale.
+
+---
+
+## 9) Required Translation Dictionary (Iteration Baseline)
+
+Below is the **baseline UI copy** to translate now (extend as new UI text appears).  
+Keys are illustrative; actual structure can differ but must be consistent.
+
+| Key / English | Russian (RU) | Armenian (HY) |
+|---|---|---|
+| Favorites | Избранное | Նախընտրածներ |
+| Map | Карта | Քարտեզ |
+| Sign up | Регистрация | Գրանցվել |
+| Log in | Войти | Մուտք գործել |
+| My account | Мой аккаунт | Իմ հաշիվը |
+| Developers | Застройщики | Կառուցապատողներ |
+| Banks | Банки | Բանկեր |
+| Projects | Проекты | Նախագծեր |
+| Settings | Настройки | Կարգավորումներ |
+| Light mode | Светлая тема | Լուսավոր ռեժիմ |
+| Dark mode | Тёмная тема | Մուգ ռեժիմ |
+| Search… | Поиск… | Որոնում… |
+| City | Город | Քաղաք |
+| District | Район | Շրջան |
+| Bank | Банк | Բանկ |
+| Developer | Застройщик | Կառուցապատող |
+| Clear filters | Сбросить фильтры | Մաքրել զտիչները |
+| Sort by | Сортировать | Տեսակավորել ըստ |
+| Newest | Сначала новые | Ամենանորերը |
+| Price: Low → High | Цена: по возрастанию | Գին՝ աճման կարգով |
+| Price: High → Low | Цена: по убыванию | Գին՝ նվազման կարգով |
+| Completion: Soonest | Сдача: раньше | Ավարտումը՝ շուտ |
+| Name: A → Z | Название: А → Я | Անուն՝ Ա → Ֆ |
+| No results | Ничего не найдено | Արդյունքներ չկան |
+| Try clearing filters | Попробуйте сбросить фильтры | Փորձեք մաքրել զտիչները |
+| Loading… | Загрузка… | Բեռնվում է… |
+| Something went wrong | Что-то пошло не так | Ինչ-որ բան սխալ գնաց |
+| Retry | Повторить | Կրկնել |
+
+Notes:
+- “Armenian abbreviation”: UI may show **AM**/**ARM** while locale remains `hy`.
+- “Name: A → Z” in RU often becomes “А → Я”; Armenian alphabet order is different; the above is a reasonable UI label meaning “alphabetical”. A native review should confirm the preferred phrasing.
+
+---
+
+## 10) Acceptance Criteria
+1. Header displays language button with abbreviation; default is **EN**.
+2. Clicking language button opens dropdown with EN/RU/AM.
+3. Selecting a language:
+   - saves preference
+   - refreshes the page
+   - renders all UI text in the chosen language
+4. Language persists across reloads and navigation.
+5. No hard-coded user-facing strings remain (lint/test gate).
+6. Fonts render English, Russian, and Armenian without broken glyphs; no major layout break in header/sidebar.
+7. Date/number formatting reflects selected locale where applicable.

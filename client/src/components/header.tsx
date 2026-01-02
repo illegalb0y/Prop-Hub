@@ -1,9 +1,11 @@
 import { Heart, Map, User, Search, X, LogOut, Menu } from "lucide-react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +21,7 @@ interface HeaderProps {
 }
 
 export function Header({ searchQuery, onSearchChange }: HeaderProps) {
+  const { t } = useTranslation();
   const { user, isAuthenticated, isLoading, logout } = useAuth();
 
   const getInitials = () => {
@@ -44,7 +47,7 @@ export function Header({ searchQuery, onSearchChange }: HeaderProps) {
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search projects by name, location..."
+            placeholder={t("header.searchPlaceholder")}
             className="w-full rounded-full pl-10 pr-10"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -65,6 +68,8 @@ export function Header({ searchQuery, onSearchChange }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
+        <LanguageSwitcher />
+
         <Button variant="ghost" size="icon" asChild data-testid="button-favorites">
           <Link href="/favorites">
             <Heart className="h-5 w-5" />
@@ -107,13 +112,13 @@ export function Header({ searchQuery, onSearchChange }: HeaderProps) {
               <DropdownMenuItem asChild>
                 <Link href="/account" className="cursor-pointer" data-testid="link-my-account">
                   <User className="mr-2 h-4 w-4" />
-                  My Account
+                  {t("nav.account")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/favorites" className="cursor-pointer" data-testid="link-my-favorites">
                   <Heart className="mr-2 h-4 w-4" />
-                  Favorites
+                  {t("nav.favorites")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -123,13 +128,13 @@ export function Header({ searchQuery, onSearchChange }: HeaderProps) {
                 data-testid="button-logout"
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                Log out
+                {t("nav.logout")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
           <Button asChild data-testid="button-login">
-            <a href="/api/login">Sign in</a>
+            <a href="/api/login">{t("nav.login")}</a>
           </Button>
         )}
       </div>

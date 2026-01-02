@@ -1,0 +1,125 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Retry",
+    "noResults": "No results",
+    "tryClearing": "Try clearing filters",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "viewAll": "View all"
+  },
+  "nav": {
+    "home": "Home",
+    "projects": "Projects",
+    "developers": "Developers",
+    "banks": "Banks",
+    "map": "Map",
+    "favorites": "Favorites",
+    "account": "My account",
+    "settings": "Settings",
+    "login": "Log in",
+    "signup": "Sign up",
+    "logout": "Log out"
+  },
+  "header": {
+    "searchPlaceholder": "Search...",
+    "toggleSidebar": "Toggle sidebar"
+  },
+  "theme": {
+    "light": "Light mode",
+    "dark": "Dark mode",
+    "system": "System"
+  },
+  "language": {
+    "select": "Language",
+    "en": "English",
+    "ru": "Russian",
+    "hy": "Armenian"
+  },
+  "filters": {
+    "city": "City",
+    "district": "District",
+    "bank": "Bank",
+    "developer": "Developer",
+    "clearFilters": "Clear filters",
+    "activeFilters": "Active filters",
+    "selectCity": "Select city",
+    "selectDistrict": "Select district",
+    "selectBank": "Select bank",
+    "selectDeveloper": "Select developer",
+    "allCities": "All cities",
+    "allDistricts": "All districts",
+    "allBanks": "All banks",
+    "allDevelopers": "All developers"
+  },
+  "sort": {
+    "sortBy": "Sort by",
+    "newest": "Newest",
+    "priceLowHigh": "Price: Low to High",
+    "priceHighLow": "Price: High to Low",
+    "completionSoonest": "Completion: Soonest",
+    "nameAZ": "Name: A to Z"
+  },
+  "projects": {
+    "title": "Projects",
+    "allProjects": "All Projects",
+    "projectCount": "{{count}} projects",
+    "priceFrom": "From",
+    "completionDate": "Completion",
+    "viewDetails": "View details",
+    "noProjects": "No projects found",
+    "adjustFilters": "Try adjusting your filters"
+  },
+  "developers": {
+    "title": "Developers",
+    "projectCount": "{{count}} projects",
+    "viewProjects": "View projects",
+    "noDevelopers": "No developers found"
+  },
+  "banks": {
+    "title": "Banks",
+    "partnerDevelopers": "Partner developers",
+    "viewDetails": "View details",
+    "noBanks": "No banks found"
+  },
+  "favorites": {
+    "title": "Favorites",
+    "empty": "No favorites yet",
+    "emptyDescription": "Browse projects and click the heart icon to add them here",
+    "browseProjects": "Browse projects",
+    "loginRequired": "Please log in to view your favorites"
+  },
+  "account": {
+    "title": "My Account",
+    "profile": "Profile",
+    "email": "Email",
+    "name": "Name",
+    "viewHistory": "View History",
+    "recentlyViewed": "Recently viewed projects",
+    "noHistory": "No viewing history yet",
+    "loginRequired": "Please log in to view your account"
+  },
+  "settings": {
+    "title": "Settings",
+    "appearance": "Appearance",
+    "language": "Language",
+    "selectLanguage": "Select language",
+    "theme": "Theme"
+  },
+  "auth": {
+    "loginTitle": "Welcome back",
+    "loginDescription": "Log in to access your favorites and history",
+    "signupTitle": "Create an account",
+    "signupDescription": "Sign up to save your favorite projects"
+  },
+  "map": {
+    "title": "Map",
+    "viewOnMap": "View on map"
+  }
+}

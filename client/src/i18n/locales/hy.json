@@ -1,0 +1,125 @@
+{
+  "common": {
+    "loading": "Բdelays delays delays delays...",
+    "error": " Delays delays delays delays delays",
+    "retry": "Delays",
+    "noResults": "Delays delays delays delays",
+    "tryClearing": "Delays delays delays delays delays delays",
+    "save": "Delays",
+    "cancel": "Delays",
+    "delete": "Delays",
+    "edit": "Delays",
+    "close": "Delays",
+    "back": "Delays",
+    "next": "Delays",
+    "viewAll": "Delays delays"
+  },
+  "nav": {
+    "home": "Glxavor",
+    "projects": "Naxagcer",
+    "developers": "Karutsapatoghner",
+    "banks": "Banker",
+    "map": "Kartez",
+    "favorites": "Naxntracner",
+    "account": "Im hashiv",
+    "settings": "Kargavorumner",
+    "login": "Mutk gortsel",
+    "signup": "Grancvel",
+    "logout": "Durs gal"
+  },
+  "header": {
+    "searchPlaceholder": "Oronum...",
+    "toggleSidebar": "Pokhel koghmayin panel"
+  },
+  "theme": {
+    "light": "Lusavor rezhim",
+    "dark": "Mug rezhim",
+    "system": "Hamakargi"
+  },
+  "language": {
+    "select": "Lezu",
+    "en": "Angleren",
+    "ru": "Ruseren",
+    "hy": "Hayeren"
+  },
+  "filters": {
+    "city": "Kaghak",
+    "district": "Shrjan",
+    "bank": "Bank",
+    "developer": "Karutsapatogh",
+    "clearFilters": "Makrel ztichnere",
+    "activeFilters": "Aktiv ztichner",
+    "selectCity": "Entrel kaghak",
+    "selectDistrict": "Entrel shrjan",
+    "selectBank": "Entrel bank",
+    "selectDeveloper": "Entrel karutsapatogh",
+    "allCities": "Bolor kaghakner",
+    "allDistricts": "Bolor shrjanner",
+    "allBanks": "Bolor banker",
+    "allDevelopers": "Bolor karutsapatoghner"
+  },
+  "sort": {
+    "sortBy": "Tesakavorel",
+    "newest": "Amenanorere",
+    "priceLowHigh": "Gin: acman kargov",
+    "priceHighLow": "Gin: nvazman kargov",
+    "completionSoonest": "Avart: shut",
+    "nameAZ": "Anun: A-F"
+  },
+  "projects": {
+    "title": "Naxagcer",
+    "allProjects": "Bolor naxagcer",
+    "projectCount": "{{count}} naxagic",
+    "priceFrom": "Skzac",
+    "completionDate": "Avartum",
+    "viewDetails": "Tesnel manramasner",
+    "noProjects": "Naxagcer chkan gtvel",
+    "adjustFilters": "Pokhel ztichnere"
+  },
+  "developers": {
+    "title": "Karutsapatoghner",
+    "projectCount": "{{count}} naxagic",
+    "viewProjects": "Tesnel naxagcer",
+    "noDevelopers": "Karutsapatoghner chkan gtvel"
+  },
+  "banks": {
+    "title": "Banker",
+    "partnerDevelopers": "Gorcnkats karutsapatoghner",
+    "viewDetails": "Tesnel manramasner",
+    "noBanks": "Banker chkan gtvel"
+  },
+  "favorites": {
+    "title": "Naxntracner",
+    "empty": "Derevs naxntracner chkan",
+    "emptyDescription": "Znnel naxagcer ev srtik avelacsnek ays ejum",
+    "browseProjects": "Znnel naxagcer",
+    "loginRequired": "Xndrum enk mutk gortsel tesnel naxntracnere"
+  },
+  "account": {
+    "title": "Im hashiv",
+    "profile": "Profil",
+    "email": "El. post",
+    "name": "Anun",
+    "viewHistory": "Ditman patmutyun",
+    "recentlyViewed": "Verejin ditac naxagcer",
+    "noHistory": "Ditman patmutyun datark e",
+    "loginRequired": "Xndrum enk mutk gortsel tesnel hashiv"
+  },
+  "settings": {
+    "title": "Kargavorumner",
+    "appearance": "Artakin tesk",
+    "language": "Lezu",
+    "selectLanguage": "Entrel lezu",
+    "theme": "Tema"
+  },
+  "auth": {
+    "loginTitle": "Bari galust",
+    "loginDescription": "Mutk arek hasanelu naxntracnerin ev patmutyun",
+    "signupTitle": "Steghcel hashiv",
+    "signupDescription": "Grancvel pahepanek sirac naxagcer"
+  },
+  "map": {
+    "title": "Kartez",
+    "viewOnMap": "Tesnel kartezum"
+  }
+}

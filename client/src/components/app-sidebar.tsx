@@ -1,5 +1,6 @@
 import { Building2, Landmark, MapPin, Settings, Home } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import {
   Sidebar,
   SidebarContent,
@@ -21,15 +22,16 @@ interface AppSidebarProps {
   onSearchChange: (value: string) => void;
 }
 
-const navItems = [
-  { title: "Home", url: "/", icon: Home },
-  { title: "Projects", url: "/projects", icon: MapPin },
-  { title: "Developers", url: "/developers", icon: Building2 },
-  { title: "Banks", url: "/banks", icon: Landmark },
-];
-
 export function AppSidebar({ searchQuery, onSearchChange }: AppSidebarProps) {
   const [location] = useLocation();
+  const { t } = useTranslation();
+
+  const navItems = [
+    { title: t("nav.home"), url: "/", icon: Home },
+    { title: t("nav.projects"), url: "/projects", icon: MapPin },
+    { title: t("nav.developers"), url: "/developers", icon: Building2 },
+    { title: t("nav.banks"), url: "/banks", icon: Landmark },
+  ];
 
   return (
     <Sidebar collapsible="icon">
@@ -51,7 +53,7 @@ export function AppSidebar({ searchQuery, onSearchChange }: AppSidebarProps) {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search projects..."
+                placeholder={t("header.searchPlaceholder")}
                 className="pl-9"
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
@@ -69,13 +71,13 @@ export function AppSidebar({ searchQuery, onSearchChange }: AppSidebarProps) {
                   (item.url !== "/" && location.startsWith(item.url));
                 
                 return (
-                  <SidebarMenuItem key={item.title}>
+                  <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton
                       asChild
                       isActive={isActive}
                       tooltip={item.title}
                     >
-                      <Link href={item.url} data-testid={`link-nav-${item.title.toLowerCase()}`}>
+                      <Link href={item.url} data-testid={`link-nav-${item.url.slice(1) || 'home'}`}>
                         <item.icon className="h-5 w-5 shrink-0" />
                         <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
                       </Link>
@@ -91,10 +93,10 @@ export function AppSidebar({ searchQuery, onSearchChange }: AppSidebarProps) {
       <SidebarFooter className="p-2">
         <SidebarSeparator className="mb-2" />
         <div className="flex items-center justify-between px-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-4">
-          <SidebarMenuButton asChild tooltip="Settings" className="group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center">
+          <SidebarMenuButton asChild tooltip={t("nav.settings")} className="group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center">
             <Link href="/settings" data-testid="link-settings">
               <Settings className="h-5 w-5 shrink-0" />
-              <span className="group-data-[collapsible=icon]:hidden">Settings</span>
+              <span className="group-data-[collapsible=icon]:hidden">{t("nav.settings")}</span>
             </Link>
           </SidebarMenuButton>
           <div className="group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">

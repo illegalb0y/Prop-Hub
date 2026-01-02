@@ -1,0 +1,125 @@
+{
+  "common": {
+    "loading": "Загрузка...",
+    "error": "Что-то пошло не так",
+    "retry": "Повторить",
+    "noResults": "Ничего не найдено",
+    "tryClearing": "Попробуйте сбросить фильтры",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "close": "Закрыть",
+    "back": "Назад",
+    "next": "Далее",
+    "viewAll": "Смотреть все"
+  },
+  "nav": {
+    "home": "Главная",
+    "projects": "Проекты",
+    "developers": "Застройщики",
+    "banks": "Банки",
+    "map": "Карта",
+    "favorites": "Избранное",
+    "account": "Мой аккаунт",
+    "settings": "Настройки",
+    "login": "Войти",
+    "signup": "Регистрация",
+    "logout": "Выйти"
+  },
+  "header": {
+    "searchPlaceholder": "Поиск...",
+    "toggleSidebar": "Переключить боковую панель"
+  },
+  "theme": {
+    "light": "Светлая тема",
+    "dark": "Тёмная тема",
+    "system": "Системная"
+  },
+  "language": {
+    "select": "Язык",
+    "en": "Английский",
+    "ru": "Русский",
+    "hy": "Армянский"
+  },
+  "filters": {
+    "city": "Город",
+    "district": "Район",
+    "bank": "Банк",
+    "developer": "Застройщик",
+    "clearFilters": "Сбросить фильтры",
+    "activeFilters": "Активные фильтры",
+    "selectCity": "Выберите город",
+    "selectDistrict": "Выберите район",
+    "selectBank": "Выберите банк",
+    "selectDeveloper": "Выберите застройщика",
+    "allCities": "Все города",
+    "allDistricts": "Все районы",
+    "allBanks": "Все банки",
+    "allDevelopers": "Все застройщики"
+  },
+  "sort": {
+    "sortBy": "Сортировать",
+    "newest": "Сначала новые",
+    "priceLowHigh": "Цена: по возрастанию",
+    "priceHighLow": "Цена: по убыванию",
+    "completionSoonest": "Сдача: раньше",
+    "nameAZ": "Название: А — Я"
+  },
+  "projects": {
+    "title": "Проекты",
+    "allProjects": "Все проекты",
+    "projectCount": "{{count}} проектов",
+    "priceFrom": "От",
+    "completionDate": "Сдача",
+    "viewDetails": "Подробнее",
+    "noProjects": "Проекты не найдены",
+    "adjustFilters": "Попробуйте изменить фильтры"
+  },
+  "developers": {
+    "title": "Застройщики",
+    "projectCount": "{{count}} проектов",
+    "viewProjects": "Смотреть проекты",
+    "noDevelopers": "Застройщики не найдены"
+  },
+  "banks": {
+    "title": "Банки",
+    "partnerDevelopers": "Партнёры-застройщики",
+    "viewDetails": "Подробнее",
+    "noBanks": "Банки не найдены"
+  },
+  "favorites": {
+    "title": "Избранное",
+    "empty": "Пока нет избранного",
+    "emptyDescription": "Просматривайте проекты и нажимайте на сердечко, чтобы добавить их сюда",
+    "browseProjects": "Смотреть проекты",
+    "loginRequired": "Войдите, чтобы увидеть избранное"
+  },
+  "account": {
+    "title": "Мой аккаунт",
+    "profile": "Профиль",
+    "email": "Эл. почта",
+    "name": "Имя",
+    "viewHistory": "История просмотров",
+    "recentlyViewed": "Недавно просмотренные проекты",
+    "noHistory": "История просмотров пуста",
+    "loginRequired": "Войдите, чтобы увидеть ваш аккаунт"
+  },
+  "settings": {
+    "title": "Настройки",
+    "appearance": "Внешний вид",
+    "language": "Язык",
+    "selectLanguage": "Выберите язык",
+    "theme": "Тема"
+  },
+  "auth": {
+    "loginTitle": "С возвращением",
+    "loginDescription": "Войдите, чтобы получить доступ к избранному и истории",
+    "signupTitle": "Создать аккаунт",
+    "signupDescription": "Зарегистрируйтесь, чтобы сохранять избранные проекты"
+  },
+  "map": {
+    "title": "Карта",
+    "viewOnMap": "Показать на карте"
+  }
+}

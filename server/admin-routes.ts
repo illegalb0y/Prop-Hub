@@ -5,7 +5,7 @@ import { adminRateLimit } from "./middleware/rate-limit";
 import { adminStorage } from "./admin-storage";
 import { storage } from "./storage";
 import { invalidateIpBanCache } from "./middleware/ip-ban";
-import { paginationSchema, idParamSchema, ipBanSchema, userBanSchema } from "./middleware/validation";
+import { paginationSchema, idParamSchema, ipBanSchema, userBanSchema, userActivityFiltersSchema } from "./middleware/validation";
 import { z } from "zod";
 import multer from "multer";
 import { parse } from "csv-parse";
@@ -283,8 +283,11 @@ export function registerAdminRoutes(app: Express) {
 
   app.get("/api/admin/audit-logs", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
-      const { page, limit } = paginationSchema.parse(req.query);
-      const logs = await adminStorage.getAuditLogs(page, limit);
+      const filters = userActivityFiltersSchema.parse(req.query);
+      const logs = await adminStorage.getAuditLogs(filters.page, filters.limit, {
+        userId: filters.userId,
+        actionType: filters.actionType,
+      });
       res.json(logs);
     } catch (error) {
       console.error("Error fetching audit logs:", error);

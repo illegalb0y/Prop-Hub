@@ -661,19 +661,46 @@ function ImportsTab() {
 
 function AuditLogTab() {
   const [page, setPage] = useState(1);
+  const [userId, setUserId] = useState("");
+  const [actionType, setActionType] = useState("");
 
   const { data: logs, isLoading, refetch } = useQuery<PaginatedResult<any>>({
-    queryKey: ["/api/admin/audit-logs", page],
+    queryKey: ["/api/admin/audit-logs", page, userId, actionType],
   });
 
   return (
     <div className="space-y-4" data-testid="audit-log-tab">
-      <div className="flex justify-end">
-        <Button variant="outline" onClick={() => refetch()} data-testid="button-refresh-audit">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Filter Activity</CardTitle>
+        </CardHeader>
+        <CardContent className="flex gap-4 flex-wrap">
+          <div className="flex-1 min-w-48">
+            <label className="text-xs font-medium mb-1 block">Admin/User ID</label>
+            <Input
+              placeholder="Filter by User ID"
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              data-testid="input-filter-userid"
+            />
+          </div>
+          <div className="flex-1 min-w-48">
+            <label className="text-xs font-medium mb-1 block">Action Type</label>
+            <Input
+              placeholder="e.g. user_ban, project_delete"
+              value={actionType}
+              onChange={(e) => setActionType(e.target.value)}
+              data-testid="input-filter-action"
+            />
+          </div>
+          <div className="flex items-end">
+            <Button variant="outline" onClick={() => refetch()} data-testid="button-refresh-audit">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {isLoading ? (
         <div className="text-muted-foreground">Loading audit logs...</div>
@@ -692,9 +719,10 @@ function AuditLogTab() {
                   <tr>
                     <th className="text-left p-3 font-medium">Action</th>
                     <th className="text-left p-3 font-medium">Target</th>
-                    <th className="text-left p-3 font-medium">Admin ID</th>
+                    <th className="text-left p-3 font-medium">User ID</th>
                     <th className="text-left p-3 font-medium">IP</th>
                     <th className="text-left p-3 font-medium">Time</th>
+                    <th className="text-left p-3 font-medium">Details</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -709,11 +737,18 @@ function AuditLogTab() {
                       <td className="p-3 text-sm text-muted-foreground whitespace-nowrap">
                         {format(new Date(log.createdAt), "MMM d, h:mm a")}
                       </td>
+                      <td className="p-3">
+                        {log.metadataJson && (
+                          <div className="text-xs text-muted-foreground max-w-48 truncate" title={JSON.stringify(log.metadataJson)}>
+                            {JSON.stringify(log.metadataJson)}
+                          </div>
+                        )}
+                      </td>
                     </tr>
                   ))}
                   {logs?.data?.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="p-3 text-center text-muted-foreground">No audit logs</td>
+                      <td colSpan={6} className="p-3 text-center text-muted-foreground">No audit logs found</td>
                     </tr>
                   )}
                 </tbody>

@@ -46,3 +46,10 @@ export const paginationSchema = z.object({
   limit: z.string().regex(/^\d+$/).default("20").transform(n => Math.min(Number(n), 100)),
   search: z.string().max(100).optional(),
 });
+
+export const userActivityFiltersSchema = z.object({
+  userId: z.string().optional(),
+  actionType: z.string().optional(),
+  page: z.string().regex(/^\d+$/).default("1").transform(Number),
+  limit: z.string().regex(/^\d+$/).default("50").transform(n => Math.min(Number(n), 100)),
+});

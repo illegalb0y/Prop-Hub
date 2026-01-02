@@ -167,12 +167,29 @@ export class AdminStorage {
     return created;
   }
 
-  async getAuditLogs(page: number, limit: number): Promise<PaginatedResult<AuditLog>> {
+  async getAuditLogs(page: number, limit: number, filters?: { userId?: string; actionType?: string }): Promise<PaginatedResult<AuditLog>> {
     const offset = (page - 1) * limit;
     
+    let query = db.select().from(auditLogs);
+    let countQuery = db.select({ count: sql<number>`count(*)::int` }).from(auditLogs);
+    
+    const conditions = [];
+    if (filters?.userId) {
+      conditions.push(eq(auditLogs.adminId, filters.userId));
+    }
+    if (filters?.actionType) {
+      conditions.push(eq(auditLogs.actionType, filters.actionType));
+    }
+
+    if (conditions.length > 0) {
+      const whereClause = and(...conditions);
+      query = query.where(whereClause) as typeof query;
+      countQuery = countQuery.where(whereClause) as typeof countQuery;
+    }
+
     const [data, [{ count }]] = await Promise.all([
-      db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(limit).offset(offset),
-      db.select({ count: sql<number>`count(*)::int` }).from(auditLogs),
+      query.orderBy(desc(auditLogs.createdAt)).limit(limit).offset(offset),
+      countQuery,
     ]);
 
     return {

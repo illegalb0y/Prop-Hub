@@ -32,10 +32,22 @@ function MapUpdater({ projects }: MapUpdaterProps) {
 
   useEffect(() => {
     if (projects.length > 0) {
-      const bounds = L.latLngBounds(
-        projects.map((p) => [p.latitude, p.longitude] as [number, number]),
+      const yerevanProjects = projects.filter(p => 
+        p.latitude > 39.5 && p.latitude < 41.5 && 
+        p.longitude > 43.5 && p.longitude < 45.5
       );
-      map.fitBounds(bounds, { padding: [80, 80], maxZoom: 13 });
+      
+      if (yerevanProjects.length > 0) {
+        const bounds = L.latLngBounds(
+          yerevanProjects.map((p) => [p.latitude, p.longitude] as [number, number]),
+        );
+        map.fitBounds(bounds, { padding: [80, 80], maxZoom: 13 });
+      } else {
+        const bounds = L.latLngBounds(
+          projects.map((p) => [p.latitude, p.longitude] as [number, number]),
+        );
+        map.fitBounds(bounds, { padding: [80, 80], maxZoom: 13 });
+      }
     }
   }, [projects, map]);
 

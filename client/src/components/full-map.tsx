@@ -1,7 +1,8 @@
 import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, GeoJSON } from "react-leaflet";
 import L from "leaflet";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import type { ProjectWithRelations } from "@shared/schema";
 
 const defaultCenter: [number, number] = [40.1792, 44.5152];
@@ -26,6 +27,22 @@ const markerIcon = L.divIcon({
 interface MapUpdaterProps {
   projects: ProjectWithRelations[];
 }
+
+const YEREVAN_CITY_ID = 6;
+
+const defaultStyle: L.PathOptions = {
+  color: "#2B2B2B",
+  weight: 2,
+  opacity: 0.8,
+  fillOpacity: 0.05,
+};
+
+const hoverStyle: L.PathOptions = {
+  color: "#0066FF",
+  weight: 3,
+  opacity: 1,
+  fillOpacity: 0.15,
+};
 
 function MapUpdater({ projects }: MapUpdaterProps) {
   const map = useMap();
@@ -61,10 +78,40 @@ interface FullMapProps {
 export function FullMap({ projects }: FullMapProps) {
   const [, navigate] = useLocation();
 
+  const { data: districtBorders } = useQuery<GeoJSON.FeatureCollection>({
+    queryKey: ["/api/geo/district-borders", YEREVAN_CITY_ID],
+    queryFn: async () => {
+      const res = await fetch(`/api/geo/district-borders?cityId=${YEREVAN_CITY_ID}`);
+      return res.json();
+    },
+  });
+
   const center: [number, number] =
     projects.length > 0
       ? [projects[0].latitude, projects[0].longitude]
       : defaultCenter;
+
+  const onEachFeature = (feature: GeoJSON.Feature, layer: L.Layer) => {
+    const pathLayer = layer as L.Path;
+    const name = feature.properties?.name || "District";
+    
+    pathLayer.bindTooltip(name, {
+      sticky: true,
+      className: "district-tooltip",
+    });
+
+    pathLayer.on({
+      mouseover: (e) => {
+        const target = e.target as L.Path;
+        target.setStyle(hoverStyle);
+        target.bringToFront();
+      },
+      mouseout: (e) => {
+        const target = e.target as L.Path;
+        target.setStyle(defaultStyle);
+      },
+    });
+  };
 
   return (
     <div className="h-full w-full" data-testid="full-map-container">
@@ -79,6 +126,15 @@ export function FullMap({ projects }: FullMapProps) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
+
+        {districtBorders && (
+          <GeoJSON
+            key="district-borders"
+            data={districtBorders}
+            style={defaultStyle}
+            onEachFeature={onEachFeature}
+          />
+        )}
 
         {projects.length > 0 && <MapUpdater projects={projects} />}
 

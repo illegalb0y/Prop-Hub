@@ -1,6 +1,6 @@
 import {
   cities, districts, developers, banks, projects, favorites, viewHistory,
-  developerBanks, projectBanks,
+  developerBanks, projectBanks, districtGeometries,
   type City, type InsertCity,
   type District, type InsertDistrict,
   type Developer, type InsertDeveloper,
@@ -9,6 +9,7 @@ import {
   type Favorite, type InsertFavorite,
   type ViewHistory, type InsertViewHistory,
   type ProjectWithRelations, type DeveloperWithStats, type BankWithDevelopers,
+  type DistrictGeometry,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, ilike, or, desc, asc, inArray, sql } from "drizzle-orm";
@@ -46,6 +47,8 @@ export interface IStorage {
 
   getUserHistory(userId: string): Promise<(ViewHistory & { project: ProjectWithRelations })[]>;
   addToHistory(history: InsertViewHistory): Promise<ViewHistory>;
+
+  getDistrictGeometries(cityId: number): Promise<(DistrictGeometry & { district: District })[]>;
 }
 
 export interface ProjectFilters {
@@ -320,6 +323,22 @@ export class DatabaseStorage implements IStorage {
   async addToHistory(history: InsertViewHistory): Promise<ViewHistory> {
     const [created] = await db.insert(viewHistory).values(history).returning();
     return created;
+  }
+
+  async getDistrictGeometries(cityId: number): Promise<(DistrictGeometry & { district: District })[]> {
+    const geometries = await db
+      .select()
+      .from(districtGeometries)
+      .where(eq(districtGeometries.cityId, cityId));
+
+    const result: (DistrictGeometry & { district: District })[] = [];
+    for (const geo of geometries) {
+      const [district] = await db.select().from(districts).where(eq(districts.id, geo.districtId));
+      if (district) {
+        result.push({ ...geo, district });
+      }
+    }
+    return result;
   }
 }
 

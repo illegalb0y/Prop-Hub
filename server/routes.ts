@@ -38,6 +38,36 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/geo/district-borders", async (req, res) => {
+    try {
+      const cityId = req.query.cityId ? parseInt(req.query.cityId as string) : undefined;
+      if (!cityId) {
+        return res.status(400).json({ message: "cityId is required" });
+      }
+      
+      const geometries = await storage.getDistrictGeometries(cityId);
+      
+      const featureCollection = {
+        type: "FeatureCollection",
+        features: geometries.map((geo) => ({
+          type: "Feature",
+          id: geo.id,
+          properties: {
+            districtId: geo.districtId,
+            name: geo.district.name,
+          },
+          geometry: geo.geojson,
+        })),
+      };
+      
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      res.json(featureCollection);
+    } catch (error) {
+      console.error("Error fetching district borders:", error);
+      res.status(500).json({ message: "Failed to fetch district borders" });
+    }
+  });
+
   app.get("/api/developers", async (req, res) => {
     try {
       const developers = await storage.getDevelopers();

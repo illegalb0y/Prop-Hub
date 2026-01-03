@@ -37,6 +37,32 @@ export const insertDistrictSchema = createInsertSchema(districts).omit({ id: tru
 export type InsertDistrict = z.infer<typeof insertDistrictSchema>;
 export type District = typeof districts.$inferSelect;
 
+// District Geometries table (for map polygon overlays)
+export const districtGeometries = pgTable("district_geometries", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  cityId: integer("city_id").notNull().references(() => cities.id),
+  districtId: integer("district_id").notNull().references(() => districts.id).unique(),
+  geojson: jsonb("geojson").notNull(),
+  minLat: real("min_lat"),
+  minLng: real("min_lng"),
+  maxLat: real("max_lat"),
+  maxLng: real("max_lng"),
+  source: text("source"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_district_geometries_city").on(table.cityId),
+  index("idx_district_geometries_district").on(table.districtId),
+]);
+
+export const districtGeometriesRelations = relations(districtGeometries, ({ one }) => ({
+  city: one(cities, { fields: [districtGeometries.cityId], references: [cities.id] }),
+  district: one(districts, { fields: [districtGeometries.districtId], references: [districts.id] }),
+}));
+
+export const insertDistrictGeometrySchema = createInsertSchema(districtGeometries).omit({ id: true, updatedAt: true });
+export type InsertDistrictGeometry = z.infer<typeof insertDistrictGeometrySchema>;
+export type DistrictGeometry = typeof districtGeometries.$inferSelect;
+
 // Developers table
 export const developers = pgTable("developers", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),

@@ -293,3 +293,18 @@
   box-shadow: 0 6px 16px rgba(0,0,0,0.5);
   z-index: 1000;
 }
+
+/* District borders tooltip styles */
+.district-tooltip {
+  background: rgba(0, 0, 0, 0.8) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 4px !important;
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+.district-tooltip::before {
+  border-top-color: rgba(0, 0, 0, 0.8) !important;
+}

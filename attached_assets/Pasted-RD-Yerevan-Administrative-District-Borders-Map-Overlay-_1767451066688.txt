@@ -1,0 +1,124 @@
+RD: Yerevan Administrative District Borders (Map Overlay + Hover Highlight)
+1) Scope
+Add administrative district borders for Yerevan as polygon overlays on Leaflet maps (mini-map + full map). Borders must be stored in the DB and rendered so users can clearly see district boundaries. On cursor hover, the hovered district must highlight.
+
+Out of scope: editing borders in UI, click-to-filter behavior, non‑Yerevan districts (data model may support future cities).
+
+2) Data Requirements
+2.1 Geometry format
+Store borders as GeoJSON geometry of type:
+Polygon or MultiPolygon
+CRS: WGS84 (EPSG:4326) lat/lng.
+2.2 Database schema (preferred: PostGIS)
+If PostGIS is available:
+
+Table: district_geometries
+
+id (pk)
+city_id (fk → cities.id, indexed)
+district_id (fk → districts.id, unique, indexed)
+geom (geometry(MultiPolygon, 4326), NOT NULL)
+bbox (optional; geometry(Polygon, 4326) or computed)
+source (text, optional)
+updated_at (timestamp)
+Constraints:
+
+UNIQUE(district_id) (one border per district)
+Valid geometry check (application-level + PostGIS ST_IsValid)
+Indexes:
+
+GIST index on geom for spatial queries.
+If PostGIS is NOT available:
+
+Store geojson (JSONB, NOT NULL) + computed bbox columns (min_lat, min_lng, max_lat, max_lng) for quick viewport filtering.
+2.3 Relationship
+district_geometries.district_id must match the existing district row for Yerevan districts.
+city_id must match Yerevan’s city row.
+3) API Requirements
+3.1 Fetch Yerevan district borders
+GET /geo/district-borders?cityId={id}
+
+Response (GeoJSON FeatureCollection):
+
+json
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": 123,
+      "properties": { "districtId": 45, "name": "Arabkir" },
+      "geometry": { "type": "MultiPolygon", "coordinates": [] }
+    }
+  ]
+}
+Rules:
+
+Only return districts with geometry present.
+Compress payload (gzip/brotli).
+Optional optimization: serve simplified geometry for low zoom (see 6.2).
+3.2 Caching
+Cache by cityId (these borders rarely change).
+Add ETag and Cache-Control: public, max-age=86400.
+4) Frontend Requirements (Leaflet)
+4.1 Layer rendering
+Add a Leaflet L.geoJSON() layer for Yerevan districts when the active city (filter or viewport context) is Yerevan.
+District borders must be visible in both light/dark UI themes (basemap remains Carto Light).
+Default style (non-hover)
+
+Stroke: visible, medium contrast
+Example:
+color: #2B2B2B
+weight: 2
+opacity: 0.8
+fillOpacity: 0.05 (very subtle fill to define districts)
+Hover style
+
+Highlight hovered district polygon:
+weight: 3-4
+opacity: 1
+fillOpacity: 0.12-0.18
+optionally change stroke color (e.g., #0066FF) to be unambiguous
+4.2 Hover interaction
+On mouseover for a district feature:
+apply hover style to that feature only
+bring to front (layer.bringToFront())
+On mouseout:
+reset style to default
+4.3 Tooltip (recommended for clarity)
+On hover, show a small tooltip with district name:
+sticky: true
+must not block map pan/zoom.
+4.4 Pointer clarity
+Cursor changes to pointer when hovering a district polygon.
+5) UX Requirements
+Borders must not overwhelm project markers:
+polygon fill remains subtle; markers stay visually dominant.
+Hover highlight must be clearly visible at typical zoom levels for Yerevan.
+No layout changes; map overlays only.
+6) Performance Requirements
+6.1 Payload size
+Target total GeoJSON for Yerevan districts ≤ ~300–800KB compressed (guideline).
+If larger, implement simplification and/or tiling.
+6.2 Geometry simplification (recommended)
+Provide two geometry variants:
+
+simplified for low zoom (default on map load)
+full for high zoom (optional switch at zoom threshold, e.g., ≥13)
+API option:
+
+GET /geo/district-borders?cityId=YEREVAN_ID&detail=low|high
+7) Admin / Data Ingestion (minimal)
+Borders are inserted via backend script or admin-only endpoint (not exposed to clients).
+Validation pipeline must reject:
+invalid GeoJSON
+self-intersections (if detectable)
+wrong geometry type (non polygon)
+non-Yerevan district mismatch
+8) Acceptance Criteria
+District borders for Yerevan are stored in DB and retrievable via API.
+On both mini-map and full map, borders are clearly visible.
+Hovering any Yerevan district polygon highlights only that district boundary and fill, and resets on mouseout.
+Hover interaction is smooth (no noticeable lag on typical devices).
+Markers remain usable and visible on top of polygons.
+API response is cacheable and returns valid GeoJSON FeatureCollection.

@@ -1,9 +1,17 @@
 import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap, GeoJSON } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap,
+  GeoJSON,
+} from "react-leaflet";
 import L from "leaflet";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import type { ProjectWithRelations } from "@shared/schema";
+import { useTheme } from "@/lib/theme-provider";
 
 const defaultCenter: [number, number] = [40.1792, 44.5152];
 const defaultZoom = 13;
@@ -49,14 +57,19 @@ function MapUpdater({ projects }: MapUpdaterProps) {
 
   useEffect(() => {
     if (projects.length > 0) {
-      const yerevanProjects = projects.filter(p => 
-        p.latitude > 39.5 && p.latitude < 41.5 && 
-        p.longitude > 43.5 && p.longitude < 45.5
+      const yerevanProjects = projects.filter(
+        (p) =>
+          p.latitude > 39.5 &&
+          p.latitude < 41.5 &&
+          p.longitude > 43.5 &&
+          p.longitude < 45.5,
       );
-      
+
       if (yerevanProjects.length > 0) {
         const bounds = L.latLngBounds(
-          yerevanProjects.map((p) => [p.latitude, p.longitude] as [number, number]),
+          yerevanProjects.map(
+            (p) => [p.latitude, p.longitude] as [number, number],
+          ),
         );
         map.fitBounds(bounds, { padding: [80, 80], maxZoom: 13 });
       } else {
@@ -76,12 +89,15 @@ interface FullMapProps {
 }
 
 export function FullMap({ projects }: FullMapProps) {
+  const { theme } = useTheme();
   const [, navigate] = useLocation();
 
   const { data: districtBorders } = useQuery<GeoJSON.FeatureCollection>({
     queryKey: ["/api/geo/district-borders", YEREVAN_CITY_ID],
     queryFn: async () => {
-      const res = await fetch(`/api/geo/district-borders?cityId=${YEREVAN_CITY_ID}`);
+      const res = await fetch(
+        `/api/geo/district-borders?cityId=${YEREVAN_CITY_ID}`,
+      );
       return res.json();
     },
   });
@@ -94,7 +110,7 @@ export function FullMap({ projects }: FullMapProps) {
   const onEachFeature = (feature: GeoJSON.Feature, layer: L.Layer) => {
     const pathLayer = layer as L.Path;
     const name = feature.properties?.name || "District";
-    
+
     pathLayer.bindTooltip(name, {
       sticky: true,
       className: "district-tooltip",
@@ -124,7 +140,13 @@ export function FullMap({ projects }: FullMapProps) {
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          //url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" - previous version
+          url={
+            theme === "dark"
+              ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          }
+          key={theme}
         />
 
         {districtBorders && (

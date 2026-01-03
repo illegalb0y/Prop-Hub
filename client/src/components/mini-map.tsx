@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import type { ProjectWithRelations } from "@shared/schema";
+import { useTheme } from "@/lib/theme-provider";
 
 const defaultCenter: [number, number] = [40.1792, 44.5152];
 const defaultZoom = 13;
@@ -45,14 +46,19 @@ function MapUpdater({ projects }: MapUpdaterProps) {
 
   useEffect(() => {
     if (projects.length > 0) {
-      const yerevanProjects = projects.filter(p => 
-        p.latitude > 39.5 && p.latitude < 41.5 && 
-        p.longitude > 43.5 && p.longitude < 45.5
+      const yerevanProjects = projects.filter(
+        (p) =>
+          p.latitude > 39.5 &&
+          p.latitude < 41.5 &&
+          p.longitude > 43.5 &&
+          p.longitude < 45.5,
       );
-      
+
       if (yerevanProjects.length > 0) {
         const bounds = L.latLngBounds(
-          yerevanProjects.map((p) => [p.latitude, p.longitude] as [number, number]),
+          yerevanProjects.map(
+            (p) => [p.latitude, p.longitude] as [number, number],
+          ),
         );
         map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13 });
       } else {
@@ -81,6 +87,7 @@ export function MiniMap({
   className = "",
 }: MiniMapProps) {
   const mapRef = useRef<L.Map | null>(null);
+  const { theme } = useTheme();
 
   const center: [number, number] =
     projects.length > 0
@@ -101,8 +108,13 @@ export function MiniMap({
         scrollWheelZoom={true}
       >
         <TileLayer
+          key={theme}
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          url={
+            theme === "dark"
+              ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          }
         />
 
         {projects.length > 0 && <MapUpdater projects={projects} />}

@@ -44,7 +44,7 @@ function MapUpdater({ projects }: MapUpdaterProps) {
   useEffect(() => {
     if (projects.length > 0) {
       const bounds = L.latLngBounds(
-        projects.map((p) => [p.latitude, p.longitude] as [number, number])
+        projects.map((p) => [p.latitude, p.longitude] as [number, number]),
       );
       map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
     }
@@ -68,12 +68,16 @@ export function MiniMap({
 }: MiniMapProps) {
   const mapRef = useRef<L.Map | null>(null);
 
-  const center: [number, number] = projects.length > 0
-    ? [projects[0].latitude, projects[0].longitude]
-    : defaultCenter;
+  const center: [number, number] =
+    projects.length > 0
+      ? [projects[0].latitude, projects[0].longitude]
+      : defaultCenter;
 
   return (
-    <div className={`relative overflow-hidden ${className}`} data-testid="mini-map-container">
+    <div
+      className={`relative overflow-hidden ${className}`}
+      data-testid="mini-map-container"
+    >
       <MapContainer
         center={center}
         zoom={defaultZoom}
@@ -86,14 +90,16 @@ export function MiniMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
-        
+
         {projects.length > 0 && <MapUpdater projects={projects} />}
 
         {projects.map((project) => (
           <Marker
             key={project.id}
             position={[project.latitude, project.longitude]}
-            icon={project.id === selectedProjectId ? selectedMarkerIcon : markerIcon}
+            icon={
+              project.id === selectedProjectId ? selectedMarkerIcon : markerIcon
+            }
             eventHandlers={{
               click: () => onMarkerClick?.(project.id),
             }}
@@ -110,7 +116,8 @@ export function MiniMap({
                 <h3 className="font-semibold text-sm">{project.name}</h3>
                 {project.priceFrom && (
                   <p className="text-sm font-medium">
-                    From {new Intl.NumberFormat("en-US", {
+                    From{" "}
+                    {new Intl.NumberFormat("en-US", {
                       style: "currency",
                       currency: project.currency || "USD",
                       maximumFractionDigits: 0,

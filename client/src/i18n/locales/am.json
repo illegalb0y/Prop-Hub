@@ -4,11 +4,11 @@
     "error": "Ինչ-որ բան չի ստացվում",
     "retry": "Կրկնել",
     "noResults": "Ոչ մի արդյունք",
-    "tryClearing": "Pokhek ztichnerey ev krknek",
+    "tryClearing": "Փորձեք մաքրել զտիչները",
     "save": "Պահպանել",
     "cancel": "Վերացնել",
     "delete": "Հեռացնել",
-    "edit": "Khmbagrel",
+    "edit": "Խմբագրել",
     "close": "Փակել",
     "back": "Նախորդ ",
     "next": "Հաջորդ",
@@ -52,71 +52,71 @@
     "clearFilters": "Մաքրել բոլոր",
     "activeFilters": "Ակտիվ զտիչներ",
     "selectCity": "Ընտրեք քաղաքը",
-    "selectDistrict": "Entrel shrjan",
-    "selectBank": "Entrel bank",
-    "selectDeveloper": "Entrel karutsapatogh",
-    "allCities": "Bolor kaghakner",
-    "allDistricts": "Bolor shrjanner",
-    "allBanks": "Bolor banker",
-    "allDevelopers": "Bolor karutsapatoghner"
+    "selectDistrict": "Ընտրեք շրջանը",
+    "selectBank": "Ընտրեք բանկը",
+    "selectDeveloper": "Ընտրեք կառուցապատողին",
+    "allCities": "Բոլոր քաղաքները",
+    "allDistricts": "Բոլոր շրջանները",
+    "allBanks": "Բոլոր բանկերը",
+    "allDevelopers": "Բոլոր կարգավորումները"
   },
   "sort": {
-    "title": "Tesakavorel",
-    "sortBy": "Tesakavorel",
+    "title": "Դասավորել",
+    "sortBy": "Դասավորել",
     "newest": "Նորագույն",
-    "priceLowHigh": "Gin: acman kargov",
-    "priceHighLow": "Gin: nvazman kargov",
-    "completionSoonest": "Avart: shut",
-    "nameAZ": "Anun: A-F"
+    "priceLowHigh": "Գին: Աճման կարգով",
+    "priceHighLow": "Գին: նվազման կարգով",
+    "completionSoonest": "Ավարտը: շուտ",
+    "nameAZ": "Անուն: Ա-Ֆ"
   },
   "projects": {
     "sort": {
       "title": "Տեսակավորել",
-      "newest": "Amenanorere",
-      "priceAsc": "Gin: acman kargov",
-      "priceDesc": "Gin: nvazman kargov",
-      "completion": "Avart: shut",
-      "nameAsc": "Anun: A-F"
+      "newest": "Ավելի նոր",
+      "priceAsc": "Գին: Աճման կարգով",
+      "priceDesc": "Գին: նվազման կարգով",
+      "completion": "Ավարտը: շուտ",
+      "nameAsc": "Անուն: Ա-Ֆ"
     },
-    "title": "Naxagcer",
-    "allProjects": "Bolor naxagcer",
-    "projectCount": "{{count}} naxagic",
-    "priceFrom": "Skzac",
-    "completionDate": "Avartum",
-    "viewDetails": "Tesnel manramasner",
-    "noProjects": "Naxagcer chkan gtvel",
-    "adjustFilters": "Փոխել ztichnere"
+    "title": "Նախագծեր",
+    "allProjects": "Բոլոր Նախագծերը",
+    "projectCount": "{{count}} նախագիծ",
+    "priceFrom": "սկսած",
+    "completionDate": "ավարտը",
+    "viewDetails": "Դիտել Մանրամասները",
+    "noProjects": "Նախագծերը բացակայում են",
+    "adjustFilters": "Փոխել Զտիչները"
   },
   "developers": {
     "title": "Կառուցապատողները",
-    "projectCount": "{{count}} նախագիծ",
-    "viewProjects": "Tesnel naxagcer",
-    "noDevelopers": "Karutsapatoghner chkan gtvel"
+    "projectCount": "{{count}} կառուցապատող",
+    "viewProjects": "Դիտել նախագծերը",
+    "noDevelopers": "Կառուցապատողները բացակայում են"
   },
   "banks": {
     "title": "Բանկերը",
-    "partnerDevelopers": "Բանկ գործընկեր",
+    "partnerDevelopers": "Բանկ գործընկերներ",
     "viewDetails": "Մանրամասն",
-    "noBanks": "Գործընկերներ չկան"
+    "noBanks": "Գործընկերները  բացակայում են"
   },
   "favorites": {
     "title": "Նախընտրածները",
     "empty": "Նախընտրածները չկան",
     "emptyDescription": "Znnel naxagcer ev srtik avelacsnek ays ejum",
-    "browseProjects": "Znnel naxagcer",
-    "loginRequired": "Xndrum enk mutk gortsel tesnel naxntracnere",
+    "browseProjects": "Դիտել նախագծերը",
+    "loginRequired": "Խնդրում ենք մուտք գործել դիտելու համար",
     "added": "Նախընտրածների մեջ",
-    "removed": "Heracvec naxntracnerits"
+    "removed": "Նախընտրածներից հեռացվել է"
   },
   "account": {
     "title": "Իմ էջը",
     "profile": "Իմ էջ",
-    "email": "Email",
+    "email": "E-mail",
     "name": "Անուն",
     "viewHistory": "Դիտել պատմություն",
-    "recentlyViewed": "Verejin ditac naxagcer",
-    "noHistory": "Ditman patmutyun datark e",
-    "loginRequired": "Xndrum enk mutk gortsel tesnel hashiv"
+    "recentlyViewed": "վերջին դիտված նախագծեր",
+    "noHistory": "Դիտումների պատմությունը դատարկ է",
+    "loginRequired": "Խնդրում ենք մուտք գործել ձեր էջ"
   },
   "settings": {
     "title": "Կառավարում",
@@ -127,9 +127,9 @@
   },
   "auth": {
     "loginTitle": "Բարի գալուստ",
-    "loginDescription": "Mutk arek hasanelu naxntracnerin ev patmutyun",
-    "signupTitle": "Steghcel hashiv",
-    "signupDescription": "Grancvel pahepanek sirac naxagcer"
+    "loginDescription": "Մուտք գործել հասանելու նախընտրածներին և պատմություն",
+    "signupTitle": "Ստեղծել էջ",
+    "signupDescription": "Գրանցվեք և պահպանեք հավանած նախագծերը"
   },
   "map": {
     "title": "Քարտեզ",

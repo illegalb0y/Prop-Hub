@@ -3,8 +3,8 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import type { ProjectWithRelations } from "@shared/schema";
 
-const defaultCenter: [number, number] = [40.7128, -74.006];
-const defaultZoom = 11;
+const defaultCenter: [number, number] = [40.1792, 44.5152];
+const defaultZoom = 13;
 
 const markerIcon = L.divIcon({
   className: "custom-marker",

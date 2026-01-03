@@ -4,8 +4,8 @@ import L from "leaflet";
 import { useLocation } from "wouter";
 import type { ProjectWithRelations } from "@shared/schema";
 
-const defaultCenter: [number, number] = [40.7128, -74.006];
-const defaultZoom = 11;
+const defaultCenter: [number, number] = [40.1792, 44.5152];
+const defaultZoom = 13;
 
 const markerIcon = L.divIcon({
   className: "custom-marker",
@@ -33,7 +33,7 @@ function MapUpdater({ projects }: MapUpdaterProps) {
   useEffect(() => {
     if (projects.length > 0) {
       const bounds = L.latLngBounds(
-        projects.map((p) => [p.latitude, p.longitude] as [number, number])
+        projects.map((p) => [p.latitude, p.longitude] as [number, number]),
       );
       map.fitBounds(bounds, { padding: [80, 80], maxZoom: 13 });
     }
@@ -49,9 +49,10 @@ interface FullMapProps {
 export function FullMap({ projects }: FullMapProps) {
   const [, navigate] = useLocation();
 
-  const center: [number, number] = projects.length > 0
-    ? [projects[0].latitude, projects[0].longitude]
-    : defaultCenter;
+  const center: [number, number] =
+    projects.length > 0
+      ? [projects[0].latitude, projects[0].longitude]
+      : defaultCenter;
 
   return (
     <div className="h-full w-full" data-testid="full-map-container">
@@ -93,7 +94,8 @@ export function FullMap({ projects }: FullMapProps) {
                 </p>
                 {project.priceFrom && (
                   <p className="text-sm font-medium mt-1">
-                    From {new Intl.NumberFormat("en-US", {
+                    From{" "}
+                    {new Intl.NumberFormat("en-US", {
                       style: "currency",
                       currency: project.currency || "USD",
                       maximumFractionDigits: 0,

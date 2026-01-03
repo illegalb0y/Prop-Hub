@@ -9,18 +9,18 @@ const defaultZoom = 13;
 
 const markerIcon = L.divIcon({
   className: "custom-marker",
-  html: `<div style="
-    width: 24px;
-    height: 24px;
+  html: `<div class="marker-dot" style="
+    width: 20px;
+    height: 20px;
     background: black;
-    border: 7px solid white;
+    border: 6px solid white;
     border-radius: 50%;
     box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     cursor: pointer;
-    transition: transform 0.15s;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
   "></div>`,
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
 });
 
 interface MapUpdaterProps {

@@ -8,30 +8,32 @@ const defaultZoom = 13;
 
 const markerIcon = L.divIcon({
   className: "custom-marker",
-  html: `<div style="
+  html: `<div class="marker-dot" style="
+    width: 16px;
+    height: 16px;
+    background: black;
+    border: 5px solid white;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  "></div>`,
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
+});
+
+const selectedMarkerIcon = L.divIcon({
+  className: "custom-marker-selected",
+  html: `<div class="marker-dot-selected" style="
     width: 20px;
     height: 20px;
     background: black;
     border: 6px solid white;
     border-radius: 50%;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
   "></div>`,
   iconSize: [20, 20],
   iconAnchor: [10, 10],
-});
-
-const selectedMarkerIcon = L.divIcon({
-  className: "custom-marker-selected",
-  html: `<div style="
-    width: 24px;
-    height: 24px;
-    background: black;
-    border: 7px solid white;
-    border-radius: 50%;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-  "></div>`,
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
 });
 
 interface MapUpdaterProps {

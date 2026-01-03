@@ -26,7 +26,7 @@
     "settings": "Կարգավորումներ",
     "login": "Մուտք գործել",
     "signup": "Գրանցվել",
-    "logout": "Դուրս գալ"
+    "logout": "Ելք"
   },
   "header": {
     "searchPlaceholder": "Որոնում...",
@@ -82,7 +82,7 @@
     "allProjects": "Բոլոր Նախագծերը",
     "projectCount": "{{count}} նախագիծ",
     "priceFrom": "սկսած",
-    "completionDate": "ավարտը",
+    "completionDate": "Ավարտը",
     "viewDetails": "Դիտել Մանրամասները",
     "noProjects": "Նախագծերը բացակայում են",
     "adjustFilters": "Փոխել Զտիչները"
@@ -95,7 +95,7 @@
   },
   "banks": {
     "title": "Բանկերը",
-    "partnerDevelopers": "Բանկ գործընկերներ",
+    "partnerDevelopers": "Բանկային գործընկեր",
     "viewDetails": "Մանրամասն",
     "noBanks": "Գործընկերները  բացակայում են"
   },
@@ -134,6 +134,6 @@
   "map": {
     "title": "Քարտեզ",
     "viewOnMap": "Դիտել քարտեզի վրա",
-    "location": "Հասցե"
+    "location": "Հասցեն"
   }
 }

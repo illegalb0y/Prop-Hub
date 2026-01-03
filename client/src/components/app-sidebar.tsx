@@ -46,7 +46,7 @@ export function AppSidebar({ searchQuery, onSearchChange }: AppSidebarProps) {
         </Link>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="text-[18px]">
         <SidebarGroup className="group-data-[collapsible=icon]:hidden">
           <SidebarGroupContent className="px-2 pt-0 pb-2">
             <div className="relative">

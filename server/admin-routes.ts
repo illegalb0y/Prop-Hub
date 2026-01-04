@@ -112,13 +112,12 @@ export function registerAdminRoutes(app: Express) {
       });
       const data = projectSchema.parse(req.body);
       
-      // We need updateProject in adminStorage or storage. Let's check storage.ts
       const existingProject = await storage.getProject(id);
       if (!existingProject) {
         return res.status(404).json({ message: "Project not found" });
       }
 
-      const updated = await adminStorage.updateProject(id, data);
+      const updated = await adminStorage.updateProject(id, data as any);
       await createAuditLog(req, "project_update", "project", id.toString(), data);
       res.json(updated);
     } catch (error) {

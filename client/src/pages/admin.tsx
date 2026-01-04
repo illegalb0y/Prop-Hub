@@ -131,7 +131,7 @@ const navigationItems = [
     ],
   },
   {
-    section: "Data",
+    section: "Data Management",
     items: [
       { id: "projects" as AdminSection, label: "Projects", icon: FolderKanban },
       { id: "developers" as AdminSection, label: "Developers", icon: Building2 },

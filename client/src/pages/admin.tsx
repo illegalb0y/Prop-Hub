@@ -107,9 +107,23 @@ interface Project {
   districtId: number;
   address: string | null;
   shortDescription: string | null;
+  description: string | null;
+  latitude: number | null;
+  longitude: number | null;
   priceFrom: string | null;
   currency: string | null;
   deletedAt: string | null;
+}
+
+interface City {
+  id: number;
+  name: string;
+}
+
+interface District {
+  id: number;
+  name: string;
+  cityId: number;
 }
 
 const navigationItems = [
@@ -145,7 +159,7 @@ export default function AdminPage() {
 
   // Development mode bypass - allows viewing admin pages without authentication
   const isDev = import.meta.env.DEV;
-  
+
   if (!isDev && (!user || user.role !== "admin")) {
     navigate("/", { replace: true });
     return null;
@@ -650,6 +664,16 @@ function ProjectsSection() {
 
   const { data: projects, isLoading, refetch } = useQuery<PaginatedResult<Project>>({
     queryKey: ["/api/admin/projects", { page, search }],
+    queryFn: async ({ queryKey }) => {
+      const [_base, params] = queryKey as [string, { page: number; search: string }];
+      const searchParams = new URLSearchParams({
+        page: params.page.toString(),
+        limit: "10",
+        search: params.search,
+      });
+      const res = await apiRequest("GET", `/api/admin/projects?${searchParams.toString()}`);
+      return res.json();
+    },
   });
 
   const { data: developers } = useQuery<Developer[]>({
@@ -1009,7 +1033,7 @@ function ProjectsSection() {
                 data-testid="input-project-name"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="proj-developer">Developer</Label>
               <select
@@ -1184,6 +1208,16 @@ function DevelopersSection() {
 
   const { data: developers, isLoading, refetch } = useQuery<PaginatedResult<Developer>>({
     queryKey: ["/api/admin/developers", { page, search }],
+    queryFn: async ({ queryKey }) => {
+      const [_base, params] = queryKey as [string, { page: number; search: string }];
+      const searchParams = new URLSearchParams({
+        page: params.page.toString(),
+        limit: "10",
+        search: params.search,
+      });
+      const res = await apiRequest("GET", `/api/admin/developers?${searchParams.toString()}`);
+      return res.json();
+    },
   });
 
   const createMutation = useMutation({
@@ -1510,6 +1544,16 @@ function BanksSection() {
 
   const { data: banks, isLoading, refetch } = useQuery<PaginatedResult<Bank>>({
     queryKey: ["/api/admin/banks", { page, search }],
+    queryFn: async ({ queryKey }) => {
+      const [_base, params] = queryKey as [string, { page: number; search: string }];
+      const searchParams = new URLSearchParams({
+        page: params.page.toString(),
+        limit: "10",
+        search: params.search,
+      });
+      const res = await apiRequest("GET", `/api/admin/banks?${searchParams.toString()}`);
+      return res.json();
+    },
   });
 
   const createMutation = useMutation({

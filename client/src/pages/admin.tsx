@@ -701,7 +701,16 @@ function ProjectsSection() {
 
   return (
     <div className="space-y-6" data-testid="projects-section">
-      <SectionHeader title="Projects" description="Manage real estate projects" />
+      <SectionHeader 
+        title="Projects" 
+        description="Manage real estate projects"
+        actions={
+          <Button onClick={() => {}} data-testid="button-add-project">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Project
+          </Button>
+        }
+      />
 
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-64">
@@ -843,6 +852,7 @@ function DevelopersSection() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingDeveloper, setEditingDeveloper] = useState<Developer | null>(null);
   const [formData, setFormData] = useState({ name: "", logoUrl: "", description: "" });
+  const [importFile, setImportFile] = useState<File | null>(null);
 
   const { data: developers, isLoading, refetch } = useQuery<PaginatedResult<Developer>>({
     queryKey: ["/api/admin/developers", { page, search }],
@@ -886,6 +896,32 @@ function DevelopersSection() {
     },
     onError: () => {
       toast({ title: "Failed to delete developer", variant: "destructive" });
+    },
+  });
+
+  const importMutation = useMutation({
+    mutationFn: async () => {
+      if (!importFile) return;
+      const formData = new FormData();
+      formData.append("file", importFile);
+      const csrfCookie = document.cookie.split(";").find((c) => c.trim().startsWith("_csrf="));
+      const csrfToken = csrfCookie?.split("=")[1] || "";
+      const response = await fetch("/api/admin/developers/import", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+        headers: { "x-csrf-token": csrfToken },
+      });
+      if (!response.ok) throw new Error("Import failed");
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Import started successfully" });
+      setImportFile(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/developers"] });
+    },
+    onError: () => {
+      toast({ title: "Import failed", variant: "destructive" });
     },
   });
 
@@ -944,7 +980,16 @@ function DevelopersSection() {
 
   return (
     <div className="space-y-6" data-testid="developers-section">
-      <SectionHeader title="Developers" description="Manage property developers" />
+      <SectionHeader 
+        title="Developers" 
+        description="Manage property developers"
+        actions={
+          <Button onClick={openCreateDialog} data-testid="button-add-developer">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Developer
+          </Button>
+        }
+      />
 
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-64">
@@ -960,17 +1005,33 @@ function DevelopersSection() {
             data-testid="input-search-developers"
           />
         </div>
-        <Button onClick={openCreateDialog} data-testid="button-add-developer">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Developer
-        </Button>
-        <Button variant="outline" onClick={handleExport} data-testid="button-export-developers">
-          <Download className="h-4 w-4 mr-2" />
-          Export CSV
-        </Button>
-        <Button variant="outline" size="icon" onClick={() => refetch()} data-testid="button-refresh-developers">
-          <RefreshCw className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleExport} data-testid="button-export-developers">
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-md border">
+            <Input
+              type="file"
+              accept=".csv"
+              onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+              className="h-8 text-xs border-0 bg-transparent focus-visible:ring-0 w-48"
+              data-testid="input-import-developers"
+            />
+            <Button
+              size="sm"
+              onClick={() => importMutation.mutate()}
+              disabled={!importFile || importMutation.isPending}
+              data-testid="button-import-developers"
+            >
+              <Upload className="h-3.5 w-3.5 mr-1.5" />
+              Import CSV
+            </Button>
+          </div>
+          <Button variant="outline" size="icon" onClick={() => refetch()} data-testid="button-refresh-developers">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -1117,6 +1178,7 @@ function BanksSection() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBank, setEditingBank] = useState<Bank | null>(null);
   const [formData, setFormData] = useState({ name: "", logoUrl: "", description: "" });
+  const [importFile, setImportFile] = useState<File | null>(null);
 
   const { data: banks, isLoading, refetch } = useQuery<PaginatedResult<Bank>>({
     queryKey: ["/api/admin/banks", { page, search }],
@@ -1160,6 +1222,58 @@ function BanksSection() {
     },
     onError: () => {
       toast({ title: "Failed to delete bank", variant: "destructive" });
+    },
+  });
+
+  const importMutation = useMutation({
+    mutationFn: async () => {
+      if (!importFile) return;
+      const formData = new FormData();
+      formData.append("file", importFile);
+      const csrfCookie = document.cookie.split(";").find((c) => c.trim().startsWith("_csrf="));
+      const csrfToken = csrfCookie?.split("=")[1] || "";
+      const response = await fetch("/api/admin/developers/import", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+        headers: { "x-csrf-token": csrfToken },
+      });
+      if (!response.ok) throw new Error("Import failed");
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Import started successfully" });
+      setImportFile(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/developers"] });
+    },
+    onError: () => {
+      toast({ title: "Import failed", variant: "destructive" });
+    },
+  });
+
+  const importMutation = useMutation({
+    mutationFn: async () => {
+      if (!importFile) return;
+      const formData = new FormData();
+      formData.append("file", importFile);
+      const csrfCookie = document.cookie.split(";").find((c) => c.trim().startsWith("_csrf="));
+      const csrfToken = csrfCookie?.split("=")[1] || "";
+      const response = await fetch("/api/admin/banks/import", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+        headers: { "x-csrf-token": csrfToken },
+      });
+      if (!response.ok) throw new Error("Import failed");
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Import started successfully" });
+      setImportFile(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/banks"] });
+    },
+    onError: () => {
+      toast({ title: "Import failed", variant: "destructive" });
     },
   });
 
@@ -1218,7 +1332,16 @@ function BanksSection() {
 
   return (
     <div className="space-y-6" data-testid="banks-section">
-      <SectionHeader title="Banks" description="Manage partner banks" />
+      <SectionHeader 
+        title="Banks" 
+        description="Manage partner banks"
+        actions={
+          <Button onClick={openCreateDialog} data-testid="button-add-bank">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Bank
+          </Button>
+        }
+      />
 
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-64">
@@ -1234,17 +1357,33 @@ function BanksSection() {
             data-testid="input-search-banks"
           />
         </div>
-        <Button onClick={openCreateDialog} data-testid="button-add-bank">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Bank
-        </Button>
-        <Button variant="outline" onClick={handleExport} data-testid="button-export-banks">
-          <Download className="h-4 w-4 mr-2" />
-          Export CSV
-        </Button>
-        <Button variant="outline" size="icon" onClick={() => refetch()} data-testid="button-refresh-banks">
-          <RefreshCw className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleExport} data-testid="button-export-banks">
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-md border">
+            <Input
+              type="file"
+              accept=".csv"
+              onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+              className="h-8 text-xs border-0 bg-transparent focus-visible:ring-0 w-48"
+              data-testid="input-import-banks"
+            />
+            <Button
+              size="sm"
+              onClick={() => importMutation.mutate()}
+              disabled={!importFile || importMutation.isPending}
+              data-testid="button-import-banks"
+            >
+              <Upload className="h-3.5 w-3.5 mr-1.5" />
+              Import CSV
+            </Button>
+          </div>
+          <Button variant="outline" size="icon" onClick={() => refetch()} data-testid="button-refresh-banks">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -1380,13 +1519,16 @@ function BanksSection() {
   );
 }
 
-function SectionHeader({ title, description }: { title: string; description: string }) {
+function SectionHeader({ title, description, actions }: { title: string; description: string; actions?: React.ReactNode }) {
   return (
-    <div className="mb-2">
-      <h2 className="text-2xl font-semibold" data-testid={`section-title-${title.toLowerCase()}`}>
-        {title}
-      </h2>
-      <p className="text-muted-foreground text-sm">{description}</p>
+    <div className="flex items-center justify-between gap-4 mb-6">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight" data-testid={`section-title-${title.toLowerCase()}`}>
+          {title}
+        </h2>
+        <p className="text-muted-foreground">{description}</p>
+      </div>
+      {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
   );
 }

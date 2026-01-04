@@ -1,10 +1,12 @@
 import { db } from "./db";
 import {
   users, projects, ipBans, importJobs, importJobErrors, auditLogs,
+  developers, banks, cities, districts,
   type User, type IpBan, type ImportJob, type ImportJobError, type AuditLog,
   type InsertIpBan, type InsertImportJob, type InsertImportJobError, type InsertAuditLog,
+  type Developer, type InsertDeveloper, type Bank, type InsertBank,
 } from "@shared/schema";
-import { eq, isNull, or, gt, ilike, desc, sql, and } from "drizzle-orm";
+import { eq, isNull, or, gt, ilike, desc, sql, and, asc } from "drizzle-orm";
 
 export interface PaginatedResult<T> {
   data: T[];
@@ -207,12 +209,16 @@ export class AdminStorage {
       [{ projectCount }],
       [{ bannedUserCount }],
       [{ ipBanCount }],
+      [{ developerCount }],
+      [{ bankCount }],
       recentImports,
     ] = await Promise.all([
       db.select({ userCount: sql<number>`count(*)::int` }).from(users),
       db.select({ projectCount: sql<number>`count(*)::int` }).from(projects).where(isNull(projects.deletedAt)),
       db.select({ bannedUserCount: sql<number>`count(*)::int` }).from(users).where(sql`${users.bannedAt} IS NOT NULL`),
       db.select({ ipBanCount: sql<number>`count(*)::int` }).from(ipBans),
+      db.select({ developerCount: sql<number>`count(*)::int` }).from(developers),
+      db.select({ bankCount: sql<number>`count(*)::int` }).from(banks),
       db.select().from(importJobs).orderBy(desc(importJobs.createdAt)).limit(5),
     ]);
 
@@ -221,8 +227,128 @@ export class AdminStorage {
       projectCount,
       bannedUserCount,
       ipBanCount,
+      developerCount,
+      bankCount,
       recentImports,
     };
+  }
+
+  async getDevelopers(page: number, limit: number, search?: string): Promise<PaginatedResult<Developer & { projectCount: number }>> {
+    const offset = (page - 1) * limit;
+    
+    let query = db.select().from(developers);
+    let countQuery = db.select({ count: sql<number>`count(*)::int` }).from(developers);
+    
+    if (search) {
+      const condition = ilike(developers.name, `%${search}%`);
+      query = query.where(condition) as typeof query;
+      countQuery = countQuery.where(condition) as typeof countQuery;
+    }
+
+    const [data, [{ count }]] = await Promise.all([
+      query.orderBy(asc(developers.name)).limit(limit).offset(offset),
+      countQuery,
+    ]);
+
+    const dataWithCounts = await Promise.all(
+      data.map(async (dev) => {
+        const [{ projectCount }] = await db
+          .select({ projectCount: sql<number>`count(*)::int` })
+          .from(projects)
+          .where(eq(projects.developerId, dev.id));
+        return { ...dev, projectCount };
+      })
+    );
+
+    return {
+      data: dataWithCounts,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
+  }
+
+  async createDeveloper(developer: InsertDeveloper): Promise<Developer> {
+    const [created] = await db.insert(developers).values(developer).returning();
+    return created;
+  }
+
+  async updateDeveloper(id: number, data: Partial<InsertDeveloper>): Promise<Developer> {
+    const [updated] = await db.update(developers).set(data).where(eq(developers.id, id)).returning();
+    return updated;
+  }
+
+  async deleteDeveloper(id: number): Promise<void> {
+    await db.delete(developers).where(eq(developers.id, id));
+  }
+
+  async getAllDevelopersForExport(): Promise<Developer[]> {
+    return db.select().from(developers).orderBy(asc(developers.name));
+  }
+
+  async getBanks(page: number, limit: number, search?: string): Promise<PaginatedResult<Bank>> {
+    const offset = (page - 1) * limit;
+    
+    let query = db.select().from(banks);
+    let countQuery = db.select({ count: sql<number>`count(*)::int` }).from(banks);
+    
+    if (search) {
+      const condition = ilike(banks.name, `%${search}%`);
+      query = query.where(condition) as typeof query;
+      countQuery = countQuery.where(condition) as typeof countQuery;
+    }
+
+    const [data, [{ count }]] = await Promise.all([
+      query.orderBy(asc(banks.name)).limit(limit).offset(offset),
+      countQuery,
+    ]);
+
+    return {
+      data,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
+  }
+
+  async createBank(bank: InsertBank): Promise<Bank> {
+    const [created] = await db.insert(banks).values(bank).returning();
+    return created;
+  }
+
+  async updateBank(id: number, data: Partial<InsertBank>): Promise<Bank> {
+    const [updated] = await db.update(banks).set(data).where(eq(banks.id, id)).returning();
+    return updated;
+  }
+
+  async deleteBank(id: number): Promise<void> {
+    await db.delete(banks).where(eq(banks.id, id));
+  }
+
+  async getAllBanksForExport(): Promise<Bank[]> {
+    return db.select().from(banks).orderBy(asc(banks.name));
+  }
+
+  async getAllProjectsForExport(): Promise<any[]> {
+    const allProjects = await db.select().from(projects).where(isNull(projects.deletedAt)).orderBy(asc(projects.name));
+    
+    const result = await Promise.all(
+      allProjects.map(async (project) => {
+        const [developer] = await db.select().from(developers).where(eq(developers.id, project.developerId));
+        const [city] = await db.select().from(cities).where(eq(cities.id, project.cityId));
+        const [district] = await db.select().from(districts).where(eq(districts.id, project.districtId));
+        return {
+          ...project,
+          developerName: developer?.name || "",
+          cityName: city?.name || "",
+          districtName: district?.name || "",
+        };
+      })
+    );
+    
+    return result;
   }
 }
 

@@ -294,6 +294,180 @@ export function registerAdminRoutes(app: Express) {
       res.status(500).json({ message: "Failed to fetch audit logs" });
     }
   });
+
+  // Developers CRUD
+  app.get("/api/admin/developers", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { page, limit, search } = paginationSchema.parse(req.query);
+      const developers = await adminStorage.getDevelopers(page, limit, search);
+      res.json(developers);
+    } catch (error) {
+      console.error("Error fetching developers:", error);
+      res.status(500).json({ message: "Failed to fetch developers" });
+    }
+  });
+
+  app.post("/api/admin/developers", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const developerSchema = z.object({
+        name: z.string().min(1),
+        logoUrl: z.string().optional().nullable(),
+        description: z.string().optional().nullable(),
+      });
+      const data = developerSchema.parse(req.body);
+      const developer = await adminStorage.createDeveloper(data);
+      await createAuditLog(req, "developer_create", "developer", developer.id.toString(), { name: data.name });
+      res.status(201).json(developer);
+    } catch (error) {
+      console.error("Error creating developer:", error);
+      res.status(500).json({ message: "Failed to create developer" });
+    }
+  });
+
+  app.patch("/api/admin/developers/:id", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { id } = idParamSchema.parse(req.params);
+      const developerSchema = z.object({
+        name: z.string().min(1).optional(),
+        logoUrl: z.string().optional().nullable(),
+        description: z.string().optional().nullable(),
+      });
+      const data = developerSchema.parse(req.body);
+      const developer = await adminStorage.updateDeveloper(id, data);
+      await createAuditLog(req, "developer_update", "developer", id.toString(), data);
+      res.json(developer);
+    } catch (error) {
+      console.error("Error updating developer:", error);
+      res.status(500).json({ message: "Failed to update developer" });
+    }
+  });
+
+  app.delete("/api/admin/developers/:id", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { id } = idParamSchema.parse(req.params);
+      await adminStorage.deleteDeveloper(id);
+      await createAuditLog(req, "developer_delete", "developer", id.toString());
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting developer:", error);
+      res.status(500).json({ message: "Failed to delete developer" });
+    }
+  });
+
+  app.get("/api/admin/developers/export", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const developers = await adminStorage.getAllDevelopersForExport();
+      const csv = convertToCSV(developers, ["id", "name", "logoUrl", "description"]);
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", "attachment; filename=developers.csv");
+      res.send(csv);
+    } catch (error) {
+      console.error("Error exporting developers:", error);
+      res.status(500).json({ message: "Failed to export developers" });
+    }
+  });
+
+  // Banks CRUD
+  app.get("/api/admin/banks", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { page, limit, search } = paginationSchema.parse(req.query);
+      const banks = await adminStorage.getBanks(page, limit, search);
+      res.json(banks);
+    } catch (error) {
+      console.error("Error fetching banks:", error);
+      res.status(500).json({ message: "Failed to fetch banks" });
+    }
+  });
+
+  app.post("/api/admin/banks", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const bankSchema = z.object({
+        name: z.string().min(1),
+        logoUrl: z.string().optional().nullable(),
+        description: z.string().optional().nullable(),
+      });
+      const data = bankSchema.parse(req.body);
+      const bank = await adminStorage.createBank(data);
+      await createAuditLog(req, "bank_create", "bank", bank.id.toString(), { name: data.name });
+      res.status(201).json(bank);
+    } catch (error) {
+      console.error("Error creating bank:", error);
+      res.status(500).json({ message: "Failed to create bank" });
+    }
+  });
+
+  app.patch("/api/admin/banks/:id", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { id } = idParamSchema.parse(req.params);
+      const bankSchema = z.object({
+        name: z.string().min(1).optional(),
+        logoUrl: z.string().optional().nullable(),
+        description: z.string().optional().nullable(),
+      });
+      const data = bankSchema.parse(req.body);
+      const bank = await adminStorage.updateBank(id, data);
+      await createAuditLog(req, "bank_update", "bank", id.toString(), data);
+      res.json(bank);
+    } catch (error) {
+      console.error("Error updating bank:", error);
+      res.status(500).json({ message: "Failed to update bank" });
+    }
+  });
+
+  app.delete("/api/admin/banks/:id", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { id } = idParamSchema.parse(req.params);
+      await adminStorage.deleteBank(id);
+      await createAuditLog(req, "bank_delete", "bank", id.toString());
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting bank:", error);
+      res.status(500).json({ message: "Failed to delete bank" });
+    }
+  });
+
+  app.get("/api/admin/banks/export", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const banks = await adminStorage.getAllBanksForExport();
+      const csv = convertToCSV(banks, ["id", "name", "logoUrl", "description"]);
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", "attachment; filename=banks.csv");
+      res.send(csv);
+    } catch (error) {
+      console.error("Error exporting banks:", error);
+      res.status(500).json({ message: "Failed to export banks" });
+    }
+  });
+
+  // Projects export
+  app.get("/api/admin/projects/export", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const projects = await adminStorage.getAllProjectsForExport();
+      const csv = convertToCSV(projects, ["id", "name", "developerName", "cityName", "districtName", "address", "priceFrom", "currency", "shortDescription"]);
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", "attachment; filename=projects.csv");
+      res.send(csv);
+    } catch (error) {
+      console.error("Error exporting projects:", error);
+      res.status(500).json({ message: "Failed to export projects" });
+    }
+  });
+}
+
+function convertToCSV(data: any[], columns: string[]): string {
+  const header = columns.join(",");
+  const rows = data.map(item => 
+    columns.map(col => {
+      const value = item[col];
+      if (value === null || value === undefined) return "";
+      const str = String(value);
+      if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    }).join(",")
+  );
+  return [header, ...rows].join("\n");
 }
 
 async function processCSVImport(buffer: Buffer, jobId: string, adminId: string) {

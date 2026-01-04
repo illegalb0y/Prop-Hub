@@ -174,7 +174,13 @@ export function registerAdminRoutes(app: Express) {
 
   app.get("/api/admin/users/:id", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
-      const user = await adminStorage.getUser(req.params.id);
+      // Handle the case where the ID is somehow an object (unlikely for :id but good for safety)
+      const id = req.params.id;
+      if (id === "[object Object]") {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      const user = await adminStorage.getUser(id);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }

@@ -371,6 +371,16 @@ function UsersSection() {
 
   const { data: users, isLoading, refetch } = useQuery<PaginatedResult<User>>({
     queryKey: ["/api/admin/users", { page, search }],
+    queryFn: async ({ queryKey }) => {
+      const [_base, params] = queryKey as [string, { page: number; search: string }];
+      const searchParams = new URLSearchParams({
+        page: params.page.toString(),
+        limit: "10",
+        search: params.search,
+      });
+      const res = await apiRequest("GET", `/api/admin/users?${searchParams.toString()}`);
+      return res.json();
+    },
   });
 
   const banMutation = useMutation({

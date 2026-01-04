@@ -52,7 +52,7 @@ export function registerAdminRoutes(app: Express) {
   app.get("/api/admin/projects", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
       const { page, limit, search } = paginationSchema.parse(req.query);
-      const allProjects = await storage.getProjects({ q: search, includeDeleted: true });
+      const allProjects = await storage.getProjects({ q: search });
       const start = (page - 1) * limit;
       const paginatedProjects = allProjects.slice(start, start + limit);
       
@@ -85,7 +85,7 @@ export function registerAdminRoutes(app: Express) {
         currency: z.string().default("USD"),
       });
       const data = projectSchema.parse(req.body);
-      const project = await adminStorage.createProject(data as any);
+      const project = await storage.createProject(data as any);
       await createAuditLog(req, "project_create", "project", project.id.toString(), { name: data.name });
       res.status(201).json(project);
     } catch (error) {
@@ -112,12 +112,13 @@ export function registerAdminRoutes(app: Express) {
       });
       const data = projectSchema.parse(req.body);
       
+      // We need updateProject in adminStorage or storage. Let's check storage.ts
       const existingProject = await storage.getProject(id);
       if (!existingProject) {
         return res.status(404).json({ message: "Project not found" });
       }
 
-      const updated = await adminStorage.updateProject(id, data as any);
+      const updated = await adminStorage.updateProject(id, data);
       await createAuditLog(req, "project_update", "project", id.toString(), data);
       res.json(updated);
     } catch (error) {

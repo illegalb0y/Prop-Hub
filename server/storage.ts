@@ -12,7 +12,7 @@ import {
   type DistrictGeometry,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, ilike, or, desc, asc, inArray, sql, isNull } from "drizzle-orm";
+import { eq, and, ilike, or, desc, asc, inArray, sql } from "drizzle-orm";
 
 export interface IStorage {
   getCities(): Promise<City[]>;
@@ -58,7 +58,6 @@ export interface ProjectFilters {
   developerIds?: number[];
   bankIds?: number[];
   sort?: "newest" | "price_asc" | "price_desc" | "completion_soonest" | "name_asc";
-  includeDeleted?: boolean;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -168,10 +167,6 @@ export class DatabaseStorage implements IStorage {
     let query = db.select().from(projects);
     const conditions: any[] = [];
 
-    if (!filters.includeDeleted) {
-      conditions.push(isNull(projects.deletedAt));
-    }
-
     if (filters.q) {
       conditions.push(
         or(
@@ -206,23 +201,7 @@ export class DatabaseStorage implements IStorage {
         desc(projects.createdAt)
       );
 
-    const projectResults: ProjectWithRelations[] = [];
-    for (const project of baseProjects) {
-      const [developer] = await db.select().from(developers).where(eq(developers.id, project.developerId));
-      const [city] = await db.select().from(cities).where(eq(cities.id, project.cityId));
-      const [district] = await db.select().from(districts).where(eq(districts.id, project.districtId));
-      
-      if (developer && city && district) {
-        projectResults.push({
-          ...project,
-          developer,
-          city,
-          district,
-        });
-      }
-    }
-
-    let filteredProjects = projectResults;
+    let filteredProjects = baseProjects;
     
     if (filters.bankIds && filters.bankIds.length > 0) {
       const projectsWithBanks = await db
@@ -233,7 +212,7 @@ export class DatabaseStorage implements IStorage {
       filteredProjects = baseProjects.filter(p => projectIdsWithBanks.has(p.id));
     }
 
-    const finalResult: ProjectWithRelations[] = [];
+    const result: ProjectWithRelations[] = [];
     for (const project of filteredProjects) {
       const [developer] = await db.select().from(developers).where(eq(developers.id, project.developerId));
       const [city] = await db.select().from(cities).where(eq(cities.id, project.cityId));
@@ -245,7 +224,7 @@ export class DatabaseStorage implements IStorage {
         .innerJoin(banks, eq(projectBanks.bankId, banks.id))
         .where(eq(projectBanks.projectId, project.id));
       
-      finalResult.push({
+      result.push({
         ...project,
         developer,
         city,
@@ -254,7 +233,7 @@ export class DatabaseStorage implements IStorage {
       });
     }
 
-    return finalResult;
+    return result;
   }
 
   async getProject(id: number): Promise<ProjectWithRelations | undefined> {

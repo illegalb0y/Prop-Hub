@@ -17,9 +17,7 @@ export const citiesRelations = relations(cities, ({ many }) => ({
   projects: many(projects),
 }));
 
-export const insertCitySchema = createInsertSchema(cities).extend({
-  id: z.any().optional(),
-});
+export const insertCitySchema = createInsertSchema(cities).omit({ id: true });
 export type InsertCity = z.infer<typeof insertCitySchema>;
 export type City = typeof cities.$inferSelect;
 
@@ -35,9 +33,7 @@ export const districtsRelations = relations(districts, ({ one, many }) => ({
   projects: many(projects),
 }));
 
-export const insertDistrictSchema = createInsertSchema(districts).extend({
-  id: z.any().optional(),
-});
+export const insertDistrictSchema = createInsertSchema(districts).omit({ id: true });
 export type InsertDistrict = z.infer<typeof insertDistrictSchema>;
 export type District = typeof districts.$inferSelect;
 
@@ -80,9 +76,7 @@ export const developersRelations = relations(developers, ({ many }) => ({
   developerBanks: many(developerBanks),
 }));
 
-export const insertDeveloperSchema = createInsertSchema(developers).extend({
-  id: z.any().optional(),
-});
+export const insertDeveloperSchema = createInsertSchema(developers).omit({ id: true });
 export type InsertDeveloper = z.infer<typeof insertDeveloperSchema>;
 export type Developer = typeof developers.$inferSelect;
 
@@ -99,9 +93,7 @@ export const banksRelations = relations(banks, ({ many }) => ({
   projectBanks: many(projectBanks),
 }));
 
-export const insertBankSchema = createInsertSchema(banks).extend({
-  id: z.any().optional(),
-});
+export const insertBankSchema = createInsertSchema(banks).omit({ id: true });
 export type InsertBank = z.infer<typeof insertBankSchema>;
 export type Bank = typeof banks.$inferSelect;
 
@@ -154,12 +146,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   viewHistory: many(viewHistory),
 }));
 
-export const insertProjectSchema = createInsertSchema(projects).extend({
-  id: z.any().optional(),
-  createdAt: z.any().optional(),
-  updatedAt: z.any().optional(),
-  completionDate: z.any().optional().nullable(),
-});
+export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Project = typeof projects.$inferSelect;
 

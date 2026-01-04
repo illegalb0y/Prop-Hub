@@ -52,6 +52,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 
+type AdminSection = "dashboard" | "users" | "projects" | "developers" | "banks";
+
 interface PaginatedResult<T> {
   data: T[];
   total: number;
@@ -70,12 +72,24 @@ interface DashboardStats {
   recentImports: any[];
 }
 
+interface User {
+  id: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  profileImageUrl: string | null;
+  role: string;
+  bannedAt: string | null;
+  bannedReason: string | null;
+  createdAt: string | null;
+}
+
 interface Developer {
   id: number;
   name: string;
   logoUrl: string | null;
   description: string | null;
-  projectCount: number;
+  projectCount?: number;
 }
 
 interface Bank {
@@ -93,34 +107,10 @@ interface Project {
   districtId: number;
   address: string | null;
   shortDescription: string | null;
-  description: string | null;
   priceFrom: string | null;
   currency: string | null;
-  latitude: string | null;
-  longitude: string | null;
   deletedAt: string | null;
 }
-
-interface User {
-  id: string;
-  username: string;
-  role: string;
-  bannedAt: string | null;
-}
-
-interface City {
-  id: number;
-  name: string;
-}
-
-interface District {
-  id: number;
-  name: string;
-  cityId: number;
-}
-
-
-type AdminSection = "dashboard" | "users" | "projects" | "developers" | "banks";
 
 const navigationItems = [
   {
@@ -131,7 +121,7 @@ const navigationItems = [
     ],
   },
   {
-    section: "Data Management",
+    section: "Data",
     items: [
       { id: "projects" as AdminSection, label: "Projects", icon: FolderKanban },
       { id: "developers" as AdminSection, label: "Developers", icon: Building2 },
@@ -920,7 +910,7 @@ function ProjectsSection() {
                 </tr>
               </thead>
               <tbody>
-                {projects?.data?.map((project: Project) => (
+                {projects?.data?.map((project) => (
                   <tr key={project.id} className="border-b last:border-0" data-testid={`project-row-${project.id}`}>
                     <td className="p-4 text-sm text-muted-foreground">#{project.id}</td>
                     <td className="p-4">
@@ -1030,7 +1020,7 @@ function ProjectsSection() {
                 data-testid="select-project-developer"
               >
                 <option value="">Select Developer</option>
-                {developers?.map((dev: Developer) => (
+                {developers?.map((dev) => (
                   <option key={dev.id} value={dev.id}>{dev.name}</option>
                 ))}
               </select>
@@ -1046,7 +1036,7 @@ function ProjectsSection() {
                 data-testid="select-project-city"
               >
                 <option value="">Select City</option>
-                {cities?.map((city: City) => (
+                {cities?.map((city) => (
                   <option key={city.id} value={city.id}>{city.name}</option>
                 ))}
               </select>
@@ -1063,7 +1053,7 @@ function ProjectsSection() {
                 data-testid="select-project-district"
               >
                 <option value="">Select District</option>
-                {districts?.map((district: District) => (
+                {districts?.map((district) => (
                   <option key={district.id} value={district.id}>{district.name}</option>
                 ))}
               </select>

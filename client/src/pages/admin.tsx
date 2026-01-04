@@ -52,19 +52,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 
-import {
-  Project,
-  Developer,
-  Bank,
-  City,
-  District,
-  User,
-  IpBan,
-  ImportJob,
-  ImportJobError,
-  AuditLog,
-} from "@shared/schema";
-
 interface PaginatedResult<T> {
   data: T[];
   total: number;
@@ -82,6 +69,56 @@ interface DashboardStats {
   bankCount: number;
   recentImports: any[];
 }
+
+interface Developer {
+  id: number;
+  name: string;
+  logoUrl: string | null;
+  description: string | null;
+  projectCount: number;
+}
+
+interface Bank {
+  id: number;
+  name: string;
+  logoUrl: string | null;
+  description: string | null;
+}
+
+interface Project {
+  id: number;
+  name: string;
+  developerId: number;
+  cityId: number;
+  districtId: number;
+  address: string | null;
+  shortDescription: string | null;
+  description: string | null;
+  priceFrom: string | null;
+  currency: string | null;
+  latitude: string | null;
+  longitude: string | null;
+  deletedAt: string | null;
+}
+
+interface User {
+  id: string;
+  username: string;
+  role: string;
+  bannedAt: string | null;
+}
+
+interface City {
+  id: number;
+  name: string;
+}
+
+interface District {
+  id: number;
+  name: string;
+  cityId: number;
+}
+
 
 type AdminSection = "dashboard" | "users" | "projects" | "developers" | "banks";
 

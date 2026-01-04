@@ -12,7 +12,7 @@ import {
   type DistrictGeometry,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, ilike, or, desc, asc, inArray, sql } from "drizzle-orm";
+import { eq, and, ilike, or, desc, asc, inArray, sql, isNull } from "drizzle-orm";
 
 export interface IStorage {
   getCities(): Promise<City[]>;
@@ -233,7 +233,7 @@ export class DatabaseStorage implements IStorage {
       filteredProjects = baseProjects.filter(p => projectIdsWithBanks.has(p.id));
     }
 
-    const result: ProjectWithRelations[] = [];
+    const finalResult: ProjectWithRelations[] = [];
     for (const project of filteredProjects) {
       const [developer] = await db.select().from(developers).where(eq(developers.id, project.developerId));
       const [city] = await db.select().from(cities).where(eq(cities.id, project.cityId));
@@ -245,7 +245,7 @@ export class DatabaseStorage implements IStorage {
         .innerJoin(banks, eq(projectBanks.bankId, banks.id))
         .where(eq(projectBanks.projectId, project.id));
       
-      result.push({
+      finalResult.push({
         ...project,
         developer,
         city,
@@ -254,7 +254,7 @@ export class DatabaseStorage implements IStorage {
       });
     }
 
-    return result;
+    return finalResult;
   }
 
   async getProject(id: number): Promise<ProjectWithRelations | undefined> {

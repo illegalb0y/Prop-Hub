@@ -18,7 +18,7 @@ export const citiesRelations = relations(cities, ({ many }) => ({
 }));
 
 export const insertCitySchema = createInsertSchema(cities).extend({
-  id: z.number().optional(),
+  id: z.any().optional(),
 });
 export type InsertCity = z.infer<typeof insertCitySchema>;
 export type City = typeof cities.$inferSelect;
@@ -36,7 +36,7 @@ export const districtsRelations = relations(districts, ({ one, many }) => ({
 }));
 
 export const insertDistrictSchema = createInsertSchema(districts).extend({
-  id: z.number().optional(),
+  id: z.any().optional(),
 });
 export type InsertDistrict = z.infer<typeof insertDistrictSchema>;
 export type District = typeof districts.$inferSelect;
@@ -81,7 +81,7 @@ export const developersRelations = relations(developers, ({ many }) => ({
 }));
 
 export const insertDeveloperSchema = createInsertSchema(developers).extend({
-  id: z.number().optional(),
+  id: z.any().optional(),
 });
 export type InsertDeveloper = z.infer<typeof insertDeveloperSchema>;
 export type Developer = typeof developers.$inferSelect;
@@ -100,7 +100,7 @@ export const banksRelations = relations(banks, ({ many }) => ({
 }));
 
 export const insertBankSchema = createInsertSchema(banks).extend({
-  id: z.number().optional(),
+  id: z.any().optional(),
 });
 export type InsertBank = z.infer<typeof insertBankSchema>;
 export type Bank = typeof banks.$inferSelect;
@@ -155,10 +155,10 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
 }));
 
 export const insertProjectSchema = createInsertSchema(projects).extend({
-  id: z.number().optional(),
-  createdAt: z.date().or(z.string()).optional(),
-  updatedAt: z.date().or(z.string()).optional(),
-  completionDate: z.date().or(z.string()).optional().nullable(),
+  id: z.any().optional(),
+  createdAt: z.any().optional(),
+  updatedAt: z.any().optional(),
+  completionDate: z.any().optional().nullable(),
 });
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Project = typeof projects.$inferSelect;

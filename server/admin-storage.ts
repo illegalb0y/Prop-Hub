@@ -127,12 +127,12 @@ export class AdminStorage {
   }
 
   async updateProject(id: number, data: Partial<InsertProject>): Promise<Project> {
-    const [updated] = await db.update(projects).set({ ...data, updatedAt: new Date() }).where(eq(projects.id, id)).returning();
+    const [updated] = await db.update(projects).set({ ...data, updatedAt: new Date() } as any).where(eq(projects.id, id)).returning();
     return updated;
   }
 
   async createProject(project: InsertProject): Promise<Project> {
-    const [created] = await db.insert(projects).values(project).returning();
+    const [created] = await db.insert(projects).values(project as any).returning();
     return created;
   }
 

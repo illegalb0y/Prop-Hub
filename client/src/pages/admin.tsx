@@ -144,16 +144,8 @@ export default function AdminPage() {
   }
 
   if (!user || user.role !== "admin") {
-    return (
-      <div className="flex flex-col items-center justify-center h-full gap-4" data-testid="admin-unauthorized">
-        <ShieldCheck className="h-12 w-12 text-muted-foreground" />
-        <h2 className="text-xl font-semibold">Access Denied</h2>
-        <p className="text-muted-foreground">You need administrator privileges to access this page.</p>
-        <Button onClick={() => navigate("/")} data-testid="button-go-home">
-          Go to Home
-        </Button>
-      </div>
-    );
+    navigate("/", { replace: true });
+    return null;
   }
 
   return (

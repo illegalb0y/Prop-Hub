@@ -632,9 +632,65 @@ function ProjectsSection() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    developerId: "",
+    cityId: "",
+    districtId: "",
+    latitude: "",
+    longitude: "",
+    address: "",
+    shortDescription: "",
+    description: "",
+    priceFrom: "",
+    currency: "USD",
+  });
 
   const { data: projects, isLoading, refetch } = useQuery<PaginatedResult<Project>>({
     queryKey: ["/api/admin/projects", { page, search }],
+  });
+
+  const { data: developers } = useQuery<Developer[]>({
+    queryKey: ["/api/developers"],
+  });
+
+  const { data: cities } = useQuery<City[]>({
+    queryKey: ["/api/cities"],
+  });
+
+  const { data: districts } = useQuery<District[]>({
+    queryKey: ["/api/districts", formData.cityId],
+    enabled: !!formData.cityId,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return apiRequest("POST", "/api/admin/projects", data);
+    },
+    onSuccess: () => {
+      toast({ title: "Project created" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
+      closeDialog();
+    },
+    onError: () => {
+      toast({ title: "Failed to create project", variant: "destructive" });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      return apiRequest("PATCH", `/api/admin/projects/${id}`, data);
+    },
+    onSuccess: () => {
+      toast({ title: "Project updated" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
+      closeDialog();
+    },
+    onError: () => {
+      toast({ title: "Failed to update project", variant: "destructive" });
+    },
   });
 
   const deleteMutation = useMutation({
@@ -708,6 +764,78 @@ function ProjectsSection() {
     }
   };
 
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setEditingProject(null);
+    setFormData({
+      name: "",
+      developerId: "",
+      cityId: "",
+      districtId: "",
+      latitude: "",
+      longitude: "",
+      address: "",
+      shortDescription: "",
+      description: "",
+      priceFrom: "",
+      currency: "USD",
+    });
+  };
+
+  const openCreateDialog = () => {
+    setEditingProject(null);
+    setFormData({
+      name: "",
+      developerId: "",
+      cityId: "",
+      districtId: "",
+      latitude: "",
+      longitude: "",
+      address: "",
+      shortDescription: "",
+      description: "",
+      priceFrom: "",
+      currency: "USD",
+    });
+    setDialogOpen(true);
+  };
+
+  const openEditDialog = (project: Project) => {
+    setEditingProject(project);
+    setFormData({
+      name: project.name,
+      developerId: project.developerId.toString(),
+      cityId: project.cityId.toString(),
+      districtId: project.districtId.toString(),
+      latitude: project.latitude?.toString() || "",
+      longitude: project.longitude?.toString() || "",
+      address: project.address || "",
+      shortDescription: project.shortDescription || "",
+      description: project.description || "",
+      priceFrom: project.priceFrom?.toString() || "",
+      currency: project.currency || "USD",
+    });
+    setDialogOpen(true);
+  };
+
+  const handleSubmit = () => {
+    const data = {
+      ...formData,
+      developerId: parseInt(formData.developerId),
+      cityId: parseInt(formData.cityId),
+      districtId: parseInt(formData.districtId),
+      latitude: parseFloat(formData.latitude),
+      longitude: parseFloat(formData.longitude),
+      priceFrom: formData.priceFrom ? parseInt(formData.priceFrom) : null,
+    };
+
+    if (editingProject) {
+      updateMutation.mutate({ id: editingProject.id, data });
+    } else {
+      createMutation.mutate(data);
+    }
+  };
+
   if (isLoading) {
     return <SectionSkeleton title="Projects" />;
   }
@@ -718,7 +846,7 @@ function ProjectsSection() {
         title="Projects" 
         description="Manage real estate projects"
         actions={
-          <Button onClick={() => {}} data-testid="button-add-project">
+          <Button onClick={openCreateDialog} data-testid="button-add-project">
             <Plus className="h-4 w-4 mr-2" />
             Add Project
           </Button>
@@ -817,6 +945,13 @@ function ProjectsSection() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => openEditDialog(project)}
+                            data-testid={`button-edit-project-${project.id}`}
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
                           {project.deletedAt ? (
                             <DropdownMenuItem
                               onClick={() => restoreMutation.mutate(project.id)}
@@ -854,6 +989,186 @@ function ProjectsSection() {
       </Card>
 
       <Pagination page={page} totalPages={projects?.totalPages || 1} onPageChange={setPage} />
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingProject ? "Edit Project" : "Add Project"}</DialogTitle>
+            <DialogDescription>
+              {editingProject ? "Update project details" : "Create a new real estate project"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+            <div className="space-y-2 col-span-full">
+              <Label htmlFor="proj-name">Project Name</Label>
+              <Input
+                id="proj-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="The Manhattan Tower"
+                data-testid="input-project-name"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="proj-developer">Developer</Label>
+              <select
+                id="proj-developer"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                value={formData.developerId}
+                onChange={(e) => setFormData({ ...formData, developerId: e.target.value })}
+                data-testid="select-project-developer"
+              >
+                <option value="">Select Developer</option>
+                {developers?.map((dev) => (
+                  <option key={dev.id} value={dev.id}>{dev.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="proj-city">City</Label>
+              <select
+                id="proj-city"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                value={formData.cityId}
+                onChange={(e) => setFormData({ ...formData, cityId: e.target.value, districtId: "" })}
+                data-testid="select-project-city"
+              >
+                <option value="">Select City</option>
+                {cities?.map((city) => (
+                  <option key={city.id} value={city.id}>{city.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="proj-district">District</Label>
+              <select
+                id="proj-district"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                value={formData.districtId}
+                onChange={(e) => setFormData({ ...formData, districtId: e.target.value })}
+                disabled={!formData.cityId}
+                data-testid="select-project-district"
+              >
+                <option value="">Select District</option>
+                {districts?.map((district) => (
+                  <option key={district.id} value={district.id}>{district.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="proj-price">Price From</Label>
+              <Input
+                id="proj-price"
+                type="number"
+                value={formData.priceFrom}
+                onChange={(e) => setFormData({ ...formData, priceFrom: e.target.value })}
+                placeholder="1500000"
+                data-testid="input-project-price"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="proj-currency">Currency</Label>
+              <Input
+                id="proj-currency"
+                value={formData.currency}
+                onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                placeholder="USD"
+                data-testid="input-project-currency"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="proj-lat">Latitude</Label>
+              <Input
+                id="proj-lat"
+                type="number"
+                step="any"
+                value={formData.latitude}
+                onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
+                placeholder="40.758"
+                data-testid="input-project-lat"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="proj-lng">Longitude</Label>
+              <Input
+                id="proj-lng"
+                type="number"
+                step="any"
+                value={formData.longitude}
+                onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
+                placeholder="-73.9855"
+                data-testid="input-project-lng"
+              />
+            </div>
+
+            <div className="space-y-2 col-span-full">
+              <Label htmlFor="proj-address">Address</Label>
+              <Input
+                id="proj-address"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                placeholder="350 5th Avenue, New York, NY 10118"
+                data-testid="input-project-address"
+              />
+            </div>
+
+            <div className="space-y-2 col-span-full">
+              <Label htmlFor="proj-short">Short Description</Label>
+              <Input
+                id="proj-short"
+                value={formData.shortDescription}
+                onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
+                placeholder="Luxury condominiums in the heart of Midtown Manhattan"
+                data-testid="input-project-short-desc"
+              />
+            </div>
+
+            <div className="space-y-2 col-span-full">
+              <Label htmlFor="proj-desc">Full Description</Label>
+              <Textarea
+                id="proj-desc"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Detailed description of the project and its amenities..."
+                className="h-32"
+                data-testid="input-project-description"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDialog}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={
+                !formData.name || 
+                !formData.developerId || 
+                !formData.cityId || 
+                !formData.districtId || 
+                !formData.latitude || 
+                !formData.longitude || 
+                createMutation.isPending || 
+                updateMutation.isPending
+              }
+              data-testid="button-save-project"
+            >
+              {createMutation.isPending || updateMutation.isPending
+                ? "Saving..."
+                : editingProject
+                ? "Update"
+                : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

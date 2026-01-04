@@ -69,6 +69,64 @@ export function registerAdminRoutes(app: Express) {
     }
   });
 
+  app.post("/api/admin/projects", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const projectSchema = z.object({
+        name: z.string().min(1),
+        developerId: z.number(),
+        cityId: z.number(),
+        districtId: z.number(),
+        latitude: z.number(),
+        longitude: z.number(),
+        address: z.string().optional().nullable(),
+        shortDescription: z.string().optional().nullable(),
+        description: z.string().optional().nullable(),
+        priceFrom: z.number().optional().nullable(),
+        currency: z.string().default("USD"),
+      });
+      const data = projectSchema.parse(req.body);
+      const project = await storage.createProject(data as any);
+      await createAuditLog(req, "project_create", "project", project.id.toString(), { name: data.name });
+      res.status(201).json(project);
+    } catch (error) {
+      console.error("Error creating project:", error);
+      res.status(500).json({ message: "Failed to create project" });
+    }
+  });
+
+  app.patch("/api/admin/projects/:id", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { id } = idParamSchema.parse(req.params);
+      const projectSchema = z.object({
+        name: z.string().min(1).optional(),
+        developerId: z.number().optional(),
+        cityId: z.number().optional(),
+        districtId: z.number().optional(),
+        latitude: z.number().optional(),
+        longitude: z.number().optional(),
+        address: z.string().optional().nullable(),
+        shortDescription: z.string().optional().nullable(),
+        description: z.string().optional().nullable(),
+        priceFrom: z.number().optional().nullable(),
+        currency: z.string().optional(),
+      });
+      const data = projectSchema.parse(req.body);
+      
+      // We need updateProject in adminStorage or storage. Let's check storage.ts
+      const existingProject = await storage.getProject(id);
+      if (!existingProject) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+
+      const updated = await adminStorage.updateProject(id, data);
+      await createAuditLog(req, "project_update", "project", id.toString(), data);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating project:", error);
+      res.status(500).json({ message: "Failed to update project" });
+    }
+  });
+
   app.delete("/api/admin/projects/:id", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
       const { id } = idParamSchema.parse(req.params);

@@ -1,26 +1,58 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { format } from "date-fns";
+import {
+  LayoutDashboard,
+  Users,
+  Building2,
+  Landmark,
+  FolderKanban,
+  Download,
+  Upload,
+  Plus,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Ban,
+  ShieldCheck,
+  FileText,
+  RefreshCw,
+  TrendingUp,
+  Activity,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Users, Building2, Shield, FileText, Upload, Activity, Ban, Trash2, RotateCcw, Search, RefreshCw } from "lucide-react";
-import { format } from "date-fns";
 
-interface DashboardStats {
-  userCount: number;
-  projectCount: number;
-  bannedUserCount: number;
-  ipBanCount: number;
-  recentImports: any[];
-  recentAuditLogs: any[];
-}
+type AdminSection = "dashboard" | "users" | "projects" | "developers" | "banks";
 
 interface PaginatedResult<T> {
   data: T[];
@@ -30,193 +62,579 @@ interface PaginatedResult<T> {
   totalPages: number;
 }
 
+interface DashboardStats {
+  userCount: number;
+  projectCount: number;
+  bannedUserCount: number;
+  ipBanCount: number;
+  developerCount: number;
+  bankCount: number;
+  recentImports: any[];
+}
+
+interface User {
+  id: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  profileImageUrl: string | null;
+  role: string;
+  bannedAt: string | null;
+  bannedReason: string | null;
+  createdAt: string | null;
+}
+
+interface Developer {
+  id: number;
+  name: string;
+  logoUrl: string | null;
+  description: string | null;
+  projectCount?: number;
+}
+
+interface Bank {
+  id: number;
+  name: string;
+  logoUrl: string | null;
+  description: string | null;
+}
+
+interface Project {
+  id: number;
+  name: string;
+  developerId: number;
+  cityId: number;
+  districtId: number;
+  address: string | null;
+  shortDescription: string | null;
+  priceFrom: string | null;
+  currency: string | null;
+  deletedAt: string | null;
+}
+
+const navigationItems = [
+  {
+    section: "Product Analytics",
+    items: [
+      { id: "dashboard" as AdminSection, label: "Dashboard", icon: LayoutDashboard },
+      { id: "users" as AdminSection, label: "Users", icon: Users },
+    ],
+  },
+  {
+    section: "Data",
+    items: [
+      { id: "projects" as AdminSection, label: "Projects", icon: FolderKanban },
+      { id: "developers" as AdminSection, label: "Developers", icon: Building2 },
+      { id: "banks" as AdminSection, label: "Banks", icon: Landmark },
+    ],
+  },
+];
+
 export default function AdminPage() {
-  const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState("dashboard");
-  const [searchQuery, setSearchQuery] = useState("");
-  const { toast } = useToast();
+  const { user, isLoading: authLoading } = useAuth();
+  const [, navigate] = useLocation();
+  const [activeSection, setActiveSection] = useState<AdminSection>("dashboard");
 
-  const { data: user, isLoading: userLoading } = useQuery<any>({
-    queryKey: ["/api/auth/user"],
-  });
-
-  const { data: dashboardStats, isLoading: statsLoading, refetch: refetchStats } = useQuery<DashboardStats>({
-    queryKey: ["/api/admin/dashboard"],
-    enabled: user?.role === "admin",
-    retry: false,
-  });
-
-  if (userLoading) {
+  if (authLoading) {
     return (
-      <div className="flex items-center justify-center h-full" data-testid="loading-admin">
+      <div className="flex items-center justify-center h-full" data-testid="admin-loading">
         <div className="text-muted-foreground">Loading...</div>
       </div>
     );
   }
 
-  if (!user) {
+  if (!user || user.role !== "admin") {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-4" data-testid="admin-login-required">
-        <p className="text-muted-foreground">Please log in to access the admin console.</p>
-        <Button onClick={() => setLocation("/")} data-testid="button-go-home">Go Home</Button>
-      </div>
-    );
-  }
-
-  if (user?.role !== "admin") {
-    return (
-      <div className="flex flex-col items-center justify-center h-full gap-4" data-testid="admin-access-denied">
-        <Shield className="h-16 w-16 text-muted-foreground" />
+      <div className="flex flex-col items-center justify-center h-full gap-4" data-testid="admin-unauthorized">
+        <ShieldCheck className="h-12 w-12 text-muted-foreground" />
         <h2 className="text-xl font-semibold">Access Denied</h2>
-        <p className="text-muted-foreground">You do not have permission to access this page.</p>
-        <Button onClick={() => setLocation("/")} data-testid="button-go-home">Go Home</Button>
+        <p className="text-muted-foreground">You need administrator privileges to access this page.</p>
+        <Button onClick={() => navigate("/")} data-testid="button-go-home">
+          Go to Home
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-6" data-testid="admin-console">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Admin Console</h1>
-          <p className="text-muted-foreground">Manage projects, users, and security settings</p>
+    <div className="flex h-full" data-testid="admin-page">
+      <AdminSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
+      <main className="flex-1 overflow-auto bg-background">
+        <div className="p-6 max-w-[1400px] mx-auto">
+          {activeSection === "dashboard" && <DashboardSection />}
+          {activeSection === "users" && <UsersSection />}
+          {activeSection === "projects" && <ProjectsSection />}
+          {activeSection === "developers" && <DevelopersSection />}
+          {activeSection === "banks" && <BanksSection />}
         </div>
-        <Button variant="outline" size="icon" onClick={() => refetchStats()} data-testid="button-refresh-stats">
-          <RefreshCw className="h-4 w-4" />
-        </Button>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-6 mb-6" data-testid="admin-tabs">
-          <TabsTrigger value="dashboard" data-testid="tab-dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="projects" data-testid="tab-projects">Projects</TabsTrigger>
-          <TabsTrigger value="users" data-testid="tab-users">Users</TabsTrigger>
-          <TabsTrigger value="ip-bans" data-testid="tab-ip-bans">IP Bans</TabsTrigger>
-          <TabsTrigger value="imports" data-testid="tab-imports">Imports</TabsTrigger>
-          <TabsTrigger value="audit" data-testid="tab-audit">Audit Log</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="dashboard">
-          <DashboardTab stats={dashboardStats} isLoading={statsLoading} />
-        </TabsContent>
-
-        <TabsContent value="projects">
-          <ProjectsTab searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-        </TabsContent>
-
-        <TabsContent value="users">
-          <UsersTab searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-        </TabsContent>
-
-        <TabsContent value="ip-bans">
-          <IpBansTab />
-        </TabsContent>
-
-        <TabsContent value="imports">
-          <ImportsTab />
-        </TabsContent>
-
-        <TabsContent value="audit">
-          <AuditLogTab />
-        </TabsContent>
-      </Tabs>
+      </main>
     </div>
   );
 }
 
-function DashboardTab({ stats, isLoading }: { stats?: DashboardStats; isLoading: boolean }) {
-  if (isLoading || !stats) {
-    return <div className="text-muted-foreground">Loading dashboard...</div>;
+function AdminSidebar({
+  activeSection,
+  onSectionChange,
+}: {
+  activeSection: AdminSection;
+  onSectionChange: (section: AdminSection) => void;
+}) {
+  return (
+    <aside className="w-64 border-r bg-sidebar flex flex-col" data-testid="admin-sidebar">
+      <div className="p-4 border-b">
+        <h1 className="font-semibold text-lg flex items-center gap-2">
+          <ShieldCheck className="h-5 w-5 text-primary" />
+          Admin Panel
+        </h1>
+      </div>
+      <ScrollArea className="flex-1 p-3">
+        {navigationItems.map((group) => (
+          <div key={group.section} className="mb-4">
+            <p className="px-3 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              {group.section}
+            </p>
+            <div className="space-y-1">
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeSection === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => onSectionChange(item.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "text-sidebar-foreground hover-elevate"
+                    }`}
+                    data-testid={`nav-${item.id}`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </ScrollArea>
+    </aside>
+  );
+}
+
+function DashboardSection() {
+  const { data: stats, isLoading } = useQuery<DashboardStats>({
+    queryKey: ["/api/admin/dashboard"],
+  });
+
+  if (isLoading) {
+    return <SectionSkeleton title="Dashboard" />;
   }
 
+  const kpiCards = [
+    { label: "Total Users", value: stats?.userCount || 0, icon: Users, color: "text-blue-500" },
+    { label: "Total Projects", value: stats?.projectCount || 0, icon: FolderKanban, color: "text-green-500" },
+    { label: "Developers", value: stats?.developerCount || 0, icon: Building2, color: "text-purple-500" },
+    { label: "Banks", value: stats?.bankCount || 0, icon: Landmark, color: "text-orange-500" },
+    { label: "Banned Users", value: stats?.bannedUserCount || 0, icon: Ban, color: "text-red-500" },
+    { label: "IP Bans", value: stats?.ipBanCount || 0, icon: ShieldCheck, color: "text-yellow-500" },
+  ];
+
   return (
-    <div className="space-y-6" data-testid="dashboard-content">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card data-testid="stat-users">
-          <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-user-count">{stats.userCount}</div>
-          </CardContent>
-        </Card>
+    <div className="space-y-6" data-testid="dashboard-section">
+      <SectionHeader title="Dashboard" description="Overview of your platform's key metrics" />
 
-        <Card data-testid="stat-projects">
-          <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-            <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-project-count">{stats.projectCount}</div>
-          </CardContent>
-        </Card>
-
-        <Card data-testid="stat-banned">
-          <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-            <CardTitle className="text-sm font-medium">Banned Users</CardTitle>
-            <Ban className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-banned-count">{stats.bannedUserCount}</div>
-          </CardContent>
-        </Card>
-
-        <Card data-testid="stat-ip-bans">
-          <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-            <CardTitle className="text-sm font-medium">IP Bans</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-ip-ban-count">{stats.ipBanCount}</div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {kpiCards.map((kpi) => {
+          const Icon = kpi.icon;
+          return (
+            <Card key={kpi.label} data-testid={`kpi-${kpi.label.toLowerCase().replace(/\s+/g, "-")}`}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <Icon className={`h-4 w-4 ${kpi.color}`} />
+                  <TrendingUp className="h-3 w-3 text-muted-foreground" />
+                </div>
+                <p className="text-2xl font-bold">{kpi.value.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">{kpi.label}</p>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
-      <Card data-testid="recent-activity">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Recent Activity
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-64">
-            {stats.recentAuditLogs?.length > 0 ? (
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Recent Imports
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {stats?.recentImports && stats.recentImports.length > 0 ? (
               <div className="space-y-3">
-                {stats.recentAuditLogs.map((log: any) => (
-                  <div key={log.id} className="flex items-center justify-between gap-4 text-sm" data-testid={`audit-log-${log.id}`}>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant="outline" className="text-xs">{log.actionType}</Badge>
-                      {log.targetType && <span className="text-muted-foreground">{log.targetType}</span>}
+                {stats.recentImports.map((job: any) => (
+                  <div
+                    key={job.id}
+                    className="flex items-center justify-between gap-3 text-sm"
+                    data-testid={`import-${job.id}`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <span className="truncate">{job.filename}</span>
                     </div>
-                    <span className="text-muted-foreground text-xs whitespace-nowrap">
-                      {format(new Date(log.createdAt), "MMM d, h:mm a")}
-                    </span>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Badge
+                        variant={
+                          job.status === "completed"
+                            ? "default"
+                            : job.status === "failed"
+                            ? "destructive"
+                            : "secondary"
+                        }
+                        className="text-xs"
+                      >
+                        {job.status}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {format(new Date(job.createdAt), "MMM d")}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground text-sm">No recent activity</p>
+              <p className="text-sm text-muted-foreground">No recent imports</p>
             )}
-          </ScrollArea>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Quick Actions
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <QuickExportButton entity="projects" label="Export Projects" />
+            <QuickExportButton entity="developers" label="Export Developers" />
+            <QuickExportButton entity="banks" label="Export Banks" />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
 
-function ProjectsTab({ searchQuery, setSearchQuery }: { searchQuery: string; setSearchQuery: (v: string) => void }) {
+function QuickExportButton({ entity, label }: { entity: string; label: string }) {
+  const { toast } = useToast();
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const response = await fetch(`/api/admin/${entity}/export`, { credentials: "include" });
+      if (!response.ok) throw new Error("Export failed");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${entity}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      toast({ title: `${label} downloaded successfully` });
+    } catch (error) {
+      toast({ title: "Export failed", variant: "destructive" });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  return (
+    <Button
+      variant="outline"
+      className="w-full justify-start"
+      onClick={handleExport}
+      disabled={isExporting}
+      data-testid={`button-export-${entity}`}
+    >
+      <Download className="h-4 w-4 mr-2" />
+      {isExporting ? "Exporting..." : label}
+    </Button>
+  );
+}
+
+function UsersSection() {
   const { toast } = useToast();
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [banDialogOpen, setBanDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [banReason, setBanReason] = useState("");
 
-  const { data: projects, isLoading, refetch } = useQuery<PaginatedResult<any>>({
-    queryKey: ["/api/admin/projects", page, searchQuery],
+  const { data: users, isLoading, refetch } = useQuery<PaginatedResult<User>>({
+    queryKey: ["/api/admin/users", page, search],
+  });
+
+  const banMutation = useMutation({
+    mutationFn: async ({ userId, reason }: { userId: string; reason: string }) => {
+      return apiRequest("POST", `/api/admin/users/${userId}/ban`, { reason });
+    },
+    onSuccess: () => {
+      toast({ title: "User banned successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      setBanDialogOpen(false);
+      setSelectedUser(null);
+      setBanReason("");
+    },
+    onError: () => {
+      toast({ title: "Failed to ban user", variant: "destructive" });
+    },
+  });
+
+  const unbanMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return apiRequest("POST", `/api/admin/users/${userId}/unban`);
+    },
+    onSuccess: () => {
+      toast({ title: "User unbanned successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    },
+    onError: () => {
+      toast({ title: "Failed to unban user", variant: "destructive" });
+    },
+  });
+
+  const promoteToAdminMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return apiRequest("PATCH", `/api/admin/users/${userId}/role`, { role: "admin" });
+    },
+    onSuccess: () => {
+      toast({ title: "User promoted to admin" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    },
+    onError: () => {
+      toast({ title: "Failed to promote user", variant: "destructive" });
+    },
+  });
+
+  const demoteFromAdminMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return apiRequest("PATCH", `/api/admin/users/${userId}/role`, { role: "user" });
+    },
+    onSuccess: () => {
+      toast({ title: "User demoted from admin" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    },
+    onError: () => {
+      toast({ title: "Failed to demote user", variant: "destructive" });
+    },
+  });
+
+  const handleBanClick = (user: User) => {
+    setSelectedUser(user);
+    setBanDialogOpen(true);
+  };
+
+  if (isLoading) {
+    return <SectionSkeleton title="Users" />;
+  }
+
+  return (
+    <div className="space-y-6" data-testid="users-section">
+      <SectionHeader title="Users" description="Manage user accounts and permissions" />
+
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by email or name..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            className="pl-9"
+            data-testid="input-search-users"
+          />
+        </div>
+        <Button variant="outline" size="icon" onClick={() => refetch()} data-testid="button-refresh-users">
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="border-b bg-muted/30">
+                <tr>
+                  <th className="text-left p-4 font-medium text-sm">User</th>
+                  <th className="text-left p-4 font-medium text-sm">Email</th>
+                  <th className="text-left p-4 font-medium text-sm">Role</th>
+                  <th className="text-left p-4 font-medium text-sm">Status</th>
+                  <th className="text-left p-4 font-medium text-sm">Joined</th>
+                  <th className="text-right p-4 font-medium text-sm">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users?.data?.map((user) => (
+                  <tr key={user.id} className="border-b last:border-0" data-testid={`user-row-${user.id}`}>
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={user.profileImageUrl || undefined} />
+                          <AvatarFallback>
+                            {user.firstName?.[0] || user.email?.[0] || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">
+                          {user.firstName || user.lastName
+                            ? `${user.firstName || ""} ${user.lastName || ""}`.trim()
+                            : "—"}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="p-4 text-sm text-muted-foreground">{user.email || "—"}</td>
+                    <td className="p-4">
+                      <Badge variant={user.role === "admin" ? "default" : "secondary"}>
+                        {user.role}
+                      </Badge>
+                    </td>
+                    <td className="p-4">
+                      {user.bannedAt ? (
+                        <Badge variant="destructive">Banned</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-green-600 border-green-300">
+                          Active
+                        </Badge>
+                      )}
+                    </td>
+                    <td className="p-4 text-sm text-muted-foreground">
+                      {user.createdAt ? format(new Date(user.createdAt), "MMM d, yyyy") : "—"}
+                    </td>
+                    <td className="p-4 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" data-testid={`button-user-actions-${user.id}`}>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {user.bannedAt ? (
+                            <DropdownMenuItem
+                              onClick={() => unbanMutation.mutate(user.id)}
+                              data-testid={`button-unban-${user.id}`}
+                            >
+                              <ShieldCheck className="h-4 w-4 mr-2" />
+                              Unban User
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              onClick={() => handleBanClick(user)}
+                              className="text-destructive"
+                              data-testid={`button-ban-${user.id}`}
+                            >
+                              <Ban className="h-4 w-4 mr-2" />
+                              Ban User
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          {user.role === "admin" ? (
+                            <DropdownMenuItem
+                              onClick={() => demoteFromAdminMutation.mutate(user.id)}
+                              data-testid={`button-demote-${user.id}`}
+                            >
+                              <Users className="h-4 w-4 mr-2" />
+                              Demote from Admin
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              onClick={() => promoteToAdminMutation.mutate(user.id)}
+                              data-testid={`button-promote-${user.id}`}
+                            >
+                              <ShieldCheck className="h-4 w-4 mr-2" />
+                              Promote to Admin
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                ))}
+                {(!users?.data || users.data.length === 0) && (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                      No users found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Pagination
+        page={page}
+        totalPages={users?.totalPages || 1}
+        onPageChange={setPage}
+      />
+
+      <Dialog open={banDialogOpen} onOpenChange={setBanDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ban User</DialogTitle>
+            <DialogDescription>
+              Ban {selectedUser?.email || "this user"} from accessing the platform.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="ban-reason">Reason for ban</Label>
+              <Textarea
+                id="ban-reason"
+                placeholder="Enter reason for banning this user..."
+                value={banReason}
+                onChange={(e) => setBanReason(e.target.value)}
+                data-testid="input-ban-reason"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBanDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => selectedUser && banMutation.mutate({ userId: selectedUser.id, reason: banReason })}
+              disabled={banMutation.isPending}
+              data-testid="button-confirm-ban"
+            >
+              {banMutation.isPending ? "Banning..." : "Ban User"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function ProjectsSection() {
+  const { toast } = useToast();
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [importFile, setImportFile] = useState<File | null>(null);
+
+  const { data: projects, isLoading, refetch } = useQuery<PaginatedResult<Project>>({
+    queryKey: ["/api/admin/projects", page, search],
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/admin/projects/${id}`);
+      return apiRequest("DELETE", `/api/admin/projects/${id}`);
     },
     onSuccess: () => {
       toast({ title: "Project deleted" });
@@ -227,536 +645,807 @@ function ProjectsTab({ searchQuery, setSearchQuery }: { searchQuery: string; set
     },
   });
 
-  return (
-    <div className="space-y-4" data-testid="projects-tab">
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search projects..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-            data-testid="input-search-projects"
-          />
-        </div>
-        <Button variant="outline" onClick={() => refetch()} data-testid="button-refresh-projects">
-          <RefreshCw className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {isLoading ? (
-        <div className="text-muted-foreground">Loading projects...</div>
-      ) : (
-        <Card>
-          <CardContent className="p-0">
-            <ScrollArea className="h-96">
-              <table className="w-full">
-                <thead className="border-b sticky top-0 bg-card">
-                  <tr>
-                    <th className="text-left p-3 font-medium">Name</th>
-                    <th className="text-left p-3 font-medium">Developer</th>
-                    <th className="text-left p-3 font-medium">City</th>
-                    <th className="text-left p-3 font-medium">Status</th>
-                    <th className="text-right p-3 font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {projects?.data?.map((project: any) => (
-                    <tr key={project.id} className="border-b" data-testid={`project-row-${project.id}`}>
-                      <td className="p-3">{project.name}</td>
-                      <td className="p-3">{project.developer?.name}</td>
-                      <td className="p-3">{project.city?.name}</td>
-                      <td className="p-3">
-                        <Badge variant={project.deletedAt ? "destructive" : "secondary"}>
-                          {project.deletedAt ? "Deleted" : "Active"}
-                        </Badge>
-                      </td>
-                      <td className="p-3 text-right">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" disabled={deleteMutation.isPending} data-testid={`button-delete-project-${project.id}`}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Project</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete "{project.name}"? This action can be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => deleteMutation.mutate(project.id)}>Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
-}
-
-function UsersTab({ searchQuery, setSearchQuery }: { searchQuery: string; setSearchQuery: (v: string) => void }) {
-  const { toast } = useToast();
-  const [page, setPage] = useState(1);
-
-  const { data: users, isLoading, refetch } = useQuery<PaginatedResult<any>>({
-    queryKey: ["/api/admin/users", page, searchQuery],
-  });
-
-  const banMutation = useMutation({
-    mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
-      await apiRequest("POST", `/api/admin/users/${id}/ban`, { reason });
+  const restoreMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest("POST", `/api/admin/projects/${id}/restore`);
     },
     onSuccess: () => {
-      toast({ title: "User banned" });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({ title: "Project restored" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
     },
     onError: () => {
-      toast({ title: "Failed to ban user", variant: "destructive" });
+      toast({ title: "Failed to restore project", variant: "destructive" });
     },
   });
 
-  const unbanMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await apiRequest("POST", `/api/admin/users/${id}/unban`);
-    },
-    onSuccess: () => {
-      toast({ title: "User unbanned" });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-    },
-    onError: () => {
-      toast({ title: "Failed to unban user", variant: "destructive" });
-    },
-  });
-
-  return (
-    <div className="space-y-4" data-testid="users-tab">
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search users..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-            data-testid="input-search-users"
-          />
-        </div>
-        <Button variant="outline" onClick={() => refetch()} data-testid="button-refresh-users">
-          <RefreshCw className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {isLoading ? (
-        <div className="text-muted-foreground">Loading users...</div>
-      ) : (
-        <Card>
-          <CardContent className="p-0">
-            <ScrollArea className="h-96">
-              <table className="w-full">
-                <thead className="border-b sticky top-0 bg-card">
-                  <tr>
-                    <th className="text-left p-3 font-medium">Email</th>
-                    <th className="text-left p-3 font-medium">Name</th>
-                    <th className="text-left p-3 font-medium">Role</th>
-                    <th className="text-left p-3 font-medium">Status</th>
-                    <th className="text-right p-3 font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users?.data?.map((user: any) => (
-                    <tr key={user.id} className="border-b" data-testid={`user-row-${user.id}`}>
-                      <td className="p-3">{user.email || "N/A"}</td>
-                      <td className="p-3">{`${user.firstName || ""} ${user.lastName || ""}`.trim() || "N/A"}</td>
-                      <td className="p-3">
-                        <Badge variant={user.role === "admin" ? "default" : "secondary"}>{user.role}</Badge>
-                      </td>
-                      <td className="p-3">
-                        <Badge variant={user.bannedAt ? "destructive" : "outline"}>
-                          {user.bannedAt ? "Banned" : "Active"}
-                        </Badge>
-                      </td>
-                      <td className="p-3 text-right">
-                        {user.bannedAt ? (
-                          <Button variant="ghost" size="sm" onClick={() => unbanMutation.mutate(user.id)} disabled={unbanMutation.isPending} data-testid={`button-unban-user-${user.id}`}>
-                            <RotateCcw className="h-4 w-4 mr-1" />
-                            Unban
-                          </Button>
-                        ) : (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm" disabled={banMutation.isPending} data-testid={`button-ban-user-${user.id}`}>
-                                <Ban className="h-4 w-4 mr-1" />
-                                Ban
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Ban User</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to ban this user? They will not be able to access protected features.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => banMutation.mutate({ id: user.id })}>Ban</AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
-}
-
-function IpBansTab() {
-  const { toast } = useToast();
-  const [newIp, setNewIp] = useState("");
-  const [newReason, setNewReason] = useState("");
-
-  const { data: ipBans, isLoading, refetch } = useQuery<PaginatedResult<any>>({
-    queryKey: ["/api/admin/ip-bans"],
-  });
-
-  const addMutation = useMutation({
+  const importMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/admin/ip-bans", { ip: newIp, reason: newReason || undefined });
-    },
-    onSuccess: () => {
-      toast({ title: "IP banned" });
-      setNewIp("");
-      setNewReason("");
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/ip-bans"] });
-    },
-    onError: () => {
-      toast({ title: "Failed to ban IP", variant: "destructive" });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await apiRequest("DELETE", `/api/admin/ip-bans/${id}`);
-    },
-    onSuccess: () => {
-      toast({ title: "IP ban removed" });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/ip-bans"] });
-    },
-    onError: () => {
-      toast({ title: "Failed to remove ban", variant: "destructive" });
-    },
-  });
-
-  return (
-    <div className="space-y-4" data-testid="ip-bans-tab">
-      <Card>
-        <CardHeader>
-          <CardTitle>Add IP Ban</CardTitle>
-        </CardHeader>
-        <CardContent className="flex gap-4 flex-wrap">
-          <Input
-            placeholder="IP Address (e.g., 192.168.1.1)"
-            value={newIp}
-            onChange={(e) => setNewIp(e.target.value)}
-            className="flex-1 min-w-48"
-            data-testid="input-ban-ip"
-          />
-          <Input
-            placeholder="Reason (optional)"
-            value={newReason}
-            onChange={(e) => setNewReason(e.target.value)}
-            className="flex-1 min-w-48"
-            data-testid="input-ban-reason"
-          />
-          <Button onClick={() => addMutation.mutate()} disabled={!newIp || addMutation.isPending} data-testid="button-add-ip-ban">
-            Add Ban
-          </Button>
-        </CardContent>
-      </Card>
-
-      {isLoading ? (
-        <div className="text-muted-foreground">Loading IP bans...</div>
-      ) : (
-        <Card>
-          <CardContent className="p-0">
-            <ScrollArea className="h-80">
-              <table className="w-full">
-                <thead className="border-b sticky top-0 bg-card">
-                  <tr>
-                    <th className="text-left p-3 font-medium">IP Address</th>
-                    <th className="text-left p-3 font-medium">Reason</th>
-                    <th className="text-left p-3 font-medium">Created</th>
-                    <th className="text-left p-3 font-medium">Expires</th>
-                    <th className="text-right p-3 font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ipBans?.data?.map((ban: any) => (
-                    <tr key={ban.id} className="border-b" data-testid={`ip-ban-row-${ban.id}`}>
-                      <td className="p-3 font-mono text-sm">{ban.ip}</td>
-                      <td className="p-3">{ban.reason || "N/A"}</td>
-                      <td className="p-3 text-sm text-muted-foreground">
-                        {format(new Date(ban.createdAt), "MMM d, yyyy")}
-                      </td>
-                      <td className="p-3 text-sm text-muted-foreground">
-                        {ban.expiresAt ? format(new Date(ban.expiresAt), "MMM d, yyyy") : "Never"}
-                      </td>
-                      <td className="p-3 text-right">
-                        <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(ban.id)} disabled={deleteMutation.isPending} data-testid={`button-remove-ip-ban-${ban.id}`}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                  {ipBans?.data?.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="p-3 text-center text-muted-foreground">No IP bans</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
-}
-
-function ImportsTab() {
-  const { toast } = useToast();
-  const [file, setFile] = useState<File | null>(null);
-
-  const { data: imports, isLoading, refetch } = useQuery<PaginatedResult<any>>({
-    queryKey: ["/api/admin/imports"],
-  });
-
-  const uploadMutation = useMutation({
-    mutationFn: async () => {
-      if (!file) return;
+      if (!importFile) return;
       const formData = new FormData();
-      formData.append("file", file);
-      
-      const csrfCookie = document.cookie.split(";").find(c => c.trim().startsWith("_csrf="));
+      formData.append("file", importFile);
+      const csrfCookie = document.cookie.split(";").find((c) => c.trim().startsWith("_csrf="));
       const csrfToken = csrfCookie?.split("=")[1] || "";
-      
       const response = await fetch("/api/admin/projects/import", {
         method: "POST",
         body: formData,
         credentials: "include",
-        headers: {
-          "x-csrf-token": csrfToken,
-        },
+        headers: { "x-csrf-token": csrfToken },
       });
-      if (!response.ok) throw new Error("Upload failed");
+      if (!response.ok) throw new Error("Import failed");
       return response.json();
     },
     onSuccess: () => {
-      toast({ title: "Import started" });
-      setFile(null);
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/imports"] });
+      toast({ title: "Import started successfully" });
+      setImportFile(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
     },
     onError: () => {
-      toast({ title: "Failed to start import", variant: "destructive" });
+      toast({ title: "Import failed", variant: "destructive" });
     },
   });
 
+  const handleExport = async () => {
+    try {
+      const response = await fetch("/api/admin/projects/export", { credentials: "include" });
+      if (!response.ok) throw new Error("Export failed");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "projects.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      toast({ title: "Projects exported successfully" });
+    } catch (error) {
+      toast({ title: "Export failed", variant: "destructive" });
+    }
+  };
+
+  if (isLoading) {
+    return <SectionSkeleton title="Projects" />;
+  }
+
   return (
-    <div className="space-y-4" data-testid="imports-tab">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Import Projects from CSV
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex gap-4 flex-wrap">
+    <div className="space-y-6" data-testid="projects-section">
+      <SectionHeader title="Projects" description="Manage real estate projects" />
+
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search projects..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            className="pl-9"
+            data-testid="input-search-projects"
+          />
+        </div>
+        <Button variant="outline" onClick={handleExport} data-testid="button-export-projects">
+          <Download className="h-4 w-4 mr-2" />
+          Export CSV
+        </Button>
+        <div className="flex items-center gap-2">
           <Input
             type="file"
             accept=".csv"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-            className="flex-1"
-            data-testid="input-csv-file"
+            onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+            className="max-w-48"
+            data-testid="input-import-projects"
           />
-          <Button onClick={() => uploadMutation.mutate()} disabled={!file || uploadMutation.isPending} data-testid="button-upload-csv">
-            {uploadMutation.isPending ? "Uploading..." : "Upload & Import"}
+          <Button
+            onClick={() => importMutation.mutate()}
+            disabled={!importFile || importMutation.isPending}
+            data-testid="button-import-projects"
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            {importMutation.isPending ? "Importing..." : "Import"}
           </Button>
+        </div>
+        <Button variant="outline" size="icon" onClick={() => refetch()} data-testid="button-refresh-projects">
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="border-b bg-muted/30">
+                <tr>
+                  <th className="text-left p-4 font-medium text-sm">ID</th>
+                  <th className="text-left p-4 font-medium text-sm">Name</th>
+                  <th className="text-left p-4 font-medium text-sm">Price</th>
+                  <th className="text-left p-4 font-medium text-sm">Status</th>
+                  <th className="text-right p-4 font-medium text-sm">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {projects?.data?.map((project) => (
+                  <tr key={project.id} className="border-b last:border-0" data-testid={`project-row-${project.id}`}>
+                    <td className="p-4 text-sm text-muted-foreground">#{project.id}</td>
+                    <td className="p-4">
+                      <div>
+                        <p className="font-medium">{project.name}</p>
+                        {project.address && (
+                          <p className="text-sm text-muted-foreground truncate max-w-xs">
+                            {project.address}
+                          </p>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      {project.priceFrom
+                        ? `${Number(project.priceFrom).toLocaleString()} ${project.currency || ""}`
+                        : "—"}
+                    </td>
+                    <td className="p-4">
+                      {project.deletedAt ? (
+                        <Badge variant="destructive">Deleted</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-green-600 border-green-300">
+                          Active
+                        </Badge>
+                      )}
+                    </td>
+                    <td className="p-4 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" data-testid={`button-project-actions-${project.id}`}>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {project.deletedAt ? (
+                            <DropdownMenuItem
+                              onClick={() => restoreMutation.mutate(project.id)}
+                              data-testid={`button-restore-${project.id}`}
+                            >
+                              <RefreshCw className="h-4 w-4 mr-2" />
+                              Restore
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              onClick={() => deleteMutation.mutate(project.id)}
+                              className="text-destructive"
+                              data-testid={`button-delete-${project.id}`}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                ))}
+                {(!projects?.data || projects.data.length === 0) && (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                      No projects found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </CardContent>
       </Card>
 
-      {isLoading ? (
-        <div className="text-muted-foreground">Loading imports...</div>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Import History</span>
-              <Button variant="outline" size="sm" onClick={() => refetch()} data-testid="button-refresh-imports">
-                <RefreshCw className="h-4 w-4" />
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <ScrollArea className="h-80">
-              <table className="w-full">
-                <thead className="border-b sticky top-0 bg-card">
-                  <tr>
-                    <th className="text-left p-3 font-medium">Filename</th>
-                    <th className="text-left p-3 font-medium">Status</th>
-                    <th className="text-left p-3 font-medium">Progress</th>
-                    <th className="text-left p-3 font-medium">Created</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {imports?.data?.map((job: any) => (
-                    <tr key={job.id} className="border-b" data-testid={`import-row-${job.id}`}>
-                      <td className="p-3">{job.filename}</td>
-                      <td className="p-3">
-                        <Badge variant={
-                          job.status === "completed" ? "default" :
-                          job.status === "failed" ? "destructive" : "secondary"
-                        }>
-                          {job.status}
-                        </Badge>
-                      </td>
-                      <td className="p-3 text-sm">
-                        {job.insertedCount || 0} added, {job.failedCount || 0} failed
-                      </td>
-                      <td className="p-3 text-sm text-muted-foreground">
-                        {format(new Date(job.createdAt), "MMM d, h:mm a")}
-                      </td>
-                    </tr>
-                  ))}
-                  {imports?.data?.length === 0 && (
-                    <tr>
-                      <td colSpan={4} className="p-3 text-center text-muted-foreground">No imports yet</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      )}
+      <Pagination page={page} totalPages={projects?.totalPages || 1} onPageChange={setPage} />
     </div>
   );
 }
 
-function AuditLogTab() {
+function DevelopersSection() {
+  const { toast } = useToast();
   const [page, setPage] = useState(1);
-  const [userId, setUserId] = useState("");
-  const [actionType, setActionType] = useState("");
+  const [search, setSearch] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingDeveloper, setEditingDeveloper] = useState<Developer | null>(null);
+  const [formData, setFormData] = useState({ name: "", logoUrl: "", description: "" });
 
-  const { data: logs, isLoading, refetch } = useQuery<PaginatedResult<any>>({
-    queryKey: ["/api/admin/audit-logs", page, userId, actionType],
+  const { data: developers, isLoading, refetch } = useQuery<PaginatedResult<Developer>>({
+    queryKey: ["/api/admin/developers", page, search],
   });
 
+  const createMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      return apiRequest("POST", "/api/admin/developers", data);
+    },
+    onSuccess: () => {
+      toast({ title: "Developer created" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/developers"] });
+      closeDialog();
+    },
+    onError: () => {
+      toast({ title: "Failed to create developer", variant: "destructive" });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: typeof formData }) => {
+      return apiRequest("PATCH", `/api/admin/developers/${id}`, data);
+    },
+    onSuccess: () => {
+      toast({ title: "Developer updated" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/developers"] });
+      closeDialog();
+    },
+    onError: () => {
+      toast({ title: "Failed to update developer", variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest("DELETE", `/api/admin/developers/${id}`);
+    },
+    onSuccess: () => {
+      toast({ title: "Developer deleted" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/developers"] });
+    },
+    onError: () => {
+      toast({ title: "Failed to delete developer", variant: "destructive" });
+    },
+  });
+
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setEditingDeveloper(null);
+    setFormData({ name: "", logoUrl: "", description: "" });
+  };
+
+  const openCreateDialog = () => {
+    setEditingDeveloper(null);
+    setFormData({ name: "", logoUrl: "", description: "" });
+    setDialogOpen(true);
+  };
+
+  const openEditDialog = (developer: Developer) => {
+    setEditingDeveloper(developer);
+    setFormData({
+      name: developer.name,
+      logoUrl: developer.logoUrl || "",
+      description: developer.description || "",
+    });
+    setDialogOpen(true);
+  };
+
+  const handleSubmit = () => {
+    if (editingDeveloper) {
+      updateMutation.mutate({ id: editingDeveloper.id, data: formData });
+    } else {
+      createMutation.mutate(formData);
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      const response = await fetch("/api/admin/developers/export", { credentials: "include" });
+      if (!response.ok) throw new Error("Export failed");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "developers.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      toast({ title: "Developers exported successfully" });
+    } catch (error) {
+      toast({ title: "Export failed", variant: "destructive" });
+    }
+  };
+
+  if (isLoading) {
+    return <SectionSkeleton title="Developers" />;
+  }
+
   return (
-    <div className="space-y-4" data-testid="audit-log-tab">
+    <div className="space-y-6" data-testid="developers-section">
+      <SectionHeader title="Developers" description="Manage property developers" />
+
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search developers..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            className="pl-9"
+            data-testid="input-search-developers"
+          />
+        </div>
+        <Button onClick={openCreateDialog} data-testid="button-add-developer">
+          <Plus className="h-4 w-4 mr-2" />
+          Add Developer
+        </Button>
+        <Button variant="outline" onClick={handleExport} data-testid="button-export-developers">
+          <Download className="h-4 w-4 mr-2" />
+          Export CSV
+        </Button>
+        <Button variant="outline" size="icon" onClick={() => refetch()} data-testid="button-refresh-developers">
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+      </div>
+
       <Card>
-        <CardHeader>
-          <CardTitle>Filter Activity</CardTitle>
-        </CardHeader>
-        <CardContent className="flex gap-4 flex-wrap">
-          <div className="flex-1 min-w-48">
-            <label className="text-xs font-medium mb-1 block">Admin/User ID</label>
-            <Input
-              placeholder="Filter by User ID"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              data-testid="input-filter-userid"
-            />
-          </div>
-          <div className="flex-1 min-w-48">
-            <label className="text-xs font-medium mb-1 block">Action Type</label>
-            <Input
-              placeholder="e.g. user_ban, project_delete"
-              value={actionType}
-              onChange={(e) => setActionType(e.target.value)}
-              data-testid="input-filter-action"
-            />
-          </div>
-          <div className="flex items-end">
-            <Button variant="outline" onClick={() => refetch()} data-testid="button-refresh-audit">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="border-b bg-muted/30">
+                <tr>
+                  <th className="text-left p-4 font-medium text-sm">Developer</th>
+                  <th className="text-left p-4 font-medium text-sm">Description</th>
+                  <th className="text-left p-4 font-medium text-sm">Projects</th>
+                  <th className="text-right p-4 font-medium text-sm">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {developers?.data?.map((developer) => (
+                  <tr key={developer.id} className="border-b last:border-0" data-testid={`developer-row-${developer.id}`}>
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={developer.logoUrl || undefined} />
+                          <AvatarFallback>
+                            <Building2 className="h-5 w-5" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">{developer.name}</span>
+                      </div>
+                    </td>
+                    <td className="p-4 text-sm text-muted-foreground max-w-xs truncate">
+                      {developer.description || "—"}
+                    </td>
+                    <td className="p-4">
+                      <Badge variant="secondary">{developer.projectCount || 0} projects</Badge>
+                    </td>
+                    <td className="p-4 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" data-testid={`button-developer-actions-${developer.id}`}>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => openEditDialog(developer)}
+                            data-testid={`button-edit-developer-${developer.id}`}
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => deleteMutation.mutate(developer.id)}
+                            className="text-destructive"
+                            data-testid={`button-delete-developer-${developer.id}`}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                ))}
+                {(!developers?.data || developers.data.length === 0) && (
+                  <tr>
+                    <td colSpan={4} className="p-8 text-center text-muted-foreground">
+                      No developers found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </CardContent>
       </Card>
 
-      {isLoading ? (
-        <div className="text-muted-foreground">Loading audit logs...</div>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Audit Log
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <ScrollArea className="h-96">
-              <table className="w-full">
-                <thead className="border-b sticky top-0 bg-card">
-                  <tr>
-                    <th className="text-left p-3 font-medium">Action</th>
-                    <th className="text-left p-3 font-medium">Target</th>
-                    <th className="text-left p-3 font-medium">User ID</th>
-                    <th className="text-left p-3 font-medium">IP</th>
-                    <th className="text-left p-3 font-medium">Time</th>
-                    <th className="text-left p-3 font-medium">Details</th>
+      <Pagination page={page} totalPages={developers?.totalPages || 1} onPageChange={setPage} />
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingDeveloper ? "Edit Developer" : "Add Developer"}</DialogTitle>
+            <DialogDescription>
+              {editingDeveloper ? "Update developer details" : "Create a new property developer"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="dev-name">Name</Label>
+              <Input
+                id="dev-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Developer name"
+                data-testid="input-developer-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dev-logo">Logo URL</Label>
+              <Input
+                id="dev-logo"
+                value={formData.logoUrl}
+                onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
+                placeholder="https://..."
+                data-testid="input-developer-logo"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dev-desc">Description</Label>
+              <Textarea
+                id="dev-desc"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Brief description..."
+                data-testid="input-developer-description"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDialog}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={!formData.name || createMutation.isPending || updateMutation.isPending}
+              data-testid="button-save-developer"
+            >
+              {createMutation.isPending || updateMutation.isPending
+                ? "Saving..."
+                : editingDeveloper
+                ? "Update"
+                : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function BanksSection() {
+  const { toast } = useToast();
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingBank, setEditingBank] = useState<Bank | null>(null);
+  const [formData, setFormData] = useState({ name: "", logoUrl: "", description: "" });
+
+  const { data: banks, isLoading, refetch } = useQuery<PaginatedResult<Bank>>({
+    queryKey: ["/api/admin/banks", page, search],
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      return apiRequest("POST", "/api/admin/banks", data);
+    },
+    onSuccess: () => {
+      toast({ title: "Bank created" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/banks"] });
+      closeDialog();
+    },
+    onError: () => {
+      toast({ title: "Failed to create bank", variant: "destructive" });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: typeof formData }) => {
+      return apiRequest("PATCH", `/api/admin/banks/${id}`, data);
+    },
+    onSuccess: () => {
+      toast({ title: "Bank updated" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/banks"] });
+      closeDialog();
+    },
+    onError: () => {
+      toast({ title: "Failed to update bank", variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest("DELETE", `/api/admin/banks/${id}`);
+    },
+    onSuccess: () => {
+      toast({ title: "Bank deleted" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/banks"] });
+    },
+    onError: () => {
+      toast({ title: "Failed to delete bank", variant: "destructive" });
+    },
+  });
+
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setEditingBank(null);
+    setFormData({ name: "", logoUrl: "", description: "" });
+  };
+
+  const openCreateDialog = () => {
+    setEditingBank(null);
+    setFormData({ name: "", logoUrl: "", description: "" });
+    setDialogOpen(true);
+  };
+
+  const openEditDialog = (bank: Bank) => {
+    setEditingBank(bank);
+    setFormData({
+      name: bank.name,
+      logoUrl: bank.logoUrl || "",
+      description: bank.description || "",
+    });
+    setDialogOpen(true);
+  };
+
+  const handleSubmit = () => {
+    if (editingBank) {
+      updateMutation.mutate({ id: editingBank.id, data: formData });
+    } else {
+      createMutation.mutate(formData);
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      const response = await fetch("/api/admin/banks/export", { credentials: "include" });
+      if (!response.ok) throw new Error("Export failed");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "banks.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      toast({ title: "Banks exported successfully" });
+    } catch (error) {
+      toast({ title: "Export failed", variant: "destructive" });
+    }
+  };
+
+  if (isLoading) {
+    return <SectionSkeleton title="Banks" />;
+  }
+
+  return (
+    <div className="space-y-6" data-testid="banks-section">
+      <SectionHeader title="Banks" description="Manage partner banks" />
+
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search banks..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            className="pl-9"
+            data-testid="input-search-banks"
+          />
+        </div>
+        <Button onClick={openCreateDialog} data-testid="button-add-bank">
+          <Plus className="h-4 w-4 mr-2" />
+          Add Bank
+        </Button>
+        <Button variant="outline" onClick={handleExport} data-testid="button-export-banks">
+          <Download className="h-4 w-4 mr-2" />
+          Export CSV
+        </Button>
+        <Button variant="outline" size="icon" onClick={() => refetch()} data-testid="button-refresh-banks">
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="border-b bg-muted/30">
+                <tr>
+                  <th className="text-left p-4 font-medium text-sm">Bank</th>
+                  <th className="text-left p-4 font-medium text-sm">Description</th>
+                  <th className="text-right p-4 font-medium text-sm">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {banks?.data?.map((bank) => (
+                  <tr key={bank.id} className="border-b last:border-0" data-testid={`bank-row-${bank.id}`}>
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={bank.logoUrl || undefined} />
+                          <AvatarFallback>
+                            <Landmark className="h-5 w-5" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">{bank.name}</span>
+                      </div>
+                    </td>
+                    <td className="p-4 text-sm text-muted-foreground max-w-xs truncate">
+                      {bank.description || "—"}
+                    </td>
+                    <td className="p-4 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" data-testid={`button-bank-actions-${bank.id}`}>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => openEditDialog(bank)}
+                            data-testid={`button-edit-bank-${bank.id}`}
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => deleteMutation.mutate(bank.id)}
+                            className="text-destructive"
+                            data-testid={`button-delete-bank-${bank.id}`}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {logs?.data?.map((log: any) => (
-                    <tr key={log.id} className="border-b" data-testid={`audit-row-${log.id}`}>
-                      <td className="p-3">
-                        <Badge variant="outline">{log.actionType}</Badge>
-                      </td>
-                      <td className="p-3 text-sm">{log.targetType} {log.targetId}</td>
-                      <td className="p-3 text-sm font-mono truncate max-w-32">{log.adminId}</td>
-                      <td className="p-3 text-sm font-mono">{log.ip || "N/A"}</td>
-                      <td className="p-3 text-sm text-muted-foreground whitespace-nowrap">
-                        {format(new Date(log.createdAt), "MMM d, h:mm a")}
-                      </td>
-                      <td className="p-3">
-                        {log.metadataJson && (
-                          <div className="text-xs text-muted-foreground max-w-48 truncate" title={JSON.stringify(log.metadataJson)}>
-                            {JSON.stringify(log.metadataJson)}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                  {logs?.data?.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="p-3 text-center text-muted-foreground">No audit logs found</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      )}
+                ))}
+                {(!banks?.data || banks.data.length === 0) && (
+                  <tr>
+                    <td colSpan={3} className="p-8 text-center text-muted-foreground">
+                      No banks found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Pagination page={page} totalPages={banks?.totalPages || 1} onPageChange={setPage} />
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingBank ? "Edit Bank" : "Add Bank"}</DialogTitle>
+            <DialogDescription>
+              {editingBank ? "Update bank details" : "Create a new partner bank"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="bank-name">Name</Label>
+              <Input
+                id="bank-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Bank name"
+                data-testid="input-bank-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bank-logo">Logo URL</Label>
+              <Input
+                id="bank-logo"
+                value={formData.logoUrl}
+                onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
+                placeholder="https://..."
+                data-testid="input-bank-logo"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bank-desc">Description</Label>
+              <Textarea
+                id="bank-desc"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Brief description..."
+                data-testid="input-bank-description"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDialog}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={!formData.name || createMutation.isPending || updateMutation.isPending}
+              data-testid="button-save-bank"
+            >
+              {createMutation.isPending || updateMutation.isPending
+                ? "Saving..."
+                : editingBank
+                ? "Update"
+                : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function SectionHeader({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="mb-2">
+      <h2 className="text-2xl font-semibold" data-testid={`section-title-${title.toLowerCase()}`}>
+        {title}
+      </h2>
+      <p className="text-muted-foreground text-sm">{description}</p>
+    </div>
+  );
+}
+
+function SectionSkeleton({ title }: { title: string }) {
+  return (
+    <div className="space-y-6">
+      <SectionHeader title={title} description="Loading..." />
+      <Card>
+        <CardContent className="p-8 text-center text-muted-foreground">
+          <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
+          Loading data...
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function Pagination({
+  page,
+  totalPages,
+  onPageChange,
+}: {
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}) {
+  if (totalPages <= 1) return null;
+
+  return (
+    <div className="flex items-center justify-center gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => onPageChange(page - 1)}
+        disabled={page <= 1}
+        data-testid="button-prev-page"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Previous
+      </Button>
+      <span className="text-sm text-muted-foreground px-4">
+        Page {page} of {totalPages}
+      </span>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => onPageChange(page + 1)}
+        disabled={page >= totalPages}
+        data-testid="button-next-page"
+      >
+        Next
+        <ChevronRight className="h-4 w-4" />
+      </Button>
     </div>
   );
 }

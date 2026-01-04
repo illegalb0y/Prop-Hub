@@ -23,9 +23,16 @@ import {
   RefreshCw,
   TrendingUp,
   Activity,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -52,7 +59,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 
-type AdminSection = "dashboard" | "users" | "projects" | "developers" | "banks";
+type AdminSection =
+  | "dashboard"
+  | "users"
+  | "projects"
+  | "developers"
+  | "banks"
+  | "security"
+  | "ip-bans";
 
 interface PaginatedResult<T> {
   data: T[];
@@ -126,11 +140,25 @@ interface District {
   cityId: number;
 }
 
+interface IpBan {
+  id: string;
+  ip: string;
+  cidr: string | null;
+  reason: string | null;
+  createdAt: string;
+  expiresAt: string | null;
+  createdByAdminId: string | null;
+}
+
 const navigationItems = [
   {
     section: "Product Analytics",
     items: [
-      { id: "dashboard" as AdminSection, label: "Dashboard", icon: LayoutDashboard },
+      {
+        id: "dashboard" as AdminSection,
+        label: "Dashboard",
+        icon: LayoutDashboard,
+      },
       { id: "users" as AdminSection, label: "Users", icon: Users },
     ],
   },
@@ -138,8 +166,23 @@ const navigationItems = [
     section: "Data",
     items: [
       { id: "projects" as AdminSection, label: "Projects", icon: FolderKanban },
-      { id: "developers" as AdminSection, label: "Developers", icon: Building2 },
+      {
+        id: "developers" as AdminSection,
+        label: "Developers",
+        icon: Building2,
+      },
       { id: "banks" as AdminSection, label: "Banks", icon: Landmark },
+    ],
+  },
+  {
+    section: "Security",
+    items: [
+      {
+        id: "security" as AdminSection,
+        label: "Security Overview",
+        icon: Shield,
+      },
+      { id: "ip-bans" as AdminSection, label: "IP Bans", icon: Ban },
     ],
   },
 ];
@@ -151,7 +194,10 @@ export default function AdminPage() {
 
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center h-full" data-testid="admin-loading">
+      <div
+        className="flex items-center justify-center h-full"
+        data-testid="admin-loading"
+      >
         <div className="text-muted-foreground">Loading...</div>
       </div>
     );
@@ -167,7 +213,10 @@ export default function AdminPage() {
 
   return (
     <div className="flex h-full" data-testid="admin-page">
-      <AdminSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
+      <AdminSidebar
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
+      />
       <main className="flex-1 overflow-auto bg-background">
         <div className="p-6 max-w-[1400px] mx-auto">
           {activeSection === "dashboard" && <DashboardSection />}
@@ -175,6 +224,8 @@ export default function AdminPage() {
           {activeSection === "projects" && <ProjectsSection />}
           {activeSection === "developers" && <DevelopersSection />}
           {activeSection === "banks" && <BanksSection />}
+          {activeSection === "security" && <SecuritySection />}
+          {activeSection === "ip-bans" && <IpBansSection />}
         </div>
       </main>
     </div>
@@ -189,7 +240,10 @@ function AdminSidebar({
   onSectionChange: (section: AdminSection) => void;
 }) {
   return (
-    <aside className="w-64 border-r bg-sidebar flex flex-col" data-testid="admin-sidebar">
+    <aside
+      className="w-64 border-r bg-sidebar flex flex-col"
+      data-testid="admin-sidebar"
+    >
       <div className="p-4 border-b">
         <h1 className="font-semibold text-lg flex items-center gap-2">
           <ShieldCheck className="h-5 w-5 text-primary" />
@@ -240,29 +294,67 @@ function DashboardSection() {
   }
 
   const kpiCards = [
-    { label: "Total Users", value: stats?.userCount || 0, icon: Users, color: "text-blue-500" },
-    { label: "Total Projects", value: stats?.projectCount || 0, icon: FolderKanban, color: "text-green-500" },
-    { label: "Developers", value: stats?.developerCount || 0, icon: Building2, color: "text-purple-500" },
-    { label: "Banks", value: stats?.bankCount || 0, icon: Landmark, color: "text-orange-500" },
-    { label: "Banned Users", value: stats?.bannedUserCount || 0, icon: Ban, color: "text-red-500" },
-    { label: "IP Bans", value: stats?.ipBanCount || 0, icon: ShieldCheck, color: "text-yellow-500" },
+    {
+      label: "Total Users",
+      value: stats?.userCount || 0,
+      icon: Users,
+      color: "text-blue-500",
+    },
+    {
+      label: "Total Projects",
+      value: stats?.projectCount || 0,
+      icon: FolderKanban,
+      color: "text-green-500",
+    },
+    {
+      label: "Developers",
+      value: stats?.developerCount || 0,
+      icon: Building2,
+      color: "text-purple-500",
+    },
+    {
+      label: "Banks",
+      value: stats?.bankCount || 0,
+      icon: Landmark,
+      color: "text-orange-500",
+    },
+    {
+      label: "Banned Users",
+      value: stats?.bannedUserCount || 0,
+      icon: Ban,
+      color: "text-red-500",
+    },
+    {
+      label: "IP Bans",
+      value: stats?.ipBanCount || 0,
+      icon: ShieldCheck,
+      color: "text-yellow-500",
+    },
   ];
 
   return (
     <div className="space-y-6" data-testid="dashboard-section">
-      <SectionHeader title="Dashboard" description="Overview of your platform's key metrics" />
+      <SectionHeader
+        title="Dashboard"
+        description="Overview of your platform's key metrics"
+      />
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {kpiCards.map((kpi) => {
           const Icon = kpi.icon;
           return (
-            <Card key={kpi.label} data-testid={`kpi-${kpi.label.toLowerCase().replace(/\s+/g, "-")}`}>
+            <Card
+              key={kpi.label}
+              data-testid={`kpi-${kpi.label.toLowerCase().replace(/\s+/g, "-")}`}
+            >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <Icon className={`h-4 w-4 ${kpi.color}`} />
                   <TrendingUp className="h-3 w-3 text-muted-foreground" />
                 </div>
-                <p className="text-2xl font-bold">{kpi.value.toLocaleString()}</p>
+                <p className="text-2xl font-bold">
+                  {kpi.value.toLocaleString()}
+                </p>
                 <p className="text-xs text-muted-foreground">{kpi.label}</p>
               </CardContent>
             </Card>
@@ -297,8 +389,8 @@ function DashboardSection() {
                           job.status === "completed"
                             ? "default"
                             : job.status === "failed"
-                            ? "destructive"
-                            : "secondary"
+                              ? "destructive"
+                              : "secondary"
                         }
                         className="text-xs"
                       >
@@ -335,14 +427,22 @@ function DashboardSection() {
   );
 }
 
-function QuickExportButton({ entity, label }: { entity: string; label: string }) {
+function QuickExportButton({
+  entity,
+  label,
+}: {
+  entity: string;
+  label: string;
+}) {
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const response = await fetch(`/api/admin/${entity}/export`, { credentials: "include" });
+      const response = await fetch(`/api/admin/${entity}/export`, {
+        credentials: "include",
+      });
       if (!response.ok) throw new Error("Export failed");
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -383,22 +483,38 @@ function UsersSection() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [banReason, setBanReason] = useState("");
 
-  const { data: users, isLoading, refetch } = useQuery<PaginatedResult<User>>({
+  const {
+    data: users,
+    isLoading,
+    refetch,
+  } = useQuery<PaginatedResult<User>>({
     queryKey: ["/api/admin/users", { page, search }],
     queryFn: async ({ queryKey }) => {
-      const [_base, params] = queryKey as [string, { page: number; search: string }];
+      const [_base, params] = queryKey as [
+        string,
+        { page: number; search: string },
+      ];
       const searchParams = new URLSearchParams({
         page: params.page.toString(),
         limit: "10",
         search: params.search,
       });
-      const res = await apiRequest("GET", `/api/admin/users?${searchParams.toString()}`);
+      const res = await apiRequest(
+        "GET",
+        `/api/admin/users?${searchParams.toString()}`,
+      );
       return res.json();
     },
   });
 
   const banMutation = useMutation({
-    mutationFn: async ({ userId, reason }: { userId: string; reason: string }) => {
+    mutationFn: async ({
+      userId,
+      reason,
+    }: {
+      userId: string;
+      reason: string;
+    }) => {
       return apiRequest("POST", `/api/admin/users/${userId}/ban`, { reason });
     },
     onSuccess: () => {
@@ -428,7 +544,9 @@ function UsersSection() {
 
   const promoteToAdminMutation = useMutation({
     mutationFn: async (userId: string) => {
-      return apiRequest("PATCH", `/api/admin/users/${userId}/role`, { role: "admin" });
+      return apiRequest("PATCH", `/api/admin/users/${userId}/role`, {
+        role: "admin",
+      });
     },
     onSuccess: () => {
       toast({ title: "User promoted to admin" });
@@ -441,7 +559,9 @@ function UsersSection() {
 
   const demoteFromAdminMutation = useMutation({
     mutationFn: async (userId: string) => {
-      return apiRequest("PATCH", `/api/admin/users/${userId}/role`, { role: "user" });
+      return apiRequest("PATCH", `/api/admin/users/${userId}/role`, {
+        role: "user",
+      });
     },
     onSuccess: () => {
       toast({ title: "User demoted from admin" });
@@ -463,7 +583,10 @@ function UsersSection() {
 
   return (
     <div className="space-y-6" data-testid="users-section">
-      <SectionHeader title="Users" description="Manage user accounts and permissions" />
+      <SectionHeader
+        title="Users"
+        description="Manage user accounts and permissions"
+      />
 
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-64">
@@ -479,7 +602,12 @@ function UsersSection() {
             data-testid="input-search-users"
           />
         </div>
-        <Button variant="outline" size="icon" onClick={() => refetch()} data-testid="button-refresh-users">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => refetch()}
+          data-testid="button-refresh-users"
+        >
           <RefreshCw className="h-4 w-4" />
         </Button>
       </div>
@@ -495,16 +623,24 @@ function UsersSection() {
                   <th className="text-left p-4 font-medium text-sm">Role</th>
                   <th className="text-left p-4 font-medium text-sm">Status</th>
                   <th className="text-left p-4 font-medium text-sm">Joined</th>
-                  <th className="text-right p-4 font-medium text-sm">Actions</th>
+                  <th className="text-right p-4 font-medium text-sm">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {users?.data?.map((user) => (
-                  <tr key={user.id} className="border-b last:border-0" data-testid={`user-row-${user.id}`}>
+                  <tr
+                    key={user.id}
+                    className="border-b last:border-0"
+                    data-testid={`user-row-${user.id}`}
+                  >
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={user.profileImageUrl || undefined} />
+                          <AvatarImage
+                            src={user.profileImageUrl || undefined}
+                          />
                           <AvatarFallback>
                             {user.firstName?.[0] || user.email?.[0] || "U"}
                           </AvatarFallback>
@@ -516,9 +652,15 @@ function UsersSection() {
                         </span>
                       </div>
                     </td>
-                    <td className="p-4 text-sm text-muted-foreground">{user.email || "—"}</td>
+                    <td className="p-4 text-sm text-muted-foreground">
+                      {user.email || "—"}
+                    </td>
                     <td className="p-4">
-                      <Badge variant={user.role === "admin" ? "default" : "secondary"}>
+                      <Badge
+                        variant={
+                          user.role === "admin" ? "default" : "secondary"
+                        }
+                      >
                         {user.role}
                       </Badge>
                     </td>
@@ -526,18 +668,27 @@ function UsersSection() {
                       {user.bannedAt ? (
                         <Badge variant="destructive">Banned</Badge>
                       ) : (
-                        <Badge variant="outline" className="text-green-600 border-green-300">
+                        <Badge
+                          variant="outline"
+                          className="text-green-600 border-green-300"
+                        >
                           Active
                         </Badge>
                       )}
                     </td>
                     <td className="p-4 text-sm text-muted-foreground">
-                      {user.createdAt ? format(new Date(user.createdAt), "MMM d, yyyy") : "—"}
+                      {user.createdAt
+                        ? format(new Date(user.createdAt), "MMM d, yyyy")
+                        : "—"}
                     </td>
                     <td className="p-4 text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" data-testid={`button-user-actions-${user.id}`}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            data-testid={`button-user-actions-${user.id}`}
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -563,7 +714,9 @@ function UsersSection() {
                           <DropdownMenuSeparator />
                           {user.role === "admin" ? (
                             <DropdownMenuItem
-                              onClick={() => demoteFromAdminMutation.mutate(user.id)}
+                              onClick={() =>
+                                demoteFromAdminMutation.mutate(user.id)
+                              }
                               data-testid={`button-demote-${user.id}`}
                             >
                               <Users className="h-4 w-4 mr-2" />
@@ -571,7 +724,9 @@ function UsersSection() {
                             </DropdownMenuItem>
                           ) : (
                             <DropdownMenuItem
-                              onClick={() => promoteToAdminMutation.mutate(user.id)}
+                              onClick={() =>
+                                promoteToAdminMutation.mutate(user.id)
+                              }
                               data-testid={`button-promote-${user.id}`}
                             >
                               <ShieldCheck className="h-4 w-4 mr-2" />
@@ -585,7 +740,10 @@ function UsersSection() {
                 ))}
                 {(!users?.data || users.data.length === 0) && (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                    <td
+                      colSpan={6}
+                      className="p-8 text-center text-muted-foreground"
+                    >
                       No users found
                     </td>
                   </tr>
@@ -607,7 +765,8 @@ function UsersSection() {
           <DialogHeader>
             <DialogTitle>Ban User</DialogTitle>
             <DialogDescription>
-              Ban {selectedUser?.email || "this user"} from accessing the platform.
+              Ban {selectedUser?.email || "this user"} from accessing the
+              platform.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -628,7 +787,13 @@ function UsersSection() {
             </Button>
             <Button
               variant="destructive"
-              onClick={() => selectedUser && banMutation.mutate({ userId: selectedUser.id, reason: banReason })}
+              onClick={() =>
+                selectedUser &&
+                banMutation.mutate({
+                  userId: selectedUser.id,
+                  reason: banReason,
+                })
+              }
               disabled={banMutation.isPending}
               data-testid="button-confirm-ban"
             >
@@ -662,16 +827,26 @@ function ProjectsSection() {
     currency: "USD",
   });
 
-  const { data: projects, isLoading, refetch } = useQuery<PaginatedResult<Project>>({
+  const {
+    data: projects,
+    isLoading,
+    refetch,
+  } = useQuery<PaginatedResult<Project>>({
     queryKey: ["/api/admin/projects", { page, search }],
     queryFn: async ({ queryKey }) => {
-      const [_base, params] = queryKey as [string, { page: number; search: string }];
+      const [_base, params] = queryKey as [
+        string,
+        { page: number; search: string },
+      ];
       const searchParams = new URLSearchParams({
         page: params.page.toString(),
         limit: "10",
         search: params.search,
       });
-      const res = await apiRequest("GET", `/api/admin/projects?${searchParams.toString()}`);
+      const res = await apiRequest(
+        "GET",
+        `/api/admin/projects?${searchParams.toString()}`,
+      );
       return res.json();
     },
   });
@@ -748,7 +923,9 @@ function ProjectsSection() {
       if (!importFile) return;
       const formData = new FormData();
       formData.append("file", importFile);
-      const csrfCookie = document.cookie.split(";").find((c) => c.trim().startsWith("_csrf="));
+      const csrfCookie = document.cookie
+        .split(";")
+        .find((c) => c.trim().startsWith("_csrf="));
       const csrfToken = csrfCookie?.split("=")[1] || "";
       const response = await fetch("/api/admin/projects/import", {
         method: "POST",
@@ -771,7 +948,9 @@ function ProjectsSection() {
 
   const handleExport = async () => {
     try {
-      const response = await fetch("/api/admin/projects/export", { credentials: "include" });
+      const response = await fetch("/api/admin/projects/export", {
+        credentials: "include",
+      });
       if (!response.ok) throw new Error("Export failed");
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -866,8 +1045,8 @@ function ProjectsSection() {
 
   return (
     <div className="space-y-6" data-testid="projects-section">
-      <SectionHeader 
-        title="Projects" 
+      <SectionHeader
+        title="Projects"
         description="Manage real estate projects"
         actions={
           <Button onClick={openCreateDialog} data-testid="button-add-project">
@@ -892,7 +1071,11 @@ function ProjectsSection() {
           />
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleExport} data-testid="button-export-projects">
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            data-testid="button-export-projects"
+          >
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
@@ -914,7 +1097,12 @@ function ProjectsSection() {
               Import CSV
             </Button>
           </div>
-          <Button variant="outline" size="icon" onClick={() => refetch()} data-testid="button-refresh-projects">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => refetch()}
+            data-testid="button-refresh-projects"
+          >
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
@@ -930,13 +1118,21 @@ function ProjectsSection() {
                   <th className="text-left p-4 font-medium text-sm">Name</th>
                   <th className="text-left p-4 font-medium text-sm">Price</th>
                   <th className="text-left p-4 font-medium text-sm">Status</th>
-                  <th className="text-right p-4 font-medium text-sm">Actions</th>
+                  <th className="text-right p-4 font-medium text-sm">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {projects?.data?.map((project) => (
-                  <tr key={project.id} className="border-b last:border-0" data-testid={`project-row-${project.id}`}>
-                    <td className="p-4 text-sm text-muted-foreground">#{project.id}</td>
+                  <tr
+                    key={project.id}
+                    className="border-b last:border-0"
+                    data-testid={`project-row-${project.id}`}
+                  >
+                    <td className="p-4 text-sm text-muted-foreground">
+                      #{project.id}
+                    </td>
                     <td className="p-4">
                       <div>
                         <p className="font-medium">{project.name}</p>
@@ -956,7 +1152,10 @@ function ProjectsSection() {
                       {project.deletedAt ? (
                         <Badge variant="destructive">Deleted</Badge>
                       ) : (
-                        <Badge variant="outline" className="text-green-600 border-green-300">
+                        <Badge
+                          variant="outline"
+                          className="text-green-600 border-green-300"
+                        >
                           Active
                         </Badge>
                       )}
@@ -964,7 +1163,11 @@ function ProjectsSection() {
                     <td className="p-4 text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" data-testid={`button-project-actions-${project.id}`}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            data-testid={`button-project-actions-${project.id}`}
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -1001,7 +1204,10 @@ function ProjectsSection() {
                 ))}
                 {(!projects?.data || projects.data.length === 0) && (
                   <tr>
-                    <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                    <td
+                      colSpan={5}
+                      className="p-8 text-center text-muted-foreground"
+                    >
                       No projects found
                     </td>
                   </tr>
@@ -1012,14 +1218,22 @@ function ProjectsSection() {
         </CardContent>
       </Card>
 
-      <Pagination page={page} totalPages={projects?.totalPages || 1} onPageChange={setPage} />
+      <Pagination
+        page={page}
+        totalPages={projects?.totalPages || 1}
+        onPageChange={setPage}
+      />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingProject ? "Edit Project" : "Add Project"}</DialogTitle>
+            <DialogTitle>
+              {editingProject ? "Edit Project" : "Add Project"}
+            </DialogTitle>
             <DialogDescription>
-              {editingProject ? "Update project details" : "Create a new real estate project"}
+              {editingProject
+                ? "Update project details"
+                : "Create a new real estate project"}
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
@@ -1028,7 +1242,9 @@ function ProjectsSection() {
               <Input
                 id="proj-name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 placeholder="The Manhattan Tower"
                 data-testid="input-project-name"
               />
@@ -1040,12 +1256,16 @@ function ProjectsSection() {
                 id="proj-developer"
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 value={formData.developerId}
-                onChange={(e) => setFormData({ ...formData, developerId: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, developerId: e.target.value })
+                }
                 data-testid="select-project-developer"
               >
                 <option value="">Select Developer</option>
                 {developers?.map((dev) => (
-                  <option key={dev.id} value={dev.id}>{dev.name}</option>
+                  <option key={dev.id} value={dev.id}>
+                    {dev.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -1056,12 +1276,20 @@ function ProjectsSection() {
                 id="proj-city"
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 value={formData.cityId}
-                onChange={(e) => setFormData({ ...formData, cityId: e.target.value, districtId: "" })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    cityId: e.target.value,
+                    districtId: "",
+                  })
+                }
                 data-testid="select-project-city"
               >
                 <option value="">Select City</option>
                 {cities?.map((city) => (
-                  <option key={city.id} value={city.id}>{city.name}</option>
+                  <option key={city.id} value={city.id}>
+                    {city.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -1072,13 +1300,17 @@ function ProjectsSection() {
                 id="proj-district"
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 value={formData.districtId}
-                onChange={(e) => setFormData({ ...formData, districtId: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, districtId: e.target.value })
+                }
                 disabled={!formData.cityId}
                 data-testid="select-project-district"
               >
                 <option value="">Select District</option>
                 {districts?.map((district) => (
-                  <option key={district.id} value={district.id}>{district.name}</option>
+                  <option key={district.id} value={district.id}>
+                    {district.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -1089,7 +1321,9 @@ function ProjectsSection() {
                 id="proj-price"
                 type="number"
                 value={formData.priceFrom}
-                onChange={(e) => setFormData({ ...formData, priceFrom: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, priceFrom: e.target.value })
+                }
                 placeholder="1500000"
                 data-testid="input-project-price"
               />
@@ -1100,7 +1334,9 @@ function ProjectsSection() {
               <Input
                 id="proj-currency"
                 value={formData.currency}
-                onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, currency: e.target.value })
+                }
                 placeholder="USD"
                 data-testid="input-project-currency"
               />
@@ -1113,7 +1349,9 @@ function ProjectsSection() {
                 type="number"
                 step="any"
                 value={formData.latitude}
-                onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, latitude: e.target.value })
+                }
                 placeholder="40.758"
                 data-testid="input-project-lat"
               />
@@ -1126,7 +1364,9 @@ function ProjectsSection() {
                 type="number"
                 step="any"
                 value={formData.longitude}
-                onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, longitude: e.target.value })
+                }
                 placeholder="-73.9855"
                 data-testid="input-project-lng"
               />
@@ -1137,7 +1377,9 @@ function ProjectsSection() {
               <Input
                 id="proj-address"
                 value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, address: e.target.value })
+                }
                 placeholder="350 5th Avenue, New York, NY 10118"
                 data-testid="input-project-address"
               />
@@ -1148,7 +1390,9 @@ function ProjectsSection() {
               <Input
                 id="proj-short"
                 value={formData.shortDescription}
-                onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, shortDescription: e.target.value })
+                }
                 placeholder="Luxury condominiums in the heart of Midtown Manhattan"
                 data-testid="input-project-short-desc"
               />
@@ -1159,7 +1403,9 @@ function ProjectsSection() {
               <Textarea
                 id="proj-desc"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 placeholder="Detailed description of the project and its amenities..."
                 className="h-32"
                 data-testid="input-project-description"
@@ -1173,13 +1419,13 @@ function ProjectsSection() {
             <Button
               onClick={handleSubmit}
               disabled={
-                !formData.name || 
-                !formData.developerId || 
-                !formData.cityId || 
-                !formData.districtId || 
-                !formData.latitude || 
-                !formData.longitude || 
-                createMutation.isPending || 
+                !formData.name ||
+                !formData.developerId ||
+                !formData.cityId ||
+                !formData.districtId ||
+                !formData.latitude ||
+                !formData.longitude ||
+                createMutation.isPending ||
                 updateMutation.isPending
               }
               data-testid="button-save-project"
@@ -1187,8 +1433,8 @@ function ProjectsSection() {
               {createMutation.isPending || updateMutation.isPending
                 ? "Saving..."
                 : editingProject
-                ? "Update"
-                : "Create"}
+                  ? "Update"
+                  : "Create"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1202,20 +1448,36 @@ function DevelopersSection() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingDeveloper, setEditingDeveloper] = useState<Developer | null>(null);
-  const [formData, setFormData] = useState({ name: "", logoUrl: "", description: "" });
+  const [editingDeveloper, setEditingDeveloper] = useState<Developer | null>(
+    null,
+  );
+  const [formData, setFormData] = useState({
+    name: "",
+    logoUrl: "",
+    description: "",
+  });
   const [importFile, setImportFile] = useState<File | null>(null);
 
-  const { data: developers, isLoading, refetch } = useQuery<PaginatedResult<Developer>>({
+  const {
+    data: developers,
+    isLoading,
+    refetch,
+  } = useQuery<PaginatedResult<Developer>>({
     queryKey: ["/api/admin/developers", { page, search }],
     queryFn: async ({ queryKey }) => {
-      const [_base, params] = queryKey as [string, { page: number; search: string }];
+      const [_base, params] = queryKey as [
+        string,
+        { page: number; search: string },
+      ];
       const searchParams = new URLSearchParams({
         page: params.page.toString(),
         limit: "10",
         search: params.search,
       });
-      const res = await apiRequest("GET", `/api/admin/developers?${searchParams.toString()}`);
+      const res = await apiRequest(
+        "GET",
+        `/api/admin/developers?${searchParams.toString()}`,
+      );
       return res.json();
     },
   });
@@ -1266,7 +1528,9 @@ function DevelopersSection() {
       if (!importFile) return;
       const formData = new FormData();
       formData.append("file", importFile);
-      const csrfCookie = document.cookie.split(";").find((c) => c.trim().startsWith("_csrf="));
+      const csrfCookie = document.cookie
+        .split(";")
+        .find((c) => c.trim().startsWith("_csrf="));
       const csrfToken = csrfCookie?.split("=")[1] || "";
       const response = await fetch("/api/admin/developers/import", {
         method: "POST",
@@ -1319,7 +1583,9 @@ function DevelopersSection() {
 
   const handleExport = async () => {
     try {
-      const response = await fetch("/api/admin/developers/export", { credentials: "include" });
+      const response = await fetch("/api/admin/developers/export", {
+        credentials: "include",
+      });
       if (!response.ok) throw new Error("Export failed");
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -1342,8 +1608,8 @@ function DevelopersSection() {
 
   return (
     <div className="space-y-6" data-testid="developers-section">
-      <SectionHeader 
-        title="Developers" 
+      <SectionHeader
+        title="Developers"
         description="Manage property developers"
         actions={
           <Button onClick={openCreateDialog} data-testid="button-add-developer">
@@ -1368,7 +1634,11 @@ function DevelopersSection() {
           />
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleExport} data-testid="button-export-developers">
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            data-testid="button-export-developers"
+          >
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
@@ -1390,7 +1660,12 @@ function DevelopersSection() {
               Import CSV
             </Button>
           </div>
-          <Button variant="outline" size="icon" onClick={() => refetch()} data-testid="button-refresh-developers">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => refetch()}
+            data-testid="button-refresh-developers"
+          >
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
@@ -1402,15 +1677,27 @@ function DevelopersSection() {
             <table className="w-full">
               <thead className="border-b bg-muted/30">
                 <tr>
-                  <th className="text-left p-4 font-medium text-sm">Developer</th>
-                  <th className="text-left p-4 font-medium text-sm">Description</th>
-                  <th className="text-left p-4 font-medium text-sm">Projects</th>
-                  <th className="text-right p-4 font-medium text-sm">Actions</th>
+                  <th className="text-left p-4 font-medium text-sm">
+                    Developer
+                  </th>
+                  <th className="text-left p-4 font-medium text-sm">
+                    Description
+                  </th>
+                  <th className="text-left p-4 font-medium text-sm">
+                    Projects
+                  </th>
+                  <th className="text-right p-4 font-medium text-sm">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {developers?.data?.map((developer) => (
-                  <tr key={developer.id} className="border-b last:border-0" data-testid={`developer-row-${developer.id}`}>
+                  <tr
+                    key={developer.id}
+                    className="border-b last:border-0"
+                    data-testid={`developer-row-${developer.id}`}
+                  >
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10">
@@ -1426,12 +1713,18 @@ function DevelopersSection() {
                       {developer.description || "—"}
                     </td>
                     <td className="p-4">
-                      <Badge variant="secondary">{developer.projectCount || 0} projects</Badge>
+                      <Badge variant="secondary">
+                        {developer.projectCount || 0} projects
+                      </Badge>
                     </td>
                     <td className="p-4 text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" data-testid={`button-developer-actions-${developer.id}`}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            data-testid={`button-developer-actions-${developer.id}`}
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -1458,7 +1751,10 @@ function DevelopersSection() {
                 ))}
                 {(!developers?.data || developers.data.length === 0) && (
                   <tr>
-                    <td colSpan={4} className="p-8 text-center text-muted-foreground">
+                    <td
+                      colSpan={4}
+                      className="p-8 text-center text-muted-foreground"
+                    >
                       No developers found
                     </td>
                   </tr>
@@ -1469,14 +1765,22 @@ function DevelopersSection() {
         </CardContent>
       </Card>
 
-      <Pagination page={page} totalPages={developers?.totalPages || 1} onPageChange={setPage} />
+      <Pagination
+        page={page}
+        totalPages={developers?.totalPages || 1}
+        onPageChange={setPage}
+      />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingDeveloper ? "Edit Developer" : "Add Developer"}</DialogTitle>
+            <DialogTitle>
+              {editingDeveloper ? "Edit Developer" : "Add Developer"}
+            </DialogTitle>
             <DialogDescription>
-              {editingDeveloper ? "Update developer details" : "Create a new property developer"}
+              {editingDeveloper
+                ? "Update developer details"
+                : "Create a new property developer"}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -1485,7 +1789,9 @@ function DevelopersSection() {
               <Input
                 id="dev-name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 placeholder="Developer name"
                 data-testid="input-developer-name"
               />
@@ -1495,7 +1801,9 @@ function DevelopersSection() {
               <Input
                 id="dev-logo"
                 value={formData.logoUrl}
-                onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, logoUrl: e.target.value })
+                }
                 placeholder="https://..."
                 data-testid="input-developer-logo"
               />
@@ -1505,7 +1813,9 @@ function DevelopersSection() {
               <Textarea
                 id="dev-desc"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 placeholder="Brief description..."
                 data-testid="input-developer-description"
               />
@@ -1517,14 +1827,18 @@ function DevelopersSection() {
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={!formData.name || createMutation.isPending || updateMutation.isPending}
+              disabled={
+                !formData.name ||
+                createMutation.isPending ||
+                updateMutation.isPending
+              }
               data-testid="button-save-developer"
             >
               {createMutation.isPending || updateMutation.isPending
                 ? "Saving..."
                 : editingDeveloper
-                ? "Update"
-                : "Create"}
+                  ? "Update"
+                  : "Create"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1539,19 +1853,33 @@ function BanksSection() {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBank, setEditingBank] = useState<Bank | null>(null);
-  const [formData, setFormData] = useState({ name: "", logoUrl: "", description: "" });
+  const [formData, setFormData] = useState({
+    name: "",
+    logoUrl: "",
+    description: "",
+  });
   const [importFile, setImportFile] = useState<File | null>(null);
 
-  const { data: banks, isLoading, refetch } = useQuery<PaginatedResult<Bank>>({
+  const {
+    data: banks,
+    isLoading,
+    refetch,
+  } = useQuery<PaginatedResult<Bank>>({
     queryKey: ["/api/admin/banks", { page, search }],
     queryFn: async ({ queryKey }) => {
-      const [_base, params] = queryKey as [string, { page: number; search: string }];
+      const [_base, params] = queryKey as [
+        string,
+        { page: number; search: string },
+      ];
       const searchParams = new URLSearchParams({
         page: params.page.toString(),
         limit: "10",
         search: params.search,
       });
-      const res = await apiRequest("GET", `/api/admin/banks?${searchParams.toString()}`);
+      const res = await apiRequest(
+        "GET",
+        `/api/admin/banks?${searchParams.toString()}`,
+      );
       return res.json();
     },
   });
@@ -1602,7 +1930,9 @@ function BanksSection() {
       if (!importFile) return;
       const formData = new FormData();
       formData.append("file", importFile);
-      const csrfCookie = document.cookie.split(";").find((c) => c.trim().startsWith("_csrf="));
+      const csrfCookie = document.cookie
+        .split(";")
+        .find((c) => c.trim().startsWith("_csrf="));
       const csrfToken = csrfCookie?.split("=")[1] || "";
       const response = await fetch("/api/admin/banks/import", {
         method: "POST",
@@ -1655,7 +1985,9 @@ function BanksSection() {
 
   const handleExport = async () => {
     try {
-      const response = await fetch("/api/admin/banks/export", { credentials: "include" });
+      const response = await fetch("/api/admin/banks/export", {
+        credentials: "include",
+      });
       if (!response.ok) throw new Error("Export failed");
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -1678,8 +2010,8 @@ function BanksSection() {
 
   return (
     <div className="space-y-6" data-testid="banks-section">
-      <SectionHeader 
-        title="Banks" 
+      <SectionHeader
+        title="Banks"
         description="Manage partner banks"
         actions={
           <Button onClick={openCreateDialog} data-testid="button-add-bank">
@@ -1704,7 +2036,11 @@ function BanksSection() {
           />
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleExport} data-testid="button-export-banks">
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            data-testid="button-export-banks"
+          >
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
@@ -1726,7 +2062,12 @@ function BanksSection() {
               Import CSV
             </Button>
           </div>
-          <Button variant="outline" size="icon" onClick={() => refetch()} data-testid="button-refresh-banks">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => refetch()}
+            data-testid="button-refresh-banks"
+          >
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
@@ -1739,13 +2080,21 @@ function BanksSection() {
               <thead className="border-b bg-muted/30">
                 <tr>
                   <th className="text-left p-4 font-medium text-sm">Bank</th>
-                  <th className="text-left p-4 font-medium text-sm">Description</th>
-                  <th className="text-right p-4 font-medium text-sm">Actions</th>
+                  <th className="text-left p-4 font-medium text-sm">
+                    Description
+                  </th>
+                  <th className="text-right p-4 font-medium text-sm">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {banks?.data?.map((bank) => (
-                  <tr key={bank.id} className="border-b last:border-0" data-testid={`bank-row-${bank.id}`}>
+                  <tr
+                    key={bank.id}
+                    className="border-b last:border-0"
+                    data-testid={`bank-row-${bank.id}`}
+                  >
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10">
@@ -1763,7 +2112,11 @@ function BanksSection() {
                     <td className="p-4 text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" data-testid={`button-bank-actions-${bank.id}`}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            data-testid={`button-bank-actions-${bank.id}`}
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -1790,7 +2143,10 @@ function BanksSection() {
                 ))}
                 {(!banks?.data || banks.data.length === 0) && (
                   <tr>
-                    <td colSpan={3} className="p-8 text-center text-muted-foreground">
+                    <td
+                      colSpan={3}
+                      className="p-8 text-center text-muted-foreground"
+                    >
                       No banks found
                     </td>
                   </tr>
@@ -1801,14 +2157,20 @@ function BanksSection() {
         </CardContent>
       </Card>
 
-      <Pagination page={page} totalPages={banks?.totalPages || 1} onPageChange={setPage} />
+      <Pagination
+        page={page}
+        totalPages={banks?.totalPages || 1}
+        onPageChange={setPage}
+      />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingBank ? "Edit Bank" : "Add Bank"}</DialogTitle>
             <DialogDescription>
-              {editingBank ? "Update bank details" : "Create a new partner bank"}
+              {editingBank
+                ? "Update bank details"
+                : "Create a new partner bank"}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -1817,7 +2179,9 @@ function BanksSection() {
               <Input
                 id="bank-name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 placeholder="Bank name"
                 data-testid="input-bank-name"
               />
@@ -1827,7 +2191,9 @@ function BanksSection() {
               <Input
                 id="bank-logo"
                 value={formData.logoUrl}
-                onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, logoUrl: e.target.value })
+                }
                 placeholder="https://..."
                 data-testid="input-bank-logo"
               />
@@ -1837,7 +2203,9 @@ function BanksSection() {
               <Textarea
                 id="bank-desc"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 placeholder="Brief description..."
                 data-testid="input-bank-description"
               />
@@ -1849,14 +2217,18 @@ function BanksSection() {
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={!formData.name || createMutation.isPending || updateMutation.isPending}
+              disabled={
+                !formData.name ||
+                createMutation.isPending ||
+                updateMutation.isPending
+              }
               data-testid="button-save-bank"
             >
               {createMutation.isPending || updateMutation.isPending
                 ? "Saving..."
                 : editingBank
-                ? "Update"
-                : "Create"}
+                  ? "Update"
+                  : "Create"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1865,11 +2237,426 @@ function BanksSection() {
   );
 }
 
-function SectionHeader({ title, description, actions }: { title: string; description: string; actions?: React.ReactNode }) {
+function IpBansSection() {
+  const { toast } = useToast();
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    ip: "",
+    cidr: "",
+    reason: "",
+    expiresAt: "",
+  });
+
+  const {
+    data: ipBans,
+    isLoading,
+    refetch,
+  } = useQuery<PaginatedResult<IpBan>>({
+    queryKey: ["/api/admin/ip-bans", { page, search }],
+    queryFn: async ({ queryKey }) => {
+      const [_base, params] = queryKey as [
+        string,
+        { page: number; search: string },
+      ];
+      const searchParams = new URLSearchParams({
+        page: params.page.toString(),
+        limit: "10",
+      });
+      const res = await apiRequest(
+        "GET",
+        `/api/admin/ip-bans?${searchParams.toString()}`,
+      );
+      return res.json();
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      return apiRequest("POST", "/api/admin/ip-bans", {
+        ip: data.ip,
+        cidr: data.cidr || null,
+        reason: data.reason || null,
+        expiresAt: data.expiresAt
+          ? new Date(data.expiresAt).toISOString()
+          : null,
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "IP ban created successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/ip-bans"] });
+      closeDialog();
+    },
+    onError: () => {
+      toast({ title: "Failed to create IP ban", variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest("DELETE", `/api/admin/ip-bans/${id}`);
+    },
+    onSuccess: () => {
+      toast({ title: "IP ban removed successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/ip-bans"] });
+    },
+    onError: () => {
+      toast({ title: "Failed to remove IP ban", variant: "destructive" });
+    },
+  });
+
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setFormData({ ip: "", cidr: "", reason: "", expiresAt: "" });
+  };
+
+  const openCreateDialog = () => {
+    setFormData({ ip: "", cidr: "", reason: "", expiresAt: "" });
+    setDialogOpen(true);
+  };
+
+  const handleSubmit = () => {
+    if (!formData.ip.trim()) {
+      toast({ title: "IP address is required", variant: "destructive" });
+      return;
+    }
+    createMutation.mutate(formData);
+  };
+
+  if (isLoading) {
+    return <SectionSkeleton title="IP Bans" />;
+  }
+
+  return (
+    <div className="space-y-6" data-testid="ip-bans-section">
+      <SectionHeader
+        title="IP Bans"
+        description="Manage blocked IP addresses and ranges"
+        actions={
+          <Button onClick={openCreateDialog} data-testid="button-add-ip-ban">
+            <Plus className="h-4 w-4 mr-2" />
+            Add IP Ban
+          </Button>
+        }
+      />
+
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search IP addresses..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            className="pl-9"
+            data-testid="input-search-ip-bans"
+          />
+        </div>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => refetch()}
+          data-testid="button-refresh-ip-bans"
+        >
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="border-b bg-muted/30">
+                <tr>
+                  <th className="text-left p-4 font-medium text-sm">
+                    IP Address
+                  </th>
+                  <th className="text-left p-4 font-medium text-sm">CIDR</th>
+                  <th className="text-left p-4 font-medium text-sm">Reason</th>
+                  <th className="text-left p-4 font-medium text-sm">Created</th>
+                  <th className="text-left p-4 font-medium text-sm">Expires</th>
+                  <th className="text-right p-4 font-medium text-sm">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {ipBans?.data?.map((ban) => (
+                  <tr
+                    key={ban.id}
+                    className="border-b last:border-0"
+                    data-testid={`ip-ban-row-${ban.id}`}
+                  >
+                    <td className="p-4">
+                      <code className="bg-muted px-2 py-1 rounded text-sm font-mono">
+                        {ban.ip}
+                      </code>
+                    </td>
+                    <td className="p-4 text-sm text-muted-foreground">
+                      {ban.cidr ? (
+                        <code className="bg-muted px-2 py-1 rounded text-sm font-mono">
+                          {ban.cidr}
+                        </code>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="p-4 text-sm max-w-xs truncate">
+                      {ban.reason || "—"}
+                    </td>
+                    <td className="p-4 text-sm text-muted-foreground">
+                      {format(new Date(ban.createdAt), "MMM d, yyyy HH:mm")}
+                    </td>
+                    <td className="p-4 text-sm">
+                      {ban.expiresAt ? (
+                        <span
+                          className={
+                            new Date(ban.expiresAt) < new Date()
+                              ? "text-green-600"
+                              : "text-muted-foreground"
+                          }
+                        >
+                          {format(new Date(ban.expiresAt), "MMM d, yyyy HH:mm")}
+                        </span>
+                      ) : (
+                        <Badge variant="secondary">Permanent</Badge>
+                      )}
+                    </td>
+                    <td className="p-4 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            data-testid={`button-ip-ban-actions-${ban.id}`}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => deleteMutation.mutate(ban.id)}
+                            className="text-destructive"
+                            data-testid={`button-delete-ip-ban-${ban.id}`}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Remove Ban
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                ))}
+                {(!ipBans?.data || ipBans.data.length === 0) && (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="p-8 text-center text-muted-foreground"
+                    >
+                      No IP bans found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Pagination
+        page={page}
+        totalPages={ipBans?.totalPages || 1}
+        onPageChange={setPage}
+      />
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add IP Ban</DialogTitle>
+            <DialogDescription>
+              Block an IP address or range from accessing the platform
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="ban-ip">IP Address *</Label>
+              <Input
+                id="ban-ip"
+                value={formData.ip}
+                onChange={(e) =>
+                  setFormData({ ...formData, ip: e.target.value })
+                }
+                placeholder="192.168.1.1"
+                data-testid="input-ban-ip"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ban-cidr">CIDR Range (optional)</Label>
+              <Input
+                id="ban-cidr"
+                value={formData.cidr}
+                onChange={(e) =>
+                  setFormData({ ...formData, cidr: e.target.value })
+                }
+                placeholder="192.168.1.0/24"
+                data-testid="input-ban-cidr"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ban-reason">Reason</Label>
+              <Textarea
+                id="ban-reason"
+                value={formData.reason}
+                onChange={(e) =>
+                  setFormData({ ...formData, reason: e.target.value })
+                }
+                placeholder="Reason for banning this IP..."
+                data-testid="input-ban-reason"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ban-expires">Expires At (optional)</Label>
+              <Input
+                id="ban-expires"
+                type="datetime-local"
+                value={formData.expiresAt}
+                onChange={(e) =>
+                  setFormData({ ...formData, expiresAt: e.target.value })
+                }
+                data-testid="input-ban-expires"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDialog}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={!formData.ip.trim() || createMutation.isPending}
+              data-testid="button-save-ip-ban"
+            >
+              {createMutation.isPending ? "Creating..." : "Create Ban"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function SecuritySection() {
+  const { data: stats } = useQuery<DashboardStats>({
+    queryKey: ["/api/admin/dashboard"],
+  });
+
+  return (
+    <div className="space-y-6" data-testid="security-section">
+      <SectionHeader
+        title="Security Overview"
+        description="Monitor platform security and access controls"
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <Activity className="h-4 w-4 text-blue-500" />
+              <TrendingUp className="h-3 w-3 text-muted-foreground" />
+            </div>
+            <p className="text-2xl font-bold">0</p>
+            <p className="text-xs text-muted-foreground">Active Sessions</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <Ban className="h-4 w-4 text-red-500" />
+              <TrendingUp className="h-3 w-3 text-muted-foreground" />
+            </div>
+            <p className="text-2xl font-bold">{stats?.ipBanCount || 0}</p>
+            <p className="text-xs text-muted-foreground">IP Bans</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <FileText className="h-4 w-4 text-green-500" />
+              <TrendingUp className="h-3 w-3 text-muted-foreground" />
+            </div>
+            <p className="text-2xl font-bold">0</p>
+            <p className="text-xs text-muted-foreground">Recent Audit Logs</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <ShieldCheck className="h-4 w-4 text-yellow-500" />
+              <TrendingUp className="h-3 w-3 text-muted-foreground" />
+            </div>
+            <p className="text-2xl font-bold">{stats?.bannedUserCount || 0}</p>
+            <p className="text-xs text-muted-foreground">Banned Users</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Ban className="h-4 w-4" />
+              Recent IP Bans
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Latest IP bans will be displayed here. Use the IP Bans section to
+              manage blocked addresses.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Security Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Security events and monitoring data will be available in upcoming
+              updates.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function SectionHeader({
+  title,
+  description,
+  actions,
+}: {
+  title: string;
+  description: string;
+  actions?: React.ReactNode;
+}) {
   return (
     <div className="flex items-center justify-between gap-4 mb-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight" data-testid={`section-title-${title.toLowerCase()}`}>
+        <h2
+          className="text-3xl font-bold tracking-tight"
+          data-testid={`section-title-${title.toLowerCase()}`}
+        >
           {title}
         </h2>
         <p className="text-muted-foreground">{description}</p>

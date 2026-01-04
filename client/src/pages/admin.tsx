@@ -65,6 +65,24 @@ import {
   AuditLog,
 } from "@shared/schema";
 
+interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+interface DashboardStats {
+  userCount: number;
+  projectCount: number;
+  bannedUserCount: number;
+  ipBanCount: number;
+  developerCount: number;
+  bankCount: number;
+  recentImports: any[];
+}
+
 type AdminSection = "dashboard" | "users" | "projects" | "developers" | "banks";
 
 const navigationItems = [
@@ -865,7 +883,7 @@ function ProjectsSection() {
                 </tr>
               </thead>
               <tbody>
-                {projects?.data?.map((project) => (
+                {projects?.data?.map((project: Project) => (
                   <tr key={project.id} className="border-b last:border-0" data-testid={`project-row-${project.id}`}>
                     <td className="p-4 text-sm text-muted-foreground">#{project.id}</td>
                     <td className="p-4">
@@ -975,7 +993,7 @@ function ProjectsSection() {
                 data-testid="select-project-developer"
               >
                 <option value="">Select Developer</option>
-                {developers?.map((dev) => (
+                {developers?.map((dev: Developer) => (
                   <option key={dev.id} value={dev.id}>{dev.name}</option>
                 ))}
               </select>
@@ -991,7 +1009,7 @@ function ProjectsSection() {
                 data-testid="select-project-city"
               >
                 <option value="">Select City</option>
-                {cities?.map((city) => (
+                {cities?.map((city: City) => (
                   <option key={city.id} value={city.id}>{city.name}</option>
                 ))}
               </select>
@@ -1008,7 +1026,7 @@ function ProjectsSection() {
                 data-testid="select-project-district"
               >
                 <option value="">Select District</option>
-                {districts?.map((district) => (
+                {districts?.map((district: District) => (
                   <option key={district.id} value={district.id}>{district.name}</option>
                 ))}
               </select>

@@ -206,7 +206,23 @@ export class DatabaseStorage implements IStorage {
         desc(projects.createdAt)
       );
 
-    let filteredProjects = baseProjects;
+    const projectResults: ProjectWithRelations[] = [];
+    for (const project of baseProjects) {
+      const [developer] = await db.select().from(developers).where(eq(developers.id, project.developerId));
+      const [city] = await db.select().from(cities).where(eq(cities.id, project.cityId));
+      const [district] = await db.select().from(districts).where(eq(districts.id, project.districtId));
+      
+      if (developer && city && district) {
+        projectResults.push({
+          ...project,
+          developer,
+          city,
+          district,
+        });
+      }
+    }
+
+    let filteredProjects = projectResults;
     
     if (filters.bankIds && filters.bankIds.length > 0) {
       const projectsWithBanks = await db

@@ -156,8 +156,9 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
 
 export const insertProjectSchema = createInsertSchema(projects).extend({
   id: z.number().optional(),
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional(),
+  createdAt: z.date().or(z.string()).optional(),
+  updatedAt: z.date().or(z.string()).optional(),
+  completionDate: z.date().or(z.string()).optional().nullable(),
 });
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Project = typeof projects.$inferSelect;

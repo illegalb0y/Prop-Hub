@@ -1232,32 +1232,6 @@ function BanksSection() {
       formData.append("file", importFile);
       const csrfCookie = document.cookie.split(";").find((c) => c.trim().startsWith("_csrf="));
       const csrfToken = csrfCookie?.split("=")[1] || "";
-      const response = await fetch("/api/admin/developers/import", {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-        headers: { "x-csrf-token": csrfToken },
-      });
-      if (!response.ok) throw new Error("Import failed");
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({ title: "Import started successfully" });
-      setImportFile(null);
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/developers"] });
-    },
-    onError: () => {
-      toast({ title: "Import failed", variant: "destructive" });
-    },
-  });
-
-  const importMutation = useMutation({
-    mutationFn: async () => {
-      if (!importFile) return;
-      const formData = new FormData();
-      formData.append("file", importFile);
-      const csrfCookie = document.cookie.split(";").find((c) => c.trim().startsWith("_csrf="));
-      const csrfToken = csrfCookie?.split("=")[1] || "";
       const response = await fetch("/api/admin/banks/import", {
         method: "POST",
         body: formData,

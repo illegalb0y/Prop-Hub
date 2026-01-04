@@ -67,7 +67,8 @@ type AdminSection =
   | "banks"
   | "security"
   | "ip-bans"
-  | "sessions";
+  | "sessions"
+  | "audit-logs";
 
 interface PaginatedResult<T> {
   data: T[];
@@ -168,6 +169,25 @@ interface SecurityStats {
   expiredSessionCount: number;
 }
 
+interface AuditLogEntry {
+  id: string;
+  adminId: string;
+  actionType: string;
+  targetType: string | null;
+  targetId: string | null;
+  ip: string | null;
+  createdAt: string;
+  metadataJson: any;
+}
+
+interface AuditLogFilters {
+  adminId?: string;
+  actionType?: string;
+  targetType?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
 const navigationItems = [
   {
     section: "Product Analytics",
@@ -206,6 +226,7 @@ const navigationItems = [
         label: "Active Sessions",
         icon: Activity,
       },
+      { id: "audit-logs" as AdminSection, label: "Audit Logs", icon: FileText },
     ],
   },
 ];
@@ -250,6 +271,7 @@ export default function AdminPage() {
           {activeSection === "security" && <SecuritySection />}
           {activeSection === "ip-bans" && <IpBansSection />}
           {activeSection === "sessions" && <SessionsSection />}
+          {activeSection === "audit-logs" && <AuditLogsSection />}
         </div>
       </main>
     </div>
@@ -2261,6 +2283,348 @@ function BanksSection() {
   );
 }
 
+function AuditLogsSection() {
+  const { toast } = useToast();
+  const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState<AuditLogFilters>({});
+  const [showFilters, setShowFilters] = useState(false);
+
+  const {
+    data: auditLogs,
+    isLoading,
+    refetch,
+  } = useQuery<PaginatedResult<AuditLogEntry>>({
+    queryKey: ["/api/admin/audit-logs", { page, ...filters }],
+    queryFn: async ({ queryKey }) => {
+      const [_base, params] = queryKey as [string, any];
+      const searchParams = new URLSearchParams({
+        page: params.page.toString(),
+        limit: "20",
+      });
+
+      // Добавляем фильтры в параметры запроса
+      if (params.adminId) searchParams.append("userId", params.adminId);
+      if (params.actionType)
+        searchParams.append("actionType", params.actionType);
+      if (params.targetType)
+        searchParams.append("targetType", params.targetType);
+      if (params.dateFrom) searchParams.append("dateFrom", params.dateFrom);
+      if (params.dateTo) searchParams.append("dateTo", params.dateTo);
+
+      const res = await apiRequest(
+        "GET",
+        `/api/admin/audit-logs?${searchParams.toString()}`,
+      );
+      return res.json();
+    },
+  });
+
+  const { data: users } = useQuery<PaginatedResult<User>>({
+    queryKey: ["/api/admin/users", { page: 1, search: "" }],
+    queryFn: async () => {
+      const res = await apiRequest(
+        "GET",
+        "/api/admin/users?page=1&limit=100&search=",
+      );
+      return res.json();
+    },
+  });
+
+  const clearFilters = () => {
+    setFilters({});
+    setPage(1);
+  };
+
+  const applyFilters = (newFilters: AuditLogFilters) => {
+    setFilters(newFilters);
+    setPage(1);
+  };
+
+  const getActionTypeColor = (actionType: string) => {
+    if (actionType.includes("delete") || actionType.includes("ban"))
+      return "text-red-600";
+    if (actionType.includes("create") || actionType.includes("add"))
+      return "text-green-600";
+    if (actionType.includes("update") || actionType.includes("edit"))
+      return "text-blue-600";
+    return "text-muted-foreground";
+  };
+
+  const getActionTypeIcon = (actionType: string) => {
+    if (actionType.includes("delete")) return <Trash2 className="h-3 w-3" />;
+    if (actionType.includes("ban")) return <Ban className="h-3 w-3" />;
+    if (actionType.includes("create") || actionType.includes("add"))
+      return <Plus className="h-3 w-3" />;
+    if (actionType.includes("update") || actionType.includes("edit"))
+      return <Pencil className="h-3 w-3" />;
+    return <Activity className="h-3 w-3" />;
+  };
+
+  if (isLoading) {
+    return <SectionSkeleton title="Audit Logs" />;
+  }
+
+  return (
+    <div className="space-y-6" data-testid="audit-logs-section">
+      <SectionHeader
+        title="Audit Logs"
+        description="Track all administrative actions and system events"
+        actions={
+          <Button
+            variant="outline"
+            onClick={() => setShowFilters(!showFilters)}
+            data-testid="button-toggle-filters"
+          >
+            <Search className="h-4 w-4 mr-2" />
+            {showFilters ? "Hide Filters" : "Show Filters"}
+          </Button>
+        }
+      />
+
+      {showFilters && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Filters</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="filter-admin">Admin User</Label>
+                <select
+                  id="filter-admin"
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  value={filters.adminId || ""}
+                  onChange={(e) =>
+                    applyFilters({
+                      ...filters,
+                      adminId: e.target.value || undefined,
+                    })
+                  }
+                >
+                  <option value="">All Admins</option>
+                  {users?.data
+                    ?.filter((user) => user.role === "admin")
+                    .map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.email ||
+                          `${user.firstName} ${user.lastName}`.trim() ||
+                          user.id}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="filter-action">Action Type</Label>
+                <select
+                  id="filter-action"
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  value={filters.actionType || ""}
+                  onChange={(e) =>
+                    applyFilters({
+                      ...filters,
+                      actionType: e.target.value || undefined,
+                    })
+                  }
+                >
+                  <option value="">All Actions</option>
+                  <option value="user_ban">User Ban</option>
+                  <option value="user_unban">User Unban</option>
+                  <option value="user_role_change">Role Change</option>
+                  <option value="ip_ban_add">IP Ban Add</option>
+                  <option value="ip_ban_remove">IP Ban Remove</option>
+                  <option value="session_terminate">Session Terminate</option>
+                  <option value="project_create">Project Create</option>
+                  <option value="project_update">Project Update</option>
+                  <option value="project_delete">Project Delete</option>
+                  <option value="developer_create">Developer Create</option>
+                  <option value="developer_update">Developer Update</option>
+                  <option value="developer_delete">Developer Delete</option>
+                  <option value="bank_create">Bank Create</option>
+                  <option value="bank_update">Bank Update</option>
+                  <option value="bank_delete">Bank Delete</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="filter-target">Target Type</Label>
+                <select
+                  id="filter-target"
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  value={filters.targetType || ""}
+                  onChange={(e) =>
+                    applyFilters({
+                      ...filters,
+                      targetType: e.target.value || undefined,
+                    })
+                  }
+                >
+                  <option value="">All Targets</option>
+                  <option value="user">User</option>
+                  <option value="project">Project</option>
+                  <option value="developer">Developer</option>
+                  <option value="bank">Bank</option>
+                  <option value="ip_ban">IP Ban</option>
+                  <option value="session">Session</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="filter-date-from">Date From</Label>
+                <Input
+                  id="filter-date-from"
+                  type="date"
+                  value={filters.dateFrom || ""}
+                  onChange={(e) =>
+                    applyFilters({
+                      ...filters,
+                      dateFrom: e.target.value || undefined,
+                    })
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="filter-date-to">Date To</Label>
+                <Input
+                  id="filter-date-to"
+                  type="date"
+                  value={filters.dateTo || ""}
+                  onChange={(e) =>
+                    applyFilters({
+                      ...filters,
+                      dateTo: e.target.value || undefined,
+                    })
+                  }
+                />
+              </div>
+
+              <div className="flex items-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={clearFilters}
+                  className="flex-1"
+                >
+                  Clear Filters
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => refetch()}>
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="border-b bg-muted/30">
+                <tr>
+                  <th className="text-left p-4 font-medium text-sm">
+                    Timestamp
+                  </th>
+                  <th className="text-left p-4 font-medium text-sm">Admin</th>
+                  <th className="text-left p-4 font-medium text-sm">Action</th>
+                  <th className="text-left p-4 font-medium text-sm">Target</th>
+                  <th className="text-left p-4 font-medium text-sm">
+                    IP Address
+                  </th>
+                  <th className="text-left p-4 font-medium text-sm">Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {auditLogs?.data?.map((log) => (
+                  <tr
+                    key={log.id}
+                    className="border-b last:border-0"
+                    data-testid={`audit-log-row-${log.id}`}
+                  >
+                    <td className="p-4 text-sm text-muted-foreground">
+                      {format(new Date(log.createdAt), "MMM d, yyyy HH:mm:ss")}
+                    </td>
+                    <td className="p-4 text-sm">
+                      {users?.data?.find((u) => u.id === log.adminId)?.email ||
+                        log.adminId}
+                    </td>
+                    <td className="p-4">
+                      <div
+                        className={`flex items-center gap-2 text-sm ${getActionTypeColor(log.actionType)}`}
+                      >
+                        {getActionTypeIcon(log.actionType)}
+                        <span className="font-medium">
+                          {log.actionType
+                            .replace(/_/g, " ")
+                            .replace(/\b\w/g, (l) => l.toUpperCase())}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="p-4 text-sm">
+                      {log.targetType && log.targetId ? (
+                        <div>
+                          <span className="text-muted-foreground">
+                            {log.targetType}:
+                          </span>
+                          <br />
+                          <code className="text-xs bg-muted px-1 rounded">
+                            {log.targetId}
+                          </code>
+                        </div>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="p-4 text-sm">
+                      {log.ip ? (
+                        <code className="bg-muted px-2 py-1 rounded text-xs font-mono">
+                          {log.ip}
+                        </code>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="p-4 text-sm max-w-xs">
+                      {log.metadataJson ? (
+                        <details className="cursor-pointer">
+                          <summary className="text-blue-600 hover:text-blue-800">
+                            View Details
+                          </summary>
+                          <pre className="text-xs bg-muted p-2 rounded mt-1 overflow-auto max-h-32">
+                            {JSON.stringify(log.metadataJson, null, 2)}
+                          </pre>
+                        </details>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {(!auditLogs?.data || auditLogs.data.length === 0) && (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="p-8 text-center text-muted-foreground"
+                    >
+                      No audit logs found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Pagination
+        page={page}
+        totalPages={auditLogs?.totalPages || 1}
+        onPageChange={setPage}
+      />
+    </div>
+  );
+}
+
 function SessionsSection() {
   const { toast } = useToast();
   const [page, setPage] = useState(1);
@@ -2778,6 +3142,17 @@ function SecuritySection() {
     },
   });
 
+  const { data: recentAuditLogs } = useQuery<PaginatedResult<AuditLogEntry>>({
+    queryKey: ["/api/admin/audit-logs", { page: 1, limit: 5 }],
+    queryFn: async () => {
+      const res = await apiRequest(
+        "GET",
+        "/api/admin/audit-logs?page=1&limit=5",
+      );
+      return res.json();
+    },
+  });
+
   return (
     <div className="space-y-6" data-testid="security-section">
       <SectionHeader
@@ -2816,8 +3191,8 @@ function SecuritySection() {
               <FileText className="h-4 w-4 text-green-500" />
               <TrendingUp className="h-3 w-3 text-muted-foreground" />
             </div>
-            <p className="text-2xl font-bold">0</p>
-            <p className="text-xs text-muted-foreground">Recent Audit Logs</p>
+            <p className="text-2xl font-bold">{recentAuditLogs?.total || 0}</p>
+            <p className="text-xs text-muted-foreground">Total Audit Logs</p>
           </CardContent>
         </Card>
 
@@ -2868,27 +3243,34 @@ function SecuritySection() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <Ban className="h-4 w-4" />
-              Security Actions
+              <FileText className="h-4 w-4" />
+              Recent Activity
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              size="sm"
-            >
-              <Activity className="h-4 w-4 mr-2" />
-              View All Sessions
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              size="sm"
-            >
-              <Ban className="h-4 w-4 mr-2" />
-              Manage IP Bans
-            </Button>
+          <CardContent>
+            {recentAuditLogs?.data && recentAuditLogs.data.length > 0 ? (
+              <div className="space-y-2">
+                {recentAuditLogs.data.slice(0, 3).map((log) => (
+                  <div
+                    key={log.id}
+                    className="flex items-center justify-between text-sm"
+                  >
+                    <span className="truncate">
+                      {log.actionType
+                        .replace(/_/g, " ")
+                        .replace(/\b\w/g, (l) => l.toUpperCase())}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(log.createdAt), "HH:mm")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No recent activity
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

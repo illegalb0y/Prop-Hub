@@ -52,65 +52,20 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 
+import {
+  Project,
+  Developer,
+  Bank,
+  City,
+  District,
+  User,
+  IpBan,
+  ImportJob,
+  ImportJobError,
+  AuditLog,
+} from "@shared/schema";
+
 type AdminSection = "dashboard" | "users" | "projects" | "developers" | "banks";
-
-interface PaginatedResult<T> {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
-
-interface DashboardStats {
-  userCount: number;
-  projectCount: number;
-  bannedUserCount: number;
-  ipBanCount: number;
-  developerCount: number;
-  bankCount: number;
-  recentImports: any[];
-}
-
-interface User {
-  id: string;
-  email: string | null;
-  firstName: string | null;
-  lastName: string | null;
-  profileImageUrl: string | null;
-  role: string;
-  bannedAt: string | null;
-  bannedReason: string | null;
-  createdAt: string | null;
-}
-
-interface Developer {
-  id: number;
-  name: string;
-  logoUrl: string | null;
-  description: string | null;
-  projectCount?: number;
-}
-
-interface Bank {
-  id: number;
-  name: string;
-  logoUrl: string | null;
-  description: string | null;
-}
-
-interface Project {
-  id: number;
-  name: string;
-  developerId: number;
-  cityId: number;
-  districtId: number;
-  address: string | null;
-  shortDescription: string | null;
-  priceFrom: string | null;
-  currency: string | null;
-  deletedAt: string | null;
-}
 
 const navigationItems = [
   {

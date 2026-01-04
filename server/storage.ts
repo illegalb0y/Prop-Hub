@@ -168,6 +168,10 @@ export class DatabaseStorage implements IStorage {
     let query = db.select().from(projects);
     const conditions: any[] = [];
 
+    if (!filters.includeDeleted) {
+      conditions.push(isNull(projects.deletedAt));
+    }
+
     if (filters.q) {
       conditions.push(
         or(

@@ -36,11 +36,17 @@ export function AppSidebar({ searchQuery, onSearchChange }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4">
-        <Link href="/" className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+        <Link
+          href="/"
+          className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+        >
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <Building2 className="h-5 w-5" />
           </div>
-          <span className="font-heading text-xl font-bold group-data-[collapsible=icon]:hidden" data-testid="text-logo">
+          <span
+            className="font-heading text-xl font-bold group-data-[collapsible=icon]:hidden"
+            data-testid="text-logo"
+          >
             PropertyHub
           </span>
         </Link>
@@ -67,9 +73,10 @@ export function AppSidebar({ searchQuery, onSearchChange }: AppSidebarProps) {
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => {
-                const isActive = location === item.url || 
+                const isActive =
+                  location === item.url ||
                   (item.url !== "/" && location.startsWith(item.url));
-                
+
                 return (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton
@@ -77,9 +84,14 @@ export function AppSidebar({ searchQuery, onSearchChange }: AppSidebarProps) {
                       isActive={isActive}
                       tooltip={item.title}
                     >
-                      <Link href={item.url} data-testid={`link-nav-${item.url.slice(1) || 'home'}`}>
+                      <Link
+                        href={item.url}
+                        data-testid={`link-nav-${item.url.slice(1) || "home"}`}
+                      >
                         <item.icon className="h-5 w-5 shrink-0" />
-                        <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
+                        <span className="group-data-[collapsible=icon]:hidden">
+                          {item.title}
+                        </span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -93,10 +105,16 @@ export function AppSidebar({ searchQuery, onSearchChange }: AppSidebarProps) {
       <SidebarFooter className="p-2">
         <SidebarSeparator className="mb-2" />
         <div className="flex items-center justify-between px-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-4">
-          <SidebarMenuButton asChild tooltip={t("nav.settings")} className="group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center">
+          <SidebarMenuButton
+            asChild
+            tooltip={t("nav.settings")}
+            className="group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center"
+          >
             <Link href="/settings" data-testid="link-settings">
               <Settings className="h-5 w-5 shrink-0" />
-              <span className="group-data-[collapsible=icon]:hidden">{t("nav.settings")}</span>
+              <span className="group-data-[collapsible=icon]:hidden">
+                {t("nav.settings")}
+              </span>
             </Link>
           </SidebarMenuButton>
           <div className="group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">

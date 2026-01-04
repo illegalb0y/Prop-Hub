@@ -1,0 +1,178 @@
+# 📄 Product Requirements Document (PRD)
+## Product: PropertyHub — Admin Panel UI
+## Feature: Admin Navigation & Data Management Interface
+## Version: MVP
+## Owner: Product / Design
+## Status: Design & Frontend Implementation
+---
+## 1. Objective
+Design and implement a **beautiful, minimalistic admin panel UI** that enables internal users to:
+* Monitor **product analytics and user behavior**
+* Manage **core platform data** (projects, developers, banks)
+* Navigate efficiently via a **clear sidebar-based information architecture**
+The interface should feel:
+* modern
+* calm
+* premium
+* trustworthy
+Comparable to high-end SaaS tools such as **Attio**, Linear, Stripe, Vercel.
+---
+## 2. Target Users
+### Primary Users
+* Product Managers
+* Operations / Admin users
+* Analysts
+### Secondary Users
+* Technical Admins
+* Founders / Executives
+---
+## 3. Information Architecture
+### Sidebar Navigation (Left, Fixed)
+The sidebar is the **primary navigation mechanism** and must always be visible.
+#### Sidebar Sections
+```
+▸ Product Analytics
+    - Users
+    - Dashboard
+▸ Data
+    - Projects
+    - Developers
+    - Banks
+```
+---
+## 4. Navigation Structure & Pages
+### 4.1 Product Analytics
+#### 4.1.1 Users Page
+**Purpose**
+Provide visibility into user activity and security-related metadata.
+**Content**
+* User list table
+* Each row includes:
+  * User ID
+  * Role
+  * Active / inactive status
+  * Last session time
+  * IP address
+  * Device / browser (optional)
+* Row click opens **User Details Drawer / Page**
+**Actions**
+* View user sessions
+* Change role (if permitted)
+* Deactivate / activate user
+**UX Notes**
+* Use subtle row hover
+* No heavy borders
+* Inline status indicators (dots, pills)
+---
+#### 4.1.2 Dashboard Page
+**Purpose**
+High-level product analytics overview.
+**Metrics (MVP)**
+* Daily / Monthly Active Users (DAU / MAU)
+* Sessions
+* Retention
+* Churn
+* Conversion rate
+**Components**
+* KPI cards (top row)
+* Line charts for trends
+* Filters:
+  * Date range
+  * Granularity (daily / weekly / monthly)
+**UX Notes**
+* Avoid clutter
+* Prioritize readability
+* Charts should feel lightweight and calm
+---
+### 4.2 Data Section
+Each data entity has its **own CRUD page**, sharing a consistent layout and interaction pattern.
+---
+#### 4.2.1 Projects Page
+**Purpose**
+Manage real estate projects displayed in the product.
+**Features**
+* Table view with:
+  * Name
+  * Status
+  * Developer
+  * Created date
+* Actions:
+  * Create project
+  * Edit project
+  * Delete project
+* Search + basic filters
+---
+#### 4.2.2 Developers Page
+**Purpose**
+Manage developers linked to projects.
+**Features**
+* CRUD functionality
+* Status toggle (active / inactive)
+* Relationship visibility (linked projects count)
+---
+#### 4.2.3 Banks Page
+**Purpose**
+Manage banks associated with mortgage / financing options.
+**Features**
+* CRUD functionality
+* Simple form-based creation and editing
+---
+## 5. Visual & Design Requirements
+### Design Style
+* Minimalistic
+* Premium SaaS look
+* No heavy borders
+* Generous whitespace
+### Typography
+* Modern sans-serif
+* Clear hierarchy
+* Comfortable reading size
+Examples:
+* Inter
+* SF Pro
+* IBM Plex Sans
+---
+### Color Palette
+* Neutral base (white / soft gray)
+* One primary accent color
+* Subtle gradients or gloss effects (very light)
+---
+### UI Elements
+* Rounded corners (medium)
+* Soft shadows
+* Smooth hover & focus states
+* Drawer-based forms preferred over modals
+---
+## 6. Interaction Principles
+* Fast navigation (no page reloads)
+* Predictable layouts
+* Consistent CRUD behavior across entities
+* Keyboard-friendly (optional for MVP)
+---
+## 7. Non-Goals (Out of Scope for MVP)
+* Advanced permissions & RBAC UI
+* Custom dashboard builder
+* Complex data visualizations
+* Bulk operations
+---
+## 8. Success Criteria
+* Admin can manage all core data without training
+* Analytics are readable within 5 seconds
+* UI feels “premium” and calm
+* Designers and devs can reuse components easily
+---
+## 9. Visual Inspiration & References
+### High-quality admin & CRM inspiration
+**Design references (Dribbble / Product level):**
+* Attio — calm, structured, premium CRM UI
+* Linear — minimal navigation & typography
+---
+## 10. Deliverables
+* Sidebar navigation UI
+* Users page
+* Analytics dashboard page
+* CRUD pages for:
+  * Projects
+  * Developers
+  * Banks
+* Shared UI components (tables, forms, cards)

@@ -17,7 +17,9 @@ export const citiesRelations = relations(cities, ({ many }) => ({
   projects: many(projects),
 }));
 
-export const insertCitySchema = createInsertSchema(cities).omit({ id: true });
+export const insertCitySchema = createInsertSchema(cities).extend({
+  id: z.number().optional(),
+});
 export type InsertCity = z.infer<typeof insertCitySchema>;
 export type City = typeof cities.$inferSelect;
 
@@ -33,7 +35,9 @@ export const districtsRelations = relations(districts, ({ one, many }) => ({
   projects: many(projects),
 }));
 
-export const insertDistrictSchema = createInsertSchema(districts).omit({ id: true });
+export const insertDistrictSchema = createInsertSchema(districts).extend({
+  id: z.number().optional(),
+});
 export type InsertDistrict = z.infer<typeof insertDistrictSchema>;
 export type District = typeof districts.$inferSelect;
 
@@ -76,7 +80,9 @@ export const developersRelations = relations(developers, ({ many }) => ({
   developerBanks: many(developerBanks),
 }));
 
-export const insertDeveloperSchema = createInsertSchema(developers).omit({ id: true });
+export const insertDeveloperSchema = createInsertSchema(developers).extend({
+  id: z.number().optional(),
+});
 export type InsertDeveloper = z.infer<typeof insertDeveloperSchema>;
 export type Developer = typeof developers.$inferSelect;
 
@@ -93,7 +99,9 @@ export const banksRelations = relations(banks, ({ many }) => ({
   projectBanks: many(projectBanks),
 }));
 
-export const insertBankSchema = createInsertSchema(banks).omit({ id: true });
+export const insertBankSchema = createInsertSchema(banks).extend({
+  id: z.number().optional(),
+});
 export type InsertBank = z.infer<typeof insertBankSchema>;
 export type Bank = typeof banks.$inferSelect;
 
@@ -146,7 +154,11 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   viewHistory: many(viewHistory),
 }));
 
-export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertProjectSchema = createInsertSchema(projects).extend({
+  id: z.number().optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+});
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Project = typeof projects.$inferSelect;
 

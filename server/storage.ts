@@ -58,6 +58,7 @@ export interface ProjectFilters {
   developerIds?: number[];
   bankIds?: number[];
   sort?: "newest" | "price_asc" | "price_desc" | "completion_soonest" | "name_asc";
+  includeDeleted?: boolean;
 }
 
 export class DatabaseStorage implements IStorage {

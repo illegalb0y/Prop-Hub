@@ -5,6 +5,7 @@ import {
   type User, type IpBan, type ImportJob, type ImportJobError, type AuditLog,
   type InsertIpBan, type InsertImportJob, type InsertImportJobError, type InsertAuditLog,
   type Developer, type InsertDeveloper, type Bank, type InsertBank,
+  type Project, type InsertProject,
 } from "@shared/schema";
 import { eq, isNull, or, gt, ilike, desc, sql, and, asc } from "drizzle-orm";
 
@@ -123,6 +124,16 @@ export class AdminStorage {
       deletedAt: null,
       updatedAt: new Date(),
     }).where(eq(projects.id, id));
+  }
+
+  async updateProject(id: number, data: Partial<InsertProject>): Promise<Project> {
+    const [updated] = await db.update(projects).set({ ...data, updatedAt: new Date() }).where(eq(projects.id, id)).returning();
+    return updated;
+  }
+
+  async createProject(project: InsertProject): Promise<Project> {
+    const [created] = await db.insert(projects).values(project).returning();
+    return created;
   }
 
   async createImportJob(job: InsertImportJob): Promise<ImportJob> {

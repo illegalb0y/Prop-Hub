@@ -1,6 +1,6 @@
 import { db } from "./db";
 import {
-  users, projects, ipBans, importJobs, importJobErrors, auditLogs,
+  users, projects, ipBans, importJobs, importJobErrors, auditLogs, sessions,
   developers, banks, cities, districts,
   type User, type IpBan, type ImportJob, type ImportJobError, type AuditLog,
   type InsertIpBan, type InsertImportJob, type InsertImportJobError, type InsertAuditLog,
@@ -349,6 +349,91 @@ export class AdminStorage {
     );
     
     return result;
+  }
+
+  async getSessions(page: number, limit: number, search?: string): Promise<PaginatedResult<any>> {
+    const offset = (page - 1) * limit;
+
+    let query = db.select({
+      sid: sessions.sid,
+      sess: sessions.sess,
+      expire: sessions.expire,
+    }).from(sessions);
+
+    let countQuery = db.select({ count: sql<number>`count(*)::int` }).from(sessions);
+
+    // Фильтр по активным сессиям (не истекшим)
+    const activeCondition = gt(sessions.expire, new Date());
+    query = query.where(activeCondition) as typeof query;
+    countQuery = countQuery.where(activeCondition) as typeof countQuery;
+
+    const [data, [{ count }]] = await Promise.all([
+      query.orderBy(desc(sessions.expire)).limit(limit).offset(offset),
+      countQuery,
+    ]);
+
+    // Обогащаем данные сессий информацией о пользователях
+    const enrichedData = await Promise.all(
+      data.map(async (session) => {
+        const sessionData = session.sess as any;
+        let user = null;
+
+        if (sessionData?.passport?.user?.id) {
+          const [foundUser] = await db.select().from(users).where(eq(users.id, sessionData.passport.user.id));
+          user = foundUser;
+        }
+
+        return {
+          sid: session.sid,
+          userId: user?.id || null,
+          userEmail: user?.email || null,
+          userAgent: sessionData?.userAgent || null,
+          ip: sessionData?.ip || null,
+          lastActivity: sessionData?.lastActivity ? new Date(sessionData.lastActivity) : session.expire,
+          expire: session.expire,
+          isActive: session.expire > new Date(),
+        };
+      })
+    );
+
+    // Применяем поиск после обогащения данных
+    let filteredData = enrichedData;
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filteredData = enrichedData.filter(session => 
+        session.userEmail?.toLowerCase().includes(searchLower) ||
+        session.ip?.includes(search) ||
+        session.userAgent?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return {
+      data: filteredData,
+      total: search ? filteredData.length : count,
+      page,
+      limit,
+      totalPages: Math.ceil((search ? filteredData.length : count) / limit),
+    };
+  }
+
+  async deleteSession(sid: string): Promise<void> {
+    await db.delete(sessions).where(eq(sessions.sid, sid));
+  }
+
+  async getSecurityStats() {
+    const [
+      [{ activeSessionCount }],
+      [{ totalSessionCount }],
+    ] = await Promise.all([
+      db.select({ activeSessionCount: sql<number>`count(*)::int` }).from(sessions).where(gt(sessions.expire, new Date())),
+      db.select({ totalSessionCount: sql<number>`count(*)::int` }).from(sessions),
+    ]);
+
+    return {
+      activeSessionCount,
+      totalSessionCount,
+      expiredSessionCount: totalSessionCount - activeSessionCount,
+    };
   }
 }
 

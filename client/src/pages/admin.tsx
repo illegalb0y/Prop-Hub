@@ -66,7 +66,8 @@ type AdminSection =
   | "developers"
   | "banks"
   | "security"
-  | "ip-bans";
+  | "ip-bans"
+  | "sessions";
 
 interface PaginatedResult<T> {
   data: T[];
@@ -150,6 +151,23 @@ interface IpBan {
   createdByAdminId: string | null;
 }
 
+interface Session {
+  sid: string;
+  userId: string | null;
+  userEmail: string | null;
+  userAgent: string | null;
+  ip: string | null;
+  lastActivity: string;
+  expire: string;
+  isActive: boolean;
+}
+
+interface SecurityStats {
+  activeSessionCount: number;
+  totalSessionCount: number;
+  expiredSessionCount: number;
+}
+
 const navigationItems = [
   {
     section: "Product Analytics",
@@ -183,6 +201,11 @@ const navigationItems = [
         icon: Shield,
       },
       { id: "ip-bans" as AdminSection, label: "IP Bans", icon: Ban },
+      {
+        id: "sessions" as AdminSection,
+        label: "Active Sessions",
+        icon: Activity,
+      },
     ],
   },
 ];
@@ -226,6 +249,7 @@ export default function AdminPage() {
           {activeSection === "banks" && <BanksSection />}
           {activeSection === "security" && <SecuritySection />}
           {activeSection === "ip-bans" && <IpBansSection />}
+          {activeSection === "sessions" && <SessionsSection />}
         </div>
       </main>
     </div>
@@ -2237,6 +2261,199 @@ function BanksSection() {
   );
 }
 
+function SessionsSection() {
+  const { toast } = useToast();
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+
+  const {
+    data: sessions,
+    isLoading,
+    refetch,
+  } = useQuery<PaginatedResult<Session>>({
+    queryKey: ["/api/admin/sessions", { page, search }],
+    queryFn: async ({ queryKey }) => {
+      const [_base, params] = queryKey as [
+        string,
+        { page: number; search: string },
+      ];
+      const searchParams = new URLSearchParams({
+        page: params.page.toString(),
+        limit: "10",
+        search: params.search,
+      });
+      const res = await apiRequest(
+        "GET",
+        `/api/admin/sessions?${searchParams.toString()}`,
+      );
+      return res.json();
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (sid: string) => {
+      return apiRequest("DELETE", `/api/admin/sessions/${sid}`);
+    },
+    onSuccess: () => {
+      toast({ title: "Session terminated successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/sessions"] });
+    },
+    onError: () => {
+      toast({ title: "Failed to terminate session", variant: "destructive" });
+    },
+  });
+
+  if (isLoading) {
+    return <SectionSkeleton title="Active Sessions" />;
+  }
+
+  return (
+    <div className="space-y-6" data-testid="sessions-section">
+      <SectionHeader
+        title="Active Sessions"
+        description="Monitor and manage user sessions"
+      />
+
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by email, IP, or user agent..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            className="pl-9"
+            data-testid="input-search-sessions"
+          />
+        </div>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => refetch()}
+          data-testid="button-refresh-sessions"
+        >
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="border-b bg-muted/30">
+                <tr>
+                  <th className="text-left p-4 font-medium text-sm">User</th>
+                  <th className="text-left p-4 font-medium text-sm">
+                    IP Address
+                  </th>
+                  <th className="text-left p-4 font-medium text-sm">
+                    User Agent
+                  </th>
+                  <th className="text-left p-4 font-medium text-sm">
+                    Last Activity
+                  </th>
+                  <th className="text-left p-4 font-medium text-sm">Expires</th>
+                  <th className="text-right p-4 font-medium text-sm">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {sessions?.data?.map((session) => (
+                  <tr
+                    key={session.sid}
+                    className="border-b last:border-0"
+                    data-testid={`session-row-${session.sid}`}
+                  >
+                    <td className="p-4">
+                      <div>
+                        <p className="font-medium">
+                          {session.userEmail || "Anonymous"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          ID: {session.userId || "N/A"}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      {session.ip ? (
+                        <code className="bg-muted px-2 py-1 rounded text-sm font-mono">
+                          {session.ip}
+                        </code>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="p-4 text-sm max-w-xs truncate">
+                      {session.userAgent || "—"}
+                    </td>
+                    <td className="p-4 text-sm text-muted-foreground">
+                      {format(
+                        new Date(session.lastActivity),
+                        "MMM d, yyyy HH:mm",
+                      )}
+                    </td>
+                    <td className="p-4 text-sm">
+                      <span
+                        className={
+                          session.isActive ? "text-green-600" : "text-red-600"
+                        }
+                      >
+                        {format(new Date(session.expire), "MMM d, yyyy HH:mm")}
+                      </span>
+                    </td>
+                    <td className="p-4 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            data-testid={`button-session-actions-${session.sid}`}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => deleteMutation.mutate(session.sid)}
+                            className="text-destructive"
+                            data-testid={`button-terminate-session-${session.sid}`}
+                          >
+                            <Ban className="h-4 w-4 mr-2" />
+                            Terminate Session
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                ))}
+                {(!sessions?.data || sessions.data.length === 0) && (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="p-8 text-center text-muted-foreground"
+                    >
+                      No active sessions found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Pagination
+        page={page}
+        totalPages={sessions?.totalPages || 1}
+        onPageChange={setPage}
+      />
+    </div>
+  );
+}
+
 function IpBansSection() {
   const { toast } = useToast();
   const [page, setPage] = useState(1);
@@ -2553,6 +2770,14 @@ function SecuritySection() {
     queryKey: ["/api/admin/dashboard"],
   });
 
+  const { data: securityStats } = useQuery<SecurityStats>({
+    queryKey: ["/api/admin/security/stats"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/admin/security/stats");
+      return res.json();
+    },
+  });
+
   return (
     <div className="space-y-6" data-testid="security-section">
       <SectionHeader
@@ -2567,7 +2792,9 @@ function SecuritySection() {
               <Activity className="h-4 w-4 text-blue-500" />
               <TrendingUp className="h-3 w-3 text-muted-foreground" />
             </div>
-            <p className="text-2xl font-bold">0</p>
+            <p className="text-2xl font-bold">
+              {securityStats?.activeSessionCount || 0}
+            </p>
             <p className="text-xs text-muted-foreground">Active Sessions</p>
           </CardContent>
         </Card>
@@ -2610,30 +2837,58 @@ function SecuritySection() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <Ban className="h-4 w-4" />
-              Recent IP Bans
+              <Activity className="h-4 w-4" />
+              Session Statistics
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Latest IP bans will be displayed here. Use the IP Bans section to
-              manage blocked addresses.
-            </p>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Active:</span>
+                <span className="text-sm font-medium">
+                  {securityStats?.activeSessionCount || 0}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Total:</span>
+                <span className="text-sm font-medium">
+                  {securityStats?.totalSessionCount || 0}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Expired:</span>
+                <span className="text-sm font-medium">
+                  {securityStats?.expiredSessionCount || 0}
+                </span>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <Activity className="h-4 w-4" />
-              Security Activity
+              <Ban className="h-4 w-4" />
+              Security Actions
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Security events and monitoring data will be available in upcoming
-              updates.
-            </p>
+          <CardContent className="space-y-2">
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              size="sm"
+            >
+              <Activity className="h-4 w-4 mr-2" />
+              View All Sessions
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              size="sm"
+            >
+              <Ban className="h-4 w-4 mr-2" />
+              Manage IP Bans
+            </Button>
           </CardContent>
         </Card>
       </div>

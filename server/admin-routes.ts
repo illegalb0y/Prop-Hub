@@ -516,6 +516,40 @@ export function registerAdminRoutes(app: Express) {
       res.status(500).json({ message: "Failed to export projects" });
     }
   });
+
+  // Sessions management
+  app.get("/api/admin/sessions", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { page, limit, search } = paginationSchema.parse(req.query);
+      const sessions = await adminStorage.getSessions(page, limit, search);
+      res.json(sessions);
+    } catch (error) {
+      console.error("Error fetching sessions:", error);
+      res.status(500).json({ message: "Failed to fetch sessions" });
+    }
+  });
+
+  app.delete("/api/admin/sessions/:sid", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { sid } = req.params;
+      await adminStorage.deleteSession(sid);
+      await createAuditLog(req, "session_terminate", "session", sid);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting session:", error);
+      res.status(500).json({ message: "Failed to delete session" });
+    }
+  });
+
+  app.get("/api/admin/security/stats", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const stats = await adminStorage.getSecurityStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching security stats:", error);
+      res.status(500).json({ message: "Failed to fetch security stats" });
+    }
+  });
 }
 
 function convertToCSV(data: any[], columns: string[]): string {

@@ -188,6 +188,30 @@ interface AuditLogFilters {
   dateTo?: string;
 }
 
+interface SecurityAnalytics {
+  hourlyActivity: Array<{ hour: string; count: number }>;
+  topIPs: Array<{ ip: string; count: number }>;
+  topActions: Array<{ actionType: string; count: number }>;
+  weeklyStats: Array<{ date: string; count: number }>;
+  suspiciousActivity: Array<{ 
+    ip: string; 
+    actionCount: number; 
+    uniqueAdmins: number; 
+    lastAction: string; 
+  }>;
+  timeRanges: {
+    last24Hours: string;
+    last7Days: string;
+    last30Days: string;
+  };
+}
+
+interface SessionAnalytics {
+  sessionsByHour: Array<{ hour: string; count: number }>;
+  topUserAgents: Array<{ userAgent: string; count: number }>;
+  expirationStats: Array<{ timeToExpire: string; count: number }>;
+}
+
 const navigationItems = [
   {
     section: "Product Analytics",
@@ -3142,24 +3166,38 @@ function SecuritySection() {
     },
   });
 
+  const { data: securityAnalytics } = useQuery<SecurityAnalytics>({
+    queryKey: ["/api/admin/security/analytics"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/admin/security/analytics");
+      return res.json();
+    },
+  });
+
+  const { data: sessionAnalytics } = useQuery<SessionAnalytics>({
+    queryKey: ["/api/admin/sessions/analytics"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/admin/sessions/analytics");
+      return res.json();
+    },
+  });
+
   const { data: recentAuditLogs } = useQuery<PaginatedResult<AuditLogEntry>>({
     queryKey: ["/api/admin/audit-logs", { page: 1, limit: 5 }],
     queryFn: async () => {
-      const res = await apiRequest(
-        "GET",
-        "/api/admin/audit-logs?page=1&limit=5",
-      );
+      const res = await apiRequest("GET", "/api/admin/audit-logs?page=1&limit=5");
       return res.json();
     },
   });
 
   return (
     <div className="space-y-6" data-testid="security-section">
-      <SectionHeader
-        title="Security Overview"
+      <SectionHeader 
+        title="Security Overview" 
         description="Monitor platform security and access controls"
       />
 
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
@@ -3167,9 +3205,7 @@ function SecuritySection() {
               <Activity className="h-4 w-4 text-blue-500" />
               <TrendingUp className="h-3 w-3 text-muted-foreground" />
             </div>
-            <p className="text-2xl font-bold">
-              {securityStats?.activeSessionCount || 0}
-            </p>
+            <p className="text-2xl font-bold">{securityStats?.activeSessionCount || 0}</p>
             <p className="text-xs text-muted-foreground">Active Sessions</p>
           </CardContent>
         </Card>
@@ -3202,13 +3238,159 @@ function SecuritySection() {
               <ShieldCheck className="h-4 w-4 text-yellow-500" />
               <TrendingUp className="h-3 w-3 text-muted-foreground" />
             </div>
-            <p className="text-2xl font-bold">{stats?.bannedUserCount || 0}</p>
-            <p className="text-xs text-muted-foreground">Banned Users</p>
+            <p className="text-2xl font-bold">{securityAnalytics?.suspiciousActivity?.length || 0}</p>
+            <p className="text-xs text-muted-foreground">Suspicious IPs</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Analytics Charts */}
       <div className="grid md:grid-cols-2 gap-6">
+        {/* Activity Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Activity Last 24 Hours
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {securityAnalytics?.hourlyActivity && securityAnalytics.hourlyActivity.length > 0 ? (
+              <div className="space-y-2">
+                {Array.from({ length: 24 }, (_, i) => {
+                  const hourData = securityAnalytics.hourlyActivity.find(h => parseInt(h.hour) === i);
+                  const count = hourData?.count || 0;
+                  const maxCount = Math.max(...securityAnalytics.hourlyActivity.map(h => h.count));
+                  const percentage = maxCount > 0 ? (count / maxCount) * 100 : 0;
+
+                  return (
+                    <div key={i} className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground w-8">
+                        {i.toString().padStart(2, '0')}:00
+                      </span>
+                      <div className="flex-1 bg-muted rounded-full h-2">
+                        <div 
+                          className="bg-blue-500 h-2 rounded-full transition-all"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground w-8 text-right">
+                        {count}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No activity data available</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Top Actions */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Top Actions (7 days)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {securityAnalytics?.topActions && securityAnalytics.topActions.length > 0 ? (
+              <div className="space-y-3">
+                {securityAnalytics.topActions.slice(0, 5).map((action, index) => {
+                  const maxCount = securityAnalytics.topActions[0]?.count || 1;
+                  const percentage = (action.count / maxCount) * 100;
+
+                  return (
+                    <div key={action.actionType} className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="truncate">
+                          {action.actionType.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
+                        </span>
+                        <span className="text-muted-foreground">{action.count}</span>
+                      </div>
+                      <div className="bg-muted rounded-full h-1.5">
+                        <div 
+                          className="bg-green-500 h-1.5 rounded-full transition-all"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No action data available</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Top IPs */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Ban className="h-4 w-4" />
+              Top IP Addresses (7 days)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {securityAnalytics?.topIPs && securityAnalytics.topIPs.length > 0 ? (
+              <div className="space-y-2">
+                {securityAnalytics.topIPs.slice(0, 5).map((ipData) => (
+                  <div key={ipData.ip} className="flex justify-between items-center text-sm">
+                    <code className="bg-muted px-2 py-1 rounded text-xs font-mono">
+                      {ipData.ip}
+                    </code>
+                    <Badge variant="secondary">{ipData.count} actions</Badge>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No IP data available</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Suspicious Activity */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-red-500" />
+              Suspicious Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {securityAnalytics?.suspiciousActivity && securityAnalytics.suspiciousActivity.length > 0 ? (
+              <div className="space-y-3">
+                {securityAnalytics.suspiciousActivity.map((activity) => (
+                  <div key={activity.ip} className="p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <code className="text-sm font-mono bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded">
+                          {activity.ip}
+                        </code>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {activity.actionCount} actions from {activity.uniqueAdmins} admin(s)
+                        </p>
+                      </div>
+                      <Badge variant="destructive" className="text-xs">
+                        High Activity
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <ShieldCheck className="h-8 w-8 text-green-500 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">No suspicious activity detected</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Session Analytics */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -3217,29 +3399,38 @@ function SecuritySection() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Active:</span>
-                <span className="text-sm font-medium">
-                  {securityStats?.activeSessionCount || 0}
-                </span>
+                <span className="text-sm font-medium">{securityStats?.activeSessionCount || 0}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Total:</span>
-                <span className="text-sm font-medium">
-                  {securityStats?.totalSessionCount || 0}
-                </span>
+                <span className="text-sm font-medium">{securityStats?.totalSessionCount || 0}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Expired:</span>
-                <span className="text-sm font-medium">
-                  {securityStats?.expiredSessionCount || 0}
-                </span>
+                <span className="text-sm font-medium">{securityStats?.expiredSessionCount || 0}</span>
               </div>
+
+              {sessionAnalytics?.expirationStats && (
+                <div className="mt-4 pt-3 border-t">
+                  <p className="text-xs text-muted-foreground mb-2">Expiration Timeline:</p>
+                  {sessionAnalytics.expirationStats.map((stat) => (
+                    <div key={stat.timeToExpire} className="flex justify-between text-xs">
+                      <span className="capitalize">
+                        {stat.timeToExpire.replace(/_/g, " ")}:
+                      </span>
+                      <span>{stat.count}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
 
+        {/* Recent Activity */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -3250,15 +3441,10 @@ function SecuritySection() {
           <CardContent>
             {recentAuditLogs?.data && recentAuditLogs.data.length > 0 ? (
               <div className="space-y-2">
-                {recentAuditLogs.data.slice(0, 3).map((log) => (
-                  <div
-                    key={log.id}
-                    className="flex items-center justify-between text-sm"
-                  >
+                {recentAuditLogs.data.slice(0, 5).map((log) => (
+                  <div key={log.id} className="flex items-center justify-between text-sm">
                     <span className="truncate">
-                      {log.actionType
-                        .replace(/_/g, " ")
-                        .replace(/\b\w/g, (l) => l.toUpperCase())}
+                      {log.actionType.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {format(new Date(log.createdAt), "HH:mm")}
@@ -3267,9 +3453,7 @@ function SecuritySection() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                No recent activity
-              </p>
+              <p className="text-sm text-muted-foreground">No recent activity</p>
             )}
           </CardContent>
         </Card>
@@ -3277,6 +3461,7 @@ function SecuritySection() {
     </div>
   );
 }
+
 
 function SectionHeader({
   title,

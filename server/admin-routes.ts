@@ -550,6 +550,27 @@ export function registerAdminRoutes(app: Express) {
       res.status(500).json({ message: "Failed to fetch security stats" });
     }
   });
+
+  // Security analytics
+  app.get("/api/admin/security/analytics", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const analytics = await adminStorage.getSecurityAnalytics();
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching security analytics:", error);
+      res.status(500).json({ message: "Failed to fetch security analytics" });
+    }
+  });
+
+  app.get("/api/admin/sessions/analytics", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const analytics = await adminStorage.getSessionAnalytics();
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching session analytics:", error);
+      res.status(500).json({ message: "Failed to fetch session analytics" });
+    }
+  });
 }
 
 function convertToCSV(data: any[], columns: string[]): string {

@@ -435,6 +435,158 @@ export class AdminStorage {
       expiredSessionCount: totalSessionCount - activeSessionCount,
     };
   }
+
+  async getSecurityAnalytics() {
+    const now = new Date();
+    const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const [
+      // Активность за последние 24 часа по часам
+      hourlyActivity,
+      // Топ IP адресов из audit logs
+      topIPs,
+      // Топ типов действий
+      topActions,
+      // Статистика по дням за последнюю неделю
+      weeklyStats,
+      // Подозрительная активность
+      suspiciousActivity,
+    ] = await Promise.all([
+      // Активность по часам за последние 24 часа
+      db.select({
+        hour: sql<string>`EXTRACT(HOUR FROM ${auditLogs.createdAt})`,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(auditLogs)
+      .where(sql`${auditLogs.createdAt} >= ${last24Hours}`)
+      .groupBy(sql`EXTRACT(HOUR FROM ${auditLogs.createdAt})`)
+      .orderBy(sql`EXTRACT(HOUR FROM ${auditLogs.createdAt})`),
+
+      // Топ IP адресов
+      db.select({
+        ip: auditLogs.ip,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(auditLogs)
+      .where(sql`${auditLogs.ip} IS NOT NULL AND ${auditLogs.createdAt} >= ${last7Days}`)
+      .groupBy(auditLogs.ip)
+      .orderBy(sql`count(*) DESC`)
+      .limit(10),
+
+      // Топ типов действий
+      db.select({
+        actionType: auditLogs.actionType,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(auditLogs)
+      .where(sql`${auditLogs.createdAt} >= ${last7Days}`)
+      .groupBy(auditLogs.actionType)
+      .orderBy(sql`count(*) DESC`)
+      .limit(10),
+
+      // Статистика по дням за неделю
+      db.select({
+        date: sql<string>`DATE(${auditLogs.createdAt})`,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(auditLogs)
+      .where(sql`${auditLogs.createdAt} >= ${last7Days}`)
+      .groupBy(sql`DATE(${auditLogs.createdAt})`)
+      .orderBy(sql`DATE(${auditLogs.createdAt})`),
+
+      // Подозрительная активность (много действий от одного IP)
+      db.select({
+        ip: auditLogs.ip,
+        actionCount: sql<number>`count(*)::int`,
+        uniqueAdmins: sql<number>`count(DISTINCT ${auditLogs.adminId})::int`,
+        lastAction: sql<string>`MAX(${auditLogs.createdAt})`,
+      })
+      .from(auditLogs)
+      .where(sql`${auditLogs.ip} IS NOT NULL AND ${auditLogs.createdAt} >= ${last24Hours}`)
+      .groupBy(auditLogs.ip)
+      .having(sql`count(*) > 10`) // Более 10 действий за 24 часа
+      .orderBy(sql`count(*) DESC`)
+      .limit(5),
+    ]);
+
+    return {
+      hourlyActivity,
+      topIPs,
+      topActions,
+      weeklyStats,
+      suspiciousActivity,
+      timeRanges: {
+        last24Hours: last24Hours.toISOString(),
+        last7Days: last7Days.toISOString(),
+        last30Days: last30Days.toISOString(),
+      },
+    };
+  }
+
+  async getSessionAnalytics() {
+    const now = new Date();
+    const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    const [
+      // Сессии по часам
+      sessionsByHour,
+      // Топ User-Agent'ов
+      topUserAgents,
+      // Статистика по истечению сессий
+      expirationStats,
+    ] = await Promise.all([
+      // Активные сессии по времени создания (приблизительно)
+      db.select({
+        hour: sql<string>`EXTRACT(HOUR FROM ${sessions.expire} - INTERVAL '1 hour')`,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(sessions)
+      .where(sql`${sessions.expire} > ${now} AND ${sessions.expire} - INTERVAL '1 hour' >= ${last24Hours}`)
+      .groupBy(sql`EXTRACT(HOUR FROM ${sessions.expire} - INTERVAL '1 hour')`)
+      .orderBy(sql`EXTRACT(HOUR FROM ${sessions.expire} - INTERVAL '1 hour')`),
+
+      // Топ User-Agent'ов из активных сессий
+      db.select({
+        userAgent: sql<string>`(${sessions.sess}->>'userAgent')`,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(sessions)
+      .where(sql`${sessions.expire} > ${now} AND ${sessions.sess}->>'userAgent' IS NOT NULL`)
+      .groupBy(sql`(${sessions.sess}->>'userAgent')`)
+      .orderBy(sql`count(*) DESC`)
+      .limit(5),
+
+      // Статистика истечения сессий
+      db.select({
+        timeToExpire: sql<string>`
+          CASE 
+            WHEN ${sessions.expire} <= ${now} THEN 'expired'
+            WHEN ${sessions.expire} <= ${now} + INTERVAL '1 hour' THEN 'expires_soon'
+            WHEN ${sessions.expire} <= ${now} + INTERVAL '1 day' THEN 'expires_today'
+            ELSE 'expires_later'
+          END
+        `,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(sessions)
+      .groupBy(sql`
+        CASE 
+          WHEN ${sessions.expire} <= ${now} THEN 'expired'
+          WHEN ${sessions.expire} <= ${now} + INTERVAL '1 hour' THEN 'expires_soon'
+          WHEN ${sessions.expire} <= ${now} + INTERVAL '1 day' THEN 'expires_today'
+          ELSE 'expires_later'
+        END
+      `),
+    ]);
+
+    return {
+      sessionsByHour,
+      topUserAgents,
+      expirationStats,
+    };
+  }
 }
 
 export const adminStorage = new AdminStorage();

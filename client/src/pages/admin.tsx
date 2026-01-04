@@ -143,7 +143,10 @@ export default function AdminPage() {
     );
   }
 
-  if (!user || user.role !== "admin") {
+  // Development mode bypass - allows viewing admin pages without authentication
+  const isDev = import.meta.env.DEV;
+  
+  if (!isDev && (!user || user.role !== "admin")) {
     navigate("/", { replace: true });
     return null;
   }

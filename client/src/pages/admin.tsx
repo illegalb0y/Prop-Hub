@@ -367,7 +367,7 @@ function UsersSection() {
   const [banReason, setBanReason] = useState("");
 
   const { data: users, isLoading, refetch } = useQuery<PaginatedResult<User>>({
-    queryKey: ["/api/admin/users", page, search],
+    queryKey: ["/api/admin/users", { page, search }],
   });
 
   const banMutation = useMutation({
@@ -621,7 +621,7 @@ function ProjectsSection() {
   const [importFile, setImportFile] = useState<File | null>(null);
 
   const { data: projects, isLoading, refetch } = useQuery<PaginatedResult<Project>>({
-    queryKey: ["/api/admin/projects", page, search],
+    queryKey: ["/api/admin/projects", { page, search }],
   });
 
   const deleteMutation = useMutation({
@@ -717,30 +717,33 @@ function ProjectsSection() {
             data-testid="input-search-projects"
           />
         </div>
-        <Button variant="outline" onClick={handleExport} data-testid="button-export-projects">
-          <Download className="h-4 w-4 mr-2" />
-          Export CSV
-        </Button>
         <div className="flex items-center gap-2">
-          <Input
-            type="file"
-            accept=".csv"
-            onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-            className="max-w-48"
-            data-testid="input-import-projects"
-          />
-          <Button
-            onClick={() => importMutation.mutate()}
-            disabled={!importFile || importMutation.isPending}
-            data-testid="button-import-projects"
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            {importMutation.isPending ? "Importing..." : "Import"}
+          <Button variant="outline" onClick={handleExport} data-testid="button-export-projects">
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-md border">
+            <Input
+              type="file"
+              accept=".csv"
+              onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+              className="h-8 text-xs border-0 bg-transparent focus-visible:ring-0 w-48"
+              data-testid="input-import-projects"
+            />
+            <Button
+              size="sm"
+              onClick={() => importMutation.mutate()}
+              disabled={!importFile || importMutation.isPending}
+              data-testid="button-import-projects"
+            >
+              <Upload className="h-3.5 w-3.5 mr-1.5" />
+              Import CSV
+            </Button>
+          </div>
+          <Button variant="outline" size="icon" onClick={() => refetch()} data-testid="button-refresh-projects">
+            <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
-        <Button variant="outline" size="icon" onClick={() => refetch()} data-testid="button-refresh-projects">
-          <RefreshCw className="h-4 w-4" />
-        </Button>
       </div>
 
       <Card>
@@ -842,7 +845,7 @@ function DevelopersSection() {
   const [formData, setFormData] = useState({ name: "", logoUrl: "", description: "" });
 
   const { data: developers, isLoading, refetch } = useQuery<PaginatedResult<Developer>>({
-    queryKey: ["/api/admin/developers", page, search],
+    queryKey: ["/api/admin/developers", { page, search }],
   });
 
   const createMutation = useMutation({
@@ -1116,7 +1119,7 @@ function BanksSection() {
   const [formData, setFormData] = useState({ name: "", logoUrl: "", description: "" });
 
   const { data: banks, isLoading, refetch } = useQuery<PaginatedResult<Bank>>({
-    queryKey: ["/api/admin/banks", page, search],
+    queryKey: ["/api/admin/banks", { page, search }],
   });
 
   const createMutation = useMutation({

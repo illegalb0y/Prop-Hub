@@ -12,7 +12,7 @@ import {
   type DistrictGeometry,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, ilike, or, desc, asc, inArray, sql } from "drizzle-orm";
+import { eq, and, ilike, or, desc, asc, inArray, sql, isNull } from "drizzle-orm";
 
 export interface IStorage {
   getCities(): Promise<City[]>;
@@ -99,9 +99,9 @@ export class DatabaseStorage implements IStorage {
     
     for (const dev of devs) {
       const [{ count }] = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(projects)
-        .where(eq(projects.developerId, dev.id));
+      .select({ count: sql<number>`count(*)::int` })
+      .from(projects)
+      .where(and(eq(projects.developerId, dev.id), isNull(projects.deletedAt)));
       result.push({ ...dev, projectCount: count });
     }
     
@@ -141,9 +141,9 @@ export class DatabaseStorage implements IStorage {
     const result: DeveloperWithStats[] = [];
     for (const dev of devs) {
       const [{ count }] = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(projects)
-        .where(eq(projects.developerId, dev.id));
+      .select({ count: sql<number>`count(*)::int` })
+      .from(projects)
+      .where(and(eq(projects.developerId, dev.id), isNull(projects.deletedAt)));
       result.push({ ...dev, projectCount: count });
     }
     
@@ -165,7 +165,7 @@ export class DatabaseStorage implements IStorage {
 
   async getProjects(filters: ProjectFilters): Promise<ProjectWithRelations[]> {
     let query = db.select().from(projects);
-    const conditions: any[] = [];
+    const conditions: any[] = [isNull(projects.deletedAt)];
 
     if (filters.q) {
       conditions.push(
@@ -237,7 +237,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProject(id: number): Promise<ProjectWithRelations | undefined> {
-    const [project] = await db.select().from(projects).where(eq(projects.id, id));
+    const [project] = await db.select().from(projects).where(
+      and(eq(projects.id, id), isNull(projects.deletedAt))
+    );
     if (!project) return undefined;
 
     const [developer] = await db.select().from(developers).where(eq(developers.id, project.developerId));

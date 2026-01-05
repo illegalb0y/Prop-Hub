@@ -52,17 +52,8 @@ export function registerAdminRoutes(app: Express) {
   app.get("/api/admin/projects", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
       const { page, limit, search } = paginationSchema.parse(req.query);
-      const allProjects = await storage.getProjects({ q: search });
-      const start = (page - 1) * limit;
-      const paginatedProjects = allProjects.slice(start, start + limit);
-      
-      res.json({
-        data: paginatedProjects,
-        total: allProjects.length,
-        page,
-        limit,
-        totalPages: Math.ceil(allProjects.length / limit),
-      });
+      const projects = await adminStorage.getProjectsForAdmin(page, limit, search);
+      res.json(projects);
     } catch (error) {
       console.error("Error fetching projects:", error);
       res.status(500).json({ message: "Failed to fetch projects" });

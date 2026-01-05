@@ -233,6 +233,57 @@ export class AdminStorage {
     };
   }
 
+  async getProjectsForAdmin(page: number, limit: number, search?: string): Promise<PaginatedResult<any>> {
+    const offset = (page - 1) * limit;
+
+    let query = db.select({
+      id: projects.id,
+      name: projects.name,
+      developerId: projects.developerId,
+      cityId: projects.cityId,
+      districtId: projects.districtId,
+      address: projects.address,
+      shortDescription: projects.shortDescription,
+      description: projects.description,
+      latitude: projects.latitude,
+      longitude: projects.longitude,
+      priceFrom: projects.priceFrom,
+      currency: projects.currency,
+      deletedAt: projects.deletedAt,
+      createdAt: projects.createdAt,
+      updatedAt: projects.updatedAt,
+    }).from(projects);
+
+    let countQuery = db.select({ count: sql<number>`count(*)::int` }).from(projects);
+
+    if (search) {
+      const condition = ilike(projects.name, `%${search}%`);
+      query = query.where(condition) as typeof query;
+      countQuery = countQuery.where(condition) as typeof countQuery;
+    }
+
+    const [data, [{ count }]] = await Promise.all([
+      query.orderBy(desc(projects.createdAt)).limit(limit).offset(offset),
+      countQuery,
+    ]);
+
+    return {
+      data,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
+  }
+
+  async updateProject(id: number, data: any): Promise<any> {
+    const [updated] = await db.update(projects).set({
+      ...data,
+      updatedAt: new Date(),
+    }).where(eq(projects.id, id)).returning();
+    return updated;
+  }
+
   async getDevelopers(page: number, limit: number, search?: string): Promise<PaginatedResult<Developer & { projectCount: number }>> {
     const offset = (page - 1) * limit;
     

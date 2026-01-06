@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
-import { ArrowLeft, Building2 } from "lucide-react";
+import { ArrowLeft, Building2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -138,6 +138,19 @@ export default function DeveloperDetailPage() {
           </div>
           {developer.description && (
             <p className="text-muted-foreground mt-2">{developer.description}</p>
+          )}
+          {developer.website && (
+            <div className="mt-3">
+              <a
+                href={developer.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+              >
+                <ExternalLink className="h-3 w-3" />
+                Website
+              </a>
+            </div>
           )}
         </div>
       </div>

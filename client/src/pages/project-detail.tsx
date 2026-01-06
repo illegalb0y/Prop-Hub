@@ -235,6 +235,19 @@ export default function ProjectDetailPage() {
               {project.address && (
                 <p className="text-sm text-muted-foreground">{project.address}</p>
               )}
+              {project.website && (
+                <div className="pt-2">
+                  <a
+                    href={project.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    {t("common.website")}
+                  </a>
+                </div>
+              )}
             </Card>
           </div>
         </div>

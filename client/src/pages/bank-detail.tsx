@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
-import { ArrowLeft, Landmark } from "lucide-react";
+import { ArrowLeft, Landmark, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DeveloperCard } from "@/components/developer-card";
@@ -91,6 +91,19 @@ export default function BankDetailPage() {
           </h1>
           {bank.description && (
             <p className="text-muted-foreground mt-2">{bank.description}</p>
+          )}
+          {bank.website && (
+            <div className="mt-3">
+              <a
+                href={bank.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+              >
+                <ExternalLink className="h-3 w-3" />
+                Website
+              </a>
+            </div>
           )}
         </div>
       </div>

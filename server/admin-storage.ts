@@ -378,6 +378,15 @@ export class AdminStorage {
     await db.delete(banks).where(eq(banks.id, id));
   }
 
+  async updateProject(id: number, data: Partial<InsertProject>): Promise<Project> {
+    const [updated] = await db
+      .update(projects)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(projects.id, id))
+      .returning();
+    return updated;
+  }
+
   async getAllBanksForExport(): Promise<Bank[]> {
     return db.select().from(banks).orderBy(asc(banks.name));
   }

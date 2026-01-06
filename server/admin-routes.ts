@@ -560,6 +560,7 @@ export function registerAdminRoutes(app: Express) {
       res.status(500).json({ message: "Failed to fetch session analytics" });
     }
   });
+  });
 }
 
 function convertToCSV(data: any[], columns: string[]): string {

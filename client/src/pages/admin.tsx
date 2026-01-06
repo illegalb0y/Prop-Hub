@@ -1791,6 +1791,12 @@ function DevelopersSection() {
   const { toast } = useToast();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<"active" | "deleted" | "all">("active");
+  const [sortBy, setSortBy] = useState<"name" | "createdAt" | "updatedAt">("updatedAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [bulkActionDialogOpen, setBulkActionDialogOpen] = useState(false);
+  const [bulkActionType, setBulkActionType] = useState<"delete" | "restore">("delete");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingDeveloper, setEditingDeveloper] = useState<Developer | null>(
     null,
@@ -1807,16 +1813,19 @@ function DevelopersSection() {
     isLoading,
     refetch,
   } = useQuery<PaginatedResult<Developer>>({
-    queryKey: ["/api/admin/developers", { page, search }],
+    queryKey: ["/api/admin/developers", { page, search, status, sortBy, sortOrder }],
     queryFn: async ({ queryKey }) => {
       const [_base, params] = queryKey as [
         string,
-        { page: number; search: string },
+        { page: number; search: string; status: string; sortBy: string; sortOrder: string },
       ];
       const searchParams = new URLSearchParams({
         page: params.page.toString(),
         limit: "10",
         search: params.search,
+        status: params.status,
+        sortBy: params.sortBy,
+        sortOrder: params.sortOrder,
       });
       const res = await apiRequest(
         "GET",
@@ -1866,6 +1875,91 @@ function DevelopersSection() {
       toast({ title: "Failed to delete developer", variant: "destructive" });
     },
   });
+
+  const restoreMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest("POST", `/api/admin/developers/${id}/restore`);
+    },
+    onSuccess: () => {
+      toast({ title: "Developer restored" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/developers"] });
+    },
+    onError: () => {
+      toast({ title: "Failed to restore developer", variant: "destructive" });
+    },
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      const res = await apiRequest("POST", "/api/admin/developers/bulk-delete", { ids });
+      return res.json();
+    },
+    onSuccess: (result) => {
+      setSelectedIds([]);
+      setBulkActionDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/developers"] });
+      const successCount = result.succeededIds?.length || 0;
+      const failCount = result.failed?.length || 0;
+      if (failCount > 0) {
+        toast({ title: `Deleted ${successCount} developers, ${failCount} failed`, variant: "destructive" });
+      } else {
+        toast({ title: `Deleted ${successCount} developers successfully` });
+      }
+    },
+    onError: () => {
+      toast({ title: "Bulk delete failed", variant: "destructive" });
+    },
+  });
+
+  const bulkRestoreMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      const res = await apiRequest("POST", "/api/admin/developers/bulk-restore", { ids });
+      return res.json();
+    },
+    onSuccess: (result) => {
+      setSelectedIds([]);
+      setBulkActionDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/developers"] });
+      const successCount = result.succeededIds?.length || 0;
+      const failCount = result.failed?.length || 0;
+      if (failCount > 0) {
+        toast({ title: `Restored ${successCount} developers, ${failCount} failed`, variant: "destructive" });
+      } else {
+        toast({ title: `Restored ${successCount} developers successfully` });
+      }
+    },
+    onError: () => {
+      toast({ title: "Bulk restore failed", variant: "destructive" });
+    },
+  });
+
+  const handleSelectAll = () => {
+    if (!developers?.data) return;
+    if (selectedIds.length === developers.data.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(developers.data.map((d) => d.id));
+    }
+  };
+
+  const handleSelectItem = (id: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const openBulkActionDialog = (action: "delete" | "restore") => {
+    setBulkActionType(action);
+    setBulkActionDialogOpen(true);
+  };
+
+  const executeBulkAction = () => {
+    if (bulkActionType === "delete") {
+      bulkDeleteMutation.mutate(selectedIds);
+    } else {
+      bulkRestoreMutation.mutate(selectedIds);
+    }
+  };
 
   const importMutation = useMutation({
     mutationFn: async () => {
@@ -1977,6 +2071,34 @@ function DevelopersSection() {
             data-testid="input-search-developers"
           />
         </div>
+        <Select value={status} onValueChange={(v) => { setStatus(v as any); setPage(1); setSelectedIds([]); }}>
+          <SelectTrigger className="w-32" data-testid="select-developer-status">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="deleted">Deleted</SelectItem>
+            <SelectItem value="all">All</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={sortBy} onValueChange={(v) => { setSortBy(v as any); setPage(1); }}>
+          <SelectTrigger className="w-36" data-testid="select-developer-sort">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="name">Name</SelectItem>
+            <SelectItem value="createdAt">Created</SelectItem>
+            <SelectItem value="updatedAt">Updated</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+          data-testid="button-toggle-developer-sort-order"
+        >
+          <ArrowUpDown className="h-4 w-4" />
+        </Button>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -2015,12 +2137,55 @@ function DevelopersSection() {
         </div>
       </div>
 
+      {selectedIds.length > 0 && (
+        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-md border">
+          <span className="text-sm font-medium">{selectedIds.length} selected</span>
+          {status === "active" || status === "all" ? (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => openBulkActionDialog("delete")}
+              data-testid="button-bulk-delete-developers"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Selected
+            </Button>
+          ) : null}
+          {status === "deleted" || status === "all" ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openBulkActionDialog("restore")}
+              data-testid="button-bulk-restore-developers"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Restore Selected
+            </Button>
+          ) : null}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelectedIds([])}
+            data-testid="button-clear-developer-selection"
+          >
+            Clear
+          </Button>
+        </div>
+      )}
+
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="border-b bg-muted/30">
                 <tr>
+                  <th className="p-4 w-12">
+                    <Checkbox
+                      checked={developers?.data && developers.data.length > 0 && selectedIds.length === developers.data.length}
+                      onCheckedChange={handleSelectAll}
+                      data-testid="checkbox-select-all-developers"
+                    />
+                  </th>
                   <th className="text-left p-4 font-medium text-sm">
                     Developer
                   </th>
@@ -2028,7 +2193,7 @@ function DevelopersSection() {
                     Description
                   </th>
                   <th className="text-left p-4 font-medium text-sm">
-                    Projects
+                    Status
                   </th>
                   <th className="text-right p-4 font-medium text-sm">
                     Actions
@@ -2039,9 +2204,16 @@ function DevelopersSection() {
                 {developers?.data?.map((developer) => (
                   <tr
                     key={developer.id}
-                    className="border-b last:border-0"
+                    className={`border-b last:border-0 ${selectedIds.includes(developer.id) ? 'bg-muted/30' : ''}`}
                     data-testid={`developer-row-${developer.id}`}
                   >
+                    <td className="p-4">
+                      <Checkbox
+                        checked={selectedIds.includes(developer.id)}
+                        onCheckedChange={() => handleSelectItem(developer.id)}
+                        data-testid={`checkbox-developer-${developer.id}`}
+                      />
+                    </td>
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10">
@@ -2057,9 +2229,16 @@ function DevelopersSection() {
                       {developer.description || "—"}
                     </td>
                     <td className="p-4">
-                      <Badge variant="secondary">
-                        {developer.projectCount || 0} projects
-                      </Badge>
+                      {developer.deletedAt ? (
+                        <Badge variant="destructive">Deleted</Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="text-green-600 border-green-300"
+                        >
+                          Active
+                        </Badge>
+                      )}
                     </td>
                     <td className="p-4 text-right">
                       <DropdownMenu>
@@ -2080,14 +2259,24 @@ function DevelopersSection() {
                             <Pencil className="h-4 w-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => deleteMutation.mutate(developer.id)}
-                            className="text-destructive"
-                            data-testid={`button-delete-developer-${developer.id}`}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
+                          {developer.deletedAt ? (
+                            <DropdownMenuItem
+                              onClick={() => restoreMutation.mutate(developer.id)}
+                              data-testid={`button-restore-developer-${developer.id}`}
+                            >
+                              <RotateCcw className="h-4 w-4 mr-2" />
+                              Restore
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              onClick={() => deleteMutation.mutate(developer.id)}
+                              className="text-destructive"
+                              data-testid={`button-delete-developer-${developer.id}`}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
@@ -2096,7 +2285,7 @@ function DevelopersSection() {
                 {(!developers?.data || developers.data.length === 0) && (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={5}
                       className="p-8 text-center text-muted-foreground"
                     >
                       No developers found
@@ -2187,6 +2376,35 @@ function DevelopersSection() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={bulkActionDialogOpen} onOpenChange={setBulkActionDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {bulkActionType === "delete" ? "Delete Developers" : "Restore Developers"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {bulkActionType === "delete"
+                ? `Are you sure you want to delete ${selectedIds.length} developer(s)? They can be restored later.`
+                : `Are you sure you want to restore ${selectedIds.length} developer(s)?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-developer-bulk-action">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={executeBulkAction}
+              className={bulkActionType === "delete" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+              data-testid="button-confirm-developer-bulk-action"
+            >
+              {bulkDeleteMutation.isPending || bulkRestoreMutation.isPending
+                ? "Processing..."
+                : bulkActionType === "delete"
+                  ? "Delete"
+                  : "Restore"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -2195,6 +2413,12 @@ function BanksSection() {
   const { toast } = useToast();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<"active" | "deleted" | "all">("active");
+  const [sortBy, setSortBy] = useState<"name" | "createdAt" | "updatedAt">("updatedAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [bulkActionDialogOpen, setBulkActionDialogOpen] = useState(false);
+  const [bulkActionType, setBulkActionType] = useState<"delete" | "restore">("delete");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBank, setEditingBank] = useState<Bank | null>(null);
   const [formData, setFormData] = useState({
@@ -2209,15 +2433,18 @@ function BanksSection() {
     isLoading,
     refetch,
   } = useQuery<PaginatedResult<Bank>>({
-    queryKey: ["/api/admin/banks", { page, search }],
+    queryKey: ["/api/admin/banks", { page, search, status, sortBy, sortOrder }],
     queryFn: async ({ queryKey }) => {
       const [_base, params] = queryKey as [
         string,
-        { page: number; search: string },
+        { page: number; search: string; status: string; sortBy: string; sortOrder: string },
       ];
       const searchParams = new URLSearchParams({
         page: params.page.toString(),
         limit: "10",
+        status: params.status,
+        sortBy: params.sortBy,
+        sortOrder: params.sortOrder,
         search: params.search,
       });
       const res = await apiRequest(
@@ -2268,6 +2495,91 @@ function BanksSection() {
       toast({ title: "Failed to delete bank", variant: "destructive" });
     },
   });
+
+  const restoreMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest("POST", `/api/admin/banks/${id}/restore`);
+    },
+    onSuccess: () => {
+      toast({ title: "Bank restored" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/banks"] });
+    },
+    onError: () => {
+      toast({ title: "Failed to restore bank", variant: "destructive" });
+    },
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      const res = await apiRequest("POST", "/api/admin/banks/bulk-delete", { ids });
+      return res.json();
+    },
+    onSuccess: (result) => {
+      setSelectedIds([]);
+      setBulkActionDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/banks"] });
+      const successCount = result.succeededIds?.length || 0;
+      const failCount = result.failed?.length || 0;
+      if (failCount > 0) {
+        toast({ title: `Deleted ${successCount} banks, ${failCount} failed`, variant: "destructive" });
+      } else {
+        toast({ title: `Deleted ${successCount} banks successfully` });
+      }
+    },
+    onError: () => {
+      toast({ title: "Bulk delete failed", variant: "destructive" });
+    },
+  });
+
+  const bulkRestoreMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      const res = await apiRequest("POST", "/api/admin/banks/bulk-restore", { ids });
+      return res.json();
+    },
+    onSuccess: (result) => {
+      setSelectedIds([]);
+      setBulkActionDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/banks"] });
+      const successCount = result.succeededIds?.length || 0;
+      const failCount = result.failed?.length || 0;
+      if (failCount > 0) {
+        toast({ title: `Restored ${successCount} banks, ${failCount} failed`, variant: "destructive" });
+      } else {
+        toast({ title: `Restored ${successCount} banks successfully` });
+      }
+    },
+    onError: () => {
+      toast({ title: "Bulk restore failed", variant: "destructive" });
+    },
+  });
+
+  const handleSelectAll = () => {
+    if (!banks?.data) return;
+    if (selectedIds.length === banks.data.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(banks.data.map((b) => b.id));
+    }
+  };
+
+  const handleSelectItem = (id: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const openBulkActionDialog = (action: "delete" | "restore") => {
+    setBulkActionType(action);
+    setBulkActionDialogOpen(true);
+  };
+
+  const executeBulkAction = () => {
+    if (bulkActionType === "delete") {
+      bulkDeleteMutation.mutate(selectedIds);
+    } else {
+      bulkRestoreMutation.mutate(selectedIds);
+    }
+  };
 
   const importMutation = useMutation({
     mutationFn: async () => {
@@ -2379,6 +2691,34 @@ function BanksSection() {
             data-testid="input-search-banks"
           />
         </div>
+        <Select value={status} onValueChange={(v) => { setStatus(v as any); setPage(1); setSelectedIds([]); }}>
+          <SelectTrigger className="w-32" data-testid="select-bank-status">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="deleted">Deleted</SelectItem>
+            <SelectItem value="all">All</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={sortBy} onValueChange={(v) => { setSortBy(v as any); setPage(1); }}>
+          <SelectTrigger className="w-36" data-testid="select-bank-sort">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="name">Name</SelectItem>
+            <SelectItem value="createdAt">Created</SelectItem>
+            <SelectItem value="updatedAt">Updated</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+          data-testid="button-toggle-bank-sort-order"
+        >
+          <ArrowUpDown className="h-4 w-4" />
+        </Button>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -2417,15 +2757,61 @@ function BanksSection() {
         </div>
       </div>
 
+      {selectedIds.length > 0 && (
+        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-md border">
+          <span className="text-sm font-medium">{selectedIds.length} selected</span>
+          {status === "active" || status === "all" ? (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => openBulkActionDialog("delete")}
+              data-testid="button-bulk-delete-banks"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Selected
+            </Button>
+          ) : null}
+          {status === "deleted" || status === "all" ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openBulkActionDialog("restore")}
+              data-testid="button-bulk-restore-banks"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Restore Selected
+            </Button>
+          ) : null}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelectedIds([])}
+            data-testid="button-clear-bank-selection"
+          >
+            Clear
+          </Button>
+        </div>
+      )}
+
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="border-b bg-muted/30">
                 <tr>
+                  <th className="p-4 w-12">
+                    <Checkbox
+                      checked={banks?.data && banks.data.length > 0 && selectedIds.length === banks.data.length}
+                      onCheckedChange={handleSelectAll}
+                      data-testid="checkbox-select-all-banks"
+                    />
+                  </th>
                   <th className="text-left p-4 font-medium text-sm">Bank</th>
                   <th className="text-left p-4 font-medium text-sm">
                     Description
+                  </th>
+                  <th className="text-left p-4 font-medium text-sm">
+                    Status
                   </th>
                   <th className="text-right p-4 font-medium text-sm">
                     Actions
@@ -2436,9 +2822,16 @@ function BanksSection() {
                 {banks?.data?.map((bank) => (
                   <tr
                     key={bank.id}
-                    className="border-b last:border-0"
+                    className={`border-b last:border-0 ${selectedIds.includes(bank.id) ? 'bg-muted/30' : ''}`}
                     data-testid={`bank-row-${bank.id}`}
                   >
+                    <td className="p-4">
+                      <Checkbox
+                        checked={selectedIds.includes(bank.id)}
+                        onCheckedChange={() => handleSelectItem(bank.id)}
+                        data-testid={`checkbox-bank-${bank.id}`}
+                      />
+                    </td>
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10">
@@ -2452,6 +2845,18 @@ function BanksSection() {
                     </td>
                     <td className="p-4 text-sm text-muted-foreground max-w-xs truncate">
                       {bank.description || "—"}
+                    </td>
+                    <td className="p-4">
+                      {bank.deletedAt ? (
+                        <Badge variant="destructive">Deleted</Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="text-green-600 border-green-300"
+                        >
+                          Active
+                        </Badge>
+                      )}
                     </td>
                     <td className="p-4 text-right">
                       <DropdownMenu>
@@ -2472,14 +2877,24 @@ function BanksSection() {
                             <Pencil className="h-4 w-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => deleteMutation.mutate(bank.id)}
-                            className="text-destructive"
-                            data-testid={`button-delete-bank-${bank.id}`}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
+                          {bank.deletedAt ? (
+                            <DropdownMenuItem
+                              onClick={() => restoreMutation.mutate(bank.id)}
+                              data-testid={`button-restore-bank-${bank.id}`}
+                            >
+                              <RotateCcw className="h-4 w-4 mr-2" />
+                              Restore
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              onClick={() => deleteMutation.mutate(bank.id)}
+                              className="text-destructive"
+                              data-testid={`button-delete-bank-${bank.id}`}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
@@ -2488,7 +2903,7 @@ function BanksSection() {
                 {(!banks?.data || banks.data.length === 0) && (
                   <tr>
                     <td
-                      colSpan={3}
+                      colSpan={5}
                       className="p-8 text-center text-muted-foreground"
                     >
                       No banks found
@@ -2577,6 +2992,35 @@ function BanksSection() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={bulkActionDialogOpen} onOpenChange={setBulkActionDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {bulkActionType === "delete" ? "Delete Banks" : "Restore Banks"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {bulkActionType === "delete"
+                ? `Are you sure you want to delete ${selectedIds.length} bank(s)? They can be restored later.`
+                : `Are you sure you want to restore ${selectedIds.length} bank(s)?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-bank-bulk-action">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={executeBulkAction}
+              className={bulkActionType === "delete" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+              data-testid="button-confirm-bank-bulk-action"
+            >
+              {bulkDeleteMutation.isPending || bulkRestoreMutation.isPending
+                ? "Processing..."
+                : bulkActionType === "delete"
+                  ? "Delete"
+                  : "Restore"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

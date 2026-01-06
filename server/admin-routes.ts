@@ -54,11 +54,38 @@ export function registerAdminRoutes(app: Express) {
   app.get("/api/admin/projects", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
       const { page, limit, search } = paginationSchema.parse(req.query);
-      const projects = await adminStorage.getProjectsForAdmin(page, limit, search);
+      const status = (req.query.status as "active" | "deleted" | "all") || "active";
+      const sortBy = (req.query.sortBy as "name" | "createdAt" | "updatedAt") || "updatedAt";
+      const sortOrder = (req.query.sortOrder as "asc" | "desc") || "desc";
+      const projects = await adminStorage.getProjectsForAdmin(page, limit, search, status, sortBy, sortOrder);
       res.json(projects);
     } catch (error) {
       console.error("Error fetching projects:", error);
       res.status(500).json({ message: "Failed to fetch projects" });
+    }
+  });
+
+  app.post("/api/admin/projects/bulk-delete", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { ids } = z.object({ ids: z.array(z.number()) }).parse(req.body);
+      const result = await adminStorage.bulkDeleteProjects(ids);
+      await createAuditLog(req, "project_bulk_delete", "project", ids.join(","), { ids, result });
+      res.json(result);
+    } catch (error) {
+      console.error("Error bulk deleting projects:", error);
+      res.status(500).json({ message: "Failed to bulk delete projects" });
+    }
+  });
+
+  app.post("/api/admin/projects/bulk-restore", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { ids } = z.object({ ids: z.array(z.number()) }).parse(req.body);
+      const result = await adminStorage.bulkRestoreProjects(ids);
+      await createAuditLog(req, "project_bulk_restore", "project", ids.join(","), { ids, result });
+      res.json(result);
+    } catch (error) {
+      console.error("Error bulk restoring projects:", error);
+      res.status(500).json({ message: "Failed to bulk restore projects" });
     }
   });
 
@@ -361,11 +388,38 @@ export function registerAdminRoutes(app: Express) {
   app.get("/api/admin/developers", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
       const { page, limit, search } = paginationSchema.parse(req.query);
-      const developers = await adminStorage.getDevelopers(page, limit, search);
+      const status = (req.query.status as "active" | "deleted" | "all") || "active";
+      const sortBy = (req.query.sortBy as "name" | "createdAt" | "updatedAt") || "name";
+      const sortOrder = (req.query.sortOrder as "asc" | "desc") || "asc";
+      const developers = await adminStorage.getDevelopers(page, limit, search, status, sortBy, sortOrder);
       res.json(developers);
     } catch (error) {
       console.error("Error fetching developers:", error);
       res.status(500).json({ message: "Failed to fetch developers" });
+    }
+  });
+
+  app.post("/api/admin/developers/bulk-delete", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { ids } = z.object({ ids: z.array(z.number()) }).parse(req.body);
+      const result = await adminStorage.bulkDeleteDevelopers(ids);
+      await createAuditLog(req, "developer_bulk_delete", "developer", ids.join(","), { ids, result });
+      res.json(result);
+    } catch (error) {
+      console.error("Error bulk deleting developers:", error);
+      res.status(500).json({ message: "Failed to bulk delete developers" });
+    }
+  });
+
+  app.post("/api/admin/developers/bulk-restore", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { ids } = z.object({ ids: z.array(z.number()) }).parse(req.body);
+      const result = await adminStorage.bulkRestoreDevelopers(ids);
+      await createAuditLog(req, "developer_bulk_restore", "developer", ids.join(","), { ids, result });
+      res.json(result);
+    } catch (error) {
+      console.error("Error bulk restoring developers:", error);
+      res.status(500).json({ message: "Failed to bulk restore developers" });
     }
   });
 
@@ -407,12 +461,24 @@ export function registerAdminRoutes(app: Express) {
   app.delete("/api/admin/developers/:id", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
       const { id } = idParamSchema.parse(req.params);
-      await adminStorage.deleteDeveloper(id);
+      await adminStorage.softDeleteDeveloper(id);
       await createAuditLog(req, "developer_delete", "developer", id.toString());
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting developer:", error);
       res.status(500).json({ message: "Failed to delete developer" });
+    }
+  });
+
+  app.post("/api/admin/developers/:id/restore", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { id } = idParamSchema.parse(req.params);
+      await adminStorage.restoreDeveloper(id);
+      await createAuditLog(req, "developer_restore", "developer", id.toString());
+      res.status(200).json({ message: "Developer restored" });
+    } catch (error) {
+      console.error("Error restoring developer:", error);
+      res.status(500).json({ message: "Failed to restore developer" });
     }
   });
 
@@ -433,11 +499,38 @@ export function registerAdminRoutes(app: Express) {
   app.get("/api/admin/banks", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
       const { page, limit, search } = paginationSchema.parse(req.query);
-      const banks = await adminStorage.getBanks(page, limit, search);
+      const status = (req.query.status as "active" | "deleted" | "all") || "active";
+      const sortBy = (req.query.sortBy as "name" | "createdAt" | "updatedAt") || "name";
+      const sortOrder = (req.query.sortOrder as "asc" | "desc") || "asc";
+      const banks = await adminStorage.getBanks(page, limit, search, status, sortBy, sortOrder);
       res.json(banks);
     } catch (error) {
       console.error("Error fetching banks:", error);
       res.status(500).json({ message: "Failed to fetch banks" });
+    }
+  });
+
+  app.post("/api/admin/banks/bulk-delete", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { ids } = z.object({ ids: z.array(z.number()) }).parse(req.body);
+      const result = await adminStorage.bulkDeleteBanks(ids);
+      await createAuditLog(req, "bank_bulk_delete", "bank", ids.join(","), { ids, result });
+      res.json(result);
+    } catch (error) {
+      console.error("Error bulk deleting banks:", error);
+      res.status(500).json({ message: "Failed to bulk delete banks" });
+    }
+  });
+
+  app.post("/api/admin/banks/bulk-restore", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { ids } = z.object({ ids: z.array(z.number()) }).parse(req.body);
+      const result = await adminStorage.bulkRestoreBanks(ids);
+      await createAuditLog(req, "bank_bulk_restore", "bank", ids.join(","), { ids, result });
+      res.json(result);
+    } catch (error) {
+      console.error("Error bulk restoring banks:", error);
+      res.status(500).json({ message: "Failed to bulk restore banks" });
     }
   });
 
@@ -479,12 +572,24 @@ export function registerAdminRoutes(app: Express) {
   app.delete("/api/admin/banks/:id", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
       const { id } = idParamSchema.parse(req.params);
-      await adminStorage.deleteBank(id);
+      await adminStorage.softDeleteBank(id);
       await createAuditLog(req, "bank_delete", "bank", id.toString());
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting bank:", error);
       res.status(500).json({ message: "Failed to delete bank" });
+    }
+  });
+
+  app.post("/api/admin/banks/:id/restore", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { id } = idParamSchema.parse(req.params);
+      await adminStorage.restoreBank(id);
+      await createAuditLog(req, "bank_restore", "bank", id.toString());
+      res.status(200).json({ message: "Bank restored" });
+    } catch (error) {
+      console.error("Error restoring bank:", error);
+      res.status(500).json({ message: "Failed to restore bank" });
     }
   });
 

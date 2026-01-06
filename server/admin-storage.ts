@@ -233,38 +233,61 @@ export class AdminStorage {
     };
   }
 
-  async getProjectsForAdmin(page: number, limit: number, search?: string): Promise<PaginatedResult<any>> {
+  async getProjectsForAdmin(
+    page: number, 
+    limit: number, 
+    search?: string,
+    status: "active" | "deleted" | "all" = "active",
+    sortBy: "name" | "createdAt" | "updatedAt" = "updatedAt",
+    sortOrder: "asc" | "desc" = "desc"
+  ): Promise<PaginatedResult<any>> {
     const offset = (page - 1) * limit;
 
-    let query = db.select({
-      id: projects.id,
-      name: projects.name,
-      developerId: projects.developerId,
-      cityId: projects.cityId,
-      districtId: projects.districtId,
-      address: projects.address,
-      shortDescription: projects.shortDescription,
-      description: projects.description,
-      latitude: projects.latitude,
-      longitude: projects.longitude,
-      priceFrom: projects.priceFrom,
-      currency: projects.currency,
-      deletedAt: projects.deletedAt,
-      createdAt: projects.createdAt,
-      updatedAt: projects.updatedAt,
-    }).from(projects);
-
-    let countQuery = db.select({ count: sql<number>`count(*)::int` }).from(projects);
-
-    if (search) {
-      const condition = ilike(projects.name, `%${search}%`);
-      query = query.where(condition) as typeof query;
-      countQuery = countQuery.where(condition) as typeof countQuery;
+    const conditions: any[] = [];
+    
+    if (status === "active") {
+      conditions.push(isNull(projects.deletedAt));
+    } else if (status === "deleted") {
+      conditions.push(sql`${projects.deletedAt} IS NOT NULL`);
     }
 
+    if (search) {
+      conditions.push(or(
+        ilike(projects.name, `%${search}%`),
+        sql`${projects.id}::text ILIKE ${'%' + search + '%'}`
+      ));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    
+    const orderColumn = sortBy === "name" ? projects.name : 
+                        sortBy === "createdAt" ? projects.createdAt : 
+                        projects.updatedAt;
+    const orderFn = sortOrder === "asc" ? asc : desc;
+
     const [data, [{ count }]] = await Promise.all([
-      query.orderBy(desc(projects.createdAt)).limit(limit).offset(offset),
-      countQuery,
+      db.select({
+        id: projects.id,
+        name: projects.name,
+        developerId: projects.developerId,
+        cityId: projects.cityId,
+        districtId: projects.districtId,
+        address: projects.address,
+        shortDescription: projects.shortDescription,
+        description: projects.description,
+        latitude: projects.latitude,
+        longitude: projects.longitude,
+        priceFrom: projects.priceFrom,
+        currency: projects.currency,
+        deletedAt: projects.deletedAt,
+        createdAt: projects.createdAt,
+        updatedAt: projects.updatedAt,
+      }).from(projects)
+        .where(whereClause)
+        .orderBy(orderFn(orderColumn))
+        .limit(limit)
+        .offset(offset),
+      db.select({ count: sql<number>`count(*)::int` }).from(projects).where(whereClause),
     ]);
 
     return {
@@ -274,6 +297,56 @@ export class AdminStorage {
       limit,
       totalPages: Math.ceil(count / limit),
     };
+  }
+
+  async bulkDeleteProjects(ids: number[]): Promise<{ succeededIds: number[]; failed: { id: number; reasonCode: string; message: string }[] }> {
+    const succeededIds: number[] = [];
+    const failed: { id: number; reasonCode: string; message: string }[] = [];
+
+    for (const id of ids) {
+      try {
+        const [project] = await db.select().from(projects).where(eq(projects.id, id));
+        if (!project) {
+          failed.push({ id, reasonCode: "NOT_FOUND", message: "Project not found" });
+          continue;
+        }
+        if (project.deletedAt) {
+          failed.push({ id, reasonCode: "ALREADY_DELETED", message: "Project already deleted" });
+          continue;
+        }
+        await db.update(projects).set({ deletedAt: new Date(), updatedAt: new Date() }).where(eq(projects.id, id));
+        succeededIds.push(id);
+      } catch (error) {
+        failed.push({ id, reasonCode: "ERROR", message: "Failed to delete" });
+      }
+    }
+
+    return { succeededIds, failed };
+  }
+
+  async bulkRestoreProjects(ids: number[]): Promise<{ succeededIds: number[]; failed: { id: number; reasonCode: string; message: string }[] }> {
+    const succeededIds: number[] = [];
+    const failed: { id: number; reasonCode: string; message: string }[] = [];
+
+    for (const id of ids) {
+      try {
+        const [project] = await db.select().from(projects).where(eq(projects.id, id));
+        if (!project) {
+          failed.push({ id, reasonCode: "NOT_FOUND", message: "Project not found" });
+          continue;
+        }
+        if (!project.deletedAt) {
+          failed.push({ id, reasonCode: "NOT_DELETED", message: "Project is not deleted" });
+          continue;
+        }
+        await db.update(projects).set({ deletedAt: null, updatedAt: new Date() }).where(eq(projects.id, id));
+        succeededIds.push(id);
+      } catch (error) {
+        failed.push({ id, reasonCode: "ERROR", message: "Failed to restore" });
+      }
+    }
+
+    return { succeededIds, failed };
   }
 
   async createProject(data: {
@@ -350,21 +423,41 @@ export class AdminStorage {
     return updated;
   }
 
-  async getDevelopers(page: number, limit: number, search?: string): Promise<PaginatedResult<Developer & { projectCount: number }>> {
+  async getDevelopers(
+    page: number, 
+    limit: number, 
+    search?: string,
+    status: "active" | "deleted" | "all" = "active",
+    sortBy: "name" | "createdAt" | "updatedAt" = "name",
+    sortOrder: "asc" | "desc" = "asc"
+  ): Promise<PaginatedResult<Developer & { projectCount: number }>> {
     const offset = (page - 1) * limit;
 
-    let query = db.select().from(developers);
-    let countQuery = db.select({ count: sql<number>`count(*)::int` }).from(developers);
-
-    if (search) {
-      const condition = ilike(developers.name, `%${search}%`);
-      query = query.where(condition) as typeof query;
-      countQuery = countQuery.where(condition) as typeof countQuery;
+    const conditions: any[] = [];
+    
+    if (status === "active") {
+      conditions.push(isNull(developers.deletedAt));
+    } else if (status === "deleted") {
+      conditions.push(sql`${developers.deletedAt} IS NOT NULL`);
     }
 
+    if (search) {
+      conditions.push(or(
+        ilike(developers.name, `%${search}%`),
+        sql`${developers.id}::text ILIKE ${'%' + search + '%'}`
+      ));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    
+    const orderColumn = sortBy === "name" ? developers.name : 
+                        sortBy === "createdAt" ? developers.createdAt : 
+                        developers.updatedAt;
+    const orderFn = sortOrder === "asc" ? asc : desc;
+
     const [data, [{ count }]] = await Promise.all([
-      query.orderBy(asc(developers.name)).limit(limit).offset(offset),
-      countQuery,
+      db.select().from(developers).where(whereClause).orderBy(orderFn(orderColumn)).limit(limit).offset(offset),
+      db.select({ count: sql<number>`count(*)::int` }).from(developers).where(whereClause),
     ]);
 
     const dataWithCounts = await Promise.all(
@@ -387,38 +480,119 @@ export class AdminStorage {
   }
 
   async createDeveloper(developer: InsertDeveloper): Promise<Developer> {
-    const [created] = await db.insert(developers).values(developer).returning();
+    const [created] = await db.insert(developers).values({
+      ...developer,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }).returning();
     return created;
   }
 
   async updateDeveloper(id: number, data: Partial<InsertDeveloper>): Promise<Developer> {
-    const [updated] = await db.update(developers).set(data).where(eq(developers.id, id)).returning();
+    const [updated] = await db.update(developers).set({
+      ...data,
+      updatedAt: new Date(),
+    }).where(eq(developers.id, id)).returning();
     return updated;
   }
 
-  async deleteDeveloper(id: number): Promise<void> {
-    await db.delete(developers).where(eq(developers.id, id));
+  async softDeleteDeveloper(id: number): Promise<void> {
+    await db.update(developers).set({ deletedAt: new Date(), updatedAt: new Date() }).where(eq(developers.id, id));
+  }
+
+  async restoreDeveloper(id: number): Promise<void> {
+    await db.update(developers).set({ deletedAt: null, updatedAt: new Date() }).where(eq(developers.id, id));
+  }
+
+  async bulkDeleteDevelopers(ids: number[]): Promise<{ succeededIds: number[]; failed: { id: number; reasonCode: string; message: string }[] }> {
+    const succeededIds: number[] = [];
+    const failed: { id: number; reasonCode: string; message: string }[] = [];
+
+    for (const id of ids) {
+      try {
+        const [dev] = await db.select().from(developers).where(eq(developers.id, id));
+        if (!dev) {
+          failed.push({ id, reasonCode: "NOT_FOUND", message: "Developer not found" });
+          continue;
+        }
+        if (dev.deletedAt) {
+          failed.push({ id, reasonCode: "ALREADY_DELETED", message: "Developer already deleted" });
+          continue;
+        }
+        await db.update(developers).set({ deletedAt: new Date(), updatedAt: new Date() }).where(eq(developers.id, id));
+        succeededIds.push(id);
+      } catch (error) {
+        failed.push({ id, reasonCode: "ERROR", message: "Failed to delete" });
+      }
+    }
+
+    return { succeededIds, failed };
+  }
+
+  async bulkRestoreDevelopers(ids: number[]): Promise<{ succeededIds: number[]; failed: { id: number; reasonCode: string; message: string }[] }> {
+    const succeededIds: number[] = [];
+    const failed: { id: number; reasonCode: string; message: string }[] = [];
+
+    for (const id of ids) {
+      try {
+        const [dev] = await db.select().from(developers).where(eq(developers.id, id));
+        if (!dev) {
+          failed.push({ id, reasonCode: "NOT_FOUND", message: "Developer not found" });
+          continue;
+        }
+        if (!dev.deletedAt) {
+          failed.push({ id, reasonCode: "NOT_DELETED", message: "Developer is not deleted" });
+          continue;
+        }
+        await db.update(developers).set({ deletedAt: null, updatedAt: new Date() }).where(eq(developers.id, id));
+        succeededIds.push(id);
+      } catch (error) {
+        failed.push({ id, reasonCode: "ERROR", message: "Failed to restore" });
+      }
+    }
+
+    return { succeededIds, failed };
   }
 
   async getAllDevelopersForExport(): Promise<Developer[]> {
-    return db.select().from(developers).orderBy(asc(developers.name));
+    return db.select().from(developers).where(isNull(developers.deletedAt)).orderBy(asc(developers.name));
   }
 
-  async getBanks(page: number, limit: number, search?: string): Promise<PaginatedResult<Bank>> {
+  async getBanks(
+    page: number, 
+    limit: number, 
+    search?: string,
+    status: "active" | "deleted" | "all" = "active",
+    sortBy: "name" | "createdAt" | "updatedAt" = "name",
+    sortOrder: "asc" | "desc" = "asc"
+  ): Promise<PaginatedResult<Bank>> {
     const offset = (page - 1) * limit;
 
-    let query = db.select().from(banks);
-    let countQuery = db.select({ count: sql<number>`count(*)::int` }).from(banks);
-
-    if (search) {
-      const condition = ilike(banks.name, `%${search}%`);
-      query = query.where(condition) as typeof query;
-      countQuery = countQuery.where(condition) as typeof countQuery;
+    const conditions: any[] = [];
+    
+    if (status === "active") {
+      conditions.push(isNull(banks.deletedAt));
+    } else if (status === "deleted") {
+      conditions.push(sql`${banks.deletedAt} IS NOT NULL`);
     }
 
+    if (search) {
+      conditions.push(or(
+        ilike(banks.name, `%${search}%`),
+        sql`${banks.id}::text ILIKE ${'%' + search + '%'}`
+      ));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    
+    const orderColumn = sortBy === "name" ? banks.name : 
+                        sortBy === "createdAt" ? banks.createdAt : 
+                        banks.updatedAt;
+    const orderFn = sortOrder === "asc" ? asc : desc;
+
     const [data, [{ count }]] = await Promise.all([
-      query.orderBy(asc(banks.name)).limit(limit).offset(offset),
-      countQuery,
+      db.select().from(banks).where(whereClause).orderBy(orderFn(orderColumn)).limit(limit).offset(offset),
+      db.select({ count: sql<number>`count(*)::int` }).from(banks).where(whereClause),
     ]);
 
     return {
@@ -431,21 +605,82 @@ export class AdminStorage {
   }
 
   async createBank(bank: InsertBank): Promise<Bank> {
-    const [created] = await db.insert(banks).values(bank).returning();
+    const [created] = await db.insert(banks).values({
+      ...bank,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }).returning();
     return created;
   }
 
   async updateBank(id: number, data: Partial<InsertBank>): Promise<Bank> {
-    const [updated] = await db.update(banks).set(data).where(eq(banks.id, id)).returning();
+    const [updated] = await db.update(banks).set({
+      ...data,
+      updatedAt: new Date(),
+    }).where(eq(banks.id, id)).returning();
     return updated;
   }
 
-  async deleteBank(id: number): Promise<void> {
-    await db.delete(banks).where(eq(banks.id, id));
+  async softDeleteBank(id: number): Promise<void> {
+    await db.update(banks).set({ deletedAt: new Date(), updatedAt: new Date() }).where(eq(banks.id, id));
+  }
+
+  async restoreBank(id: number): Promise<void> {
+    await db.update(banks).set({ deletedAt: null, updatedAt: new Date() }).where(eq(banks.id, id));
+  }
+
+  async bulkDeleteBanks(ids: number[]): Promise<{ succeededIds: number[]; failed: { id: number; reasonCode: string; message: string }[] }> {
+    const succeededIds: number[] = [];
+    const failed: { id: number; reasonCode: string; message: string }[] = [];
+
+    for (const id of ids) {
+      try {
+        const [bank] = await db.select().from(banks).where(eq(banks.id, id));
+        if (!bank) {
+          failed.push({ id, reasonCode: "NOT_FOUND", message: "Bank not found" });
+          continue;
+        }
+        if (bank.deletedAt) {
+          failed.push({ id, reasonCode: "ALREADY_DELETED", message: "Bank already deleted" });
+          continue;
+        }
+        await db.update(banks).set({ deletedAt: new Date(), updatedAt: new Date() }).where(eq(banks.id, id));
+        succeededIds.push(id);
+      } catch (error) {
+        failed.push({ id, reasonCode: "ERROR", message: "Failed to delete" });
+      }
+    }
+
+    return { succeededIds, failed };
+  }
+
+  async bulkRestoreBanks(ids: number[]): Promise<{ succeededIds: number[]; failed: { id: number; reasonCode: string; message: string }[] }> {
+    const succeededIds: number[] = [];
+    const failed: { id: number; reasonCode: string; message: string }[] = [];
+
+    for (const id of ids) {
+      try {
+        const [bank] = await db.select().from(banks).where(eq(banks.id, id));
+        if (!bank) {
+          failed.push({ id, reasonCode: "NOT_FOUND", message: "Bank not found" });
+          continue;
+        }
+        if (!bank.deletedAt) {
+          failed.push({ id, reasonCode: "NOT_DELETED", message: "Bank is not deleted" });
+          continue;
+        }
+        await db.update(banks).set({ deletedAt: null, updatedAt: new Date() }).where(eq(banks.id, id));
+        succeededIds.push(id);
+      } catch (error) {
+        failed.push({ id, reasonCode: "ERROR", message: "Failed to restore" });
+      }
+    }
+
+    return { succeededIds, failed };
   }
 
   async getAllBanksForExport(): Promise<Bank[]> {
-    return db.select().from(banks).orderBy(asc(banks.name));
+    return db.select().from(banks).where(isNull(banks.deletedAt)).orderBy(asc(banks.name));
   }
 
   async getAllProjectsForExport(): Promise<any[]> {

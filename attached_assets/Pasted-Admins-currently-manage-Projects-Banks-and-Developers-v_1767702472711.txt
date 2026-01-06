@@ -1,0 +1,157 @@
+Admins currently manage Projects, Banks, and Developers via separate sections in the admin panel. As data grows, admins need faster ways to locate objects and perform actions on multiple objects at once. This PRD adds:
+
+Multi-select in list views to enable bulk Delete and bulk Restore
+Sorting + filtering within each section to quickly find specific objects for admin actions
+2. Goals
+Enable admins to select multiple objects in list view and perform bulk actions:
+Delete (soft-delete) for active objects
+Restore for deleted objects
+Provide consistent sorting and filtering controls across Projects/Banks/Developers
+Reduce time-to-find and time-to-act on objects in large lists
+Minimize accidental destructive actions via clear UI and confirmation steps
+3. Non-goals
+Introducing new object types or changing data models beyond what’s necessary for list operations
+Implementing complex advanced search (full-text across all fields) unless explicitly included in requirements
+Bulk editing fields (other than delete/restore)
+Changing existing permission model (except enforcing it for these actions)
+4. Users & Use Cases
+Primary user
+Admin / Moderator with permissions to view and manage Projects/Banks/Developers.
+Key use cases
+Select 10 projects and delete them after a moderation sweep
+Filter developers by status “Pending” and restore multiple previously deleted entries
+Sort banks by updated date to find recently modified items
+Filter projects by name or ID to quickly open and review a single item
+5. Assumptions / Dependencies
+“Delete” is soft delete (object can be restored). If hard delete exists, it is out of scope unless specified.
+Each object has an identifier and metadata available (e.g., createdAt/updatedAt/status).
+Backend supports:
+Pagination
+Filtering and sorting parameters
+Bulk action endpoints (or can be added)
+Permission checks exist server-side for delete/restore actions.
+6. UX Requirements
+6.1 List View: Multi-select
+Applies to list pages in:
+
+Admin → Projects
+Admin → Banks
+Admin → Developers
+UI components
+
+A checkbox in the table header for Select all on current page
+A checkbox on each row to select that row
+A bulk action toolbar appears when ≥ 1 item is selected:
+Shows count: “Selected: N”
+Buttons: Delete and/or Restore (contextual)
+“Clear selection” action
+Selection behavior
+
+Selecting header checkbox selects all visible rows on the current page.
+Selection persists when:
+Applying sorting/filtering: selection should be cleared by default to avoid acting on unintended sets (recommended).
+Alternative (optional): keep selection but show warning “Filters changed; selection updated.” (requires more complexity)
+Navigating pagination: selection cleared by default (simpler, safer).
+Bulk actions availability
+
+If viewing “Active” list: show Delete.
+If viewing “Deleted/Archived” list: show Restore.
+If list mixes active and deleted items (not recommended), bulk action buttons should be enabled only if the selection is homogeneous or the system supports applying correct action per item; otherwise show validation message.
+Confirmation
+
+Bulk Delete: modal confirmation:
+Title: “Delete N items?”
+Copy: “Deleted items can be restored.”
+Actions: Cancel / Delete
+Bulk Restore: modal confirmation:
+Title: “Restore N items?”
+Copy: “Restored items will become active.”
+Actions: Cancel / Restore
+Results and feedback
+
+After action completes:
+Show toast: “Deleted N items” / “Restored N items”
+Refresh list data
+Clear selection
+Partial success handling:
+Toast: “Deleted X of N items”
+Provide a details expandable section or downloadable error list (at minimum show which IDs failed and why).
+6.2 Sorting & Filtering
+Each section gets a Filter bar above the list and sortable columns.
+
+Common filters (all sections)
+Status (Active / Deleted)
+Default: Active
+Search input (single field)
+Matches: Name + ID (exact or partial)
+Behavior: Debounced input (300–500ms) or explicit “Search” button (choose one and keep consistent)
+Sorting (common)
+Sortable fields (minimum):
+Created date (createdAt)
+Updated date (updatedAt)
+Name (alphabetical)
+Default sort:
+updatedAt desc (recommended) or current behavior if already established
+Section-specific filters (recommended if fields exist)
+Projects
+Developer (dropdown / autocomplete)
+Bank (dropdown / autocomplete)
+Country/Region (if applicable)
+Banks
+Country/Region
+Bank code (if exists)
+Developers
+Verification/KYC status (if exists)
+Country/Region
+Filter UX
+
+Filters should be combinable (AND logic).
+“Clear filters” button resets to defaults.
+Filters + sort should be reflected in the URL query string for shareable/admin-friendly links.
+7. Functional Requirements (Detailed)
+7.1 Backend/API
+List endpoints must accept:
+
+page, pageSize
+sortBy (enum), sortOrder (asc/desc)
+status (active/deleted)
+q (search term)
+Optional section-specific params (e.g., developerId, bankId, country)
+Bulk actions
+
+POST /admin/projects/bulk-delete body: { ids: [...] }
+POST /admin/projects/bulk-restore body: { ids: [...] } (Similar for banks/developers)
+Response should include:
+
+succeededIds
+failed: [{ id, reasonCode, message }]
+7.2 Permissions & Security
+Only authorized roles can perform delete/restore.
+Server must enforce access regardless of UI state.
+Rate limiting / max bulk size:
+Define max IDs per request (e.g., 100) to protect system; if selection exceeds, UI should batch or warn.
+8. Edge Cases
+Item already deleted when bulk delete is applied → return failed with reason “ALREADY_DELETED” or treat idempotently.
+Item cannot be restored due to constraints (e.g., missing dependencies) → show per-item failure.
+Pagination changes due to filters after action → list refresh should land on a valid page.
+Very large datasets:
+Ensure query performance with indexes on searchable/sortable fields (id, name, status, createdAt, updatedAt).
+9. Metrics / Success Criteria
+Reduction in median time to locate an object (proxy: fewer page navigations, faster completion)
+Number of bulk actions performed per week (adoption)
+Error rate for bulk actions (should be low; track partial failures)
+Admin satisfaction feedback (qualitative)
+10. QA / Acceptance Criteria
+Multi-select
+ Each section shows row checkboxes and header “select all on page”
+ Bulk action bar appears when ≥ 1 selected
+ Bulk delete works for active items; bulk restore works for deleted items
+ Confirmation modal appears; cancel does nothing
+ After completion, list refreshes and selection clears
+ Partial success is communicated with details
+Sorting & Filtering
+ Filters apply correctly and can be combined
+ Sorting toggles asc/desc and persists in URL
+ “Clear filters” resets to default state
+ Search works for ID and name and is consistent across sections
+ Performance: list loads within acceptable time under expected data volume (define target, e.g., p95 < 1.5s)

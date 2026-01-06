@@ -308,22 +308,50 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(viewHistory)
       .where(eq(viewHistory.userId, userId))
-      .orderBy(desc(viewHistory.viewedAt))
-      .limit(50);
+      .orderBy(desc(viewHistory.viewedAt));
 
     const result: (ViewHistory & { project: ProjectWithRelations })[] = [];
+    const seenProjectIds = new Set<number>();
+
     for (const item of history) {
+      if (seenProjectIds.has(item.projectId)) continue;
+      
       const project = await this.getProject(item.projectId);
       if (project) {
         result.push({ ...item, project });
+        seenProjectIds.add(item.projectId);
       }
+      
+      if (result.length >= 20) break;
     }
 
     return result;
   }
 
   async addToHistory(history: InsertViewHistory): Promise<ViewHistory> {
+    // Delete existing entry for this project and user to ensure uniqueness
+    // and that the new entry will be the "most recent"
+    await db.delete(viewHistory).where(
+      and(
+        eq(viewHistory.userId, history.userId),
+        eq(viewHistory.projectId, history.projectId)
+      )
+    );
+
     const [created] = await db.insert(viewHistory).values(history).returning();
+
+    // Limit to 20 items by deleting older ones
+    const userHistory = await db
+      .select({ id: viewHistory.id })
+      .from(viewHistory)
+      .where(eq(viewHistory.userId, history.userId))
+      .orderBy(desc(viewHistory.viewedAt));
+
+    if (userHistory.length > 20) {
+      const idsToDelete = userHistory.slice(20).map(h => h.id);
+      await db.delete(viewHistory).where(inArray(viewHistory.id, idsToDelete));
+    }
+
     return created;
   }
 

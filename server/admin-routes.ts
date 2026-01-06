@@ -28,7 +28,7 @@ const upload = multer({
 async function createAuditLog(req: Request, actionType: string, targetType?: string, targetId?: string, metadata?: any) {
   const adminUser = (req as any).adminUser;
   const ip = req.ip || req.socket.remoteAddress || "";
-  
+
   await adminStorage.createAuditLog({
     adminId: adminUser.id,
     actionType,
@@ -76,10 +76,19 @@ export function registerAdminRoutes(app: Express) {
         description: z.string().optional().nullable(),
         priceFrom: z.number().optional().nullable(),
         currency: z.string().default("USD"),
-        completionDate: z.string().datetime().optional().nullable(), // Добавить эту строку
-        coverImageUrl: z.string().optional().nullable(), // Добавить эту строку
+        completionDate: z.string().datetime().optional().nullable(),
+        coverImageUrl: z.string().optional().nullable(),
       });
 
+      const data = projectSchema.parse(req.body);
+      const project = await adminStorage.createProject(data);
+      await createAuditLog(req, "project_create", "project", project.id.toString(), { name: data.name });
+      res.status(201).json(project);
+    } catch (error) {
+      console.error("Error creating project:", error);
+      res.status(500).json({ message: "Failed to create project" });
+    }
+  });
 
   app.patch("/api/admin/projects/:id", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
@@ -101,7 +110,7 @@ export function registerAdminRoutes(app: Express) {
       });
 
       const data = projectSchema.parse(req.body);
-      
+
       const existingProject = await storage.getProject(id);
       if (!existingProject) {
         return res.status(404).json({ message: "Project not found" });
@@ -120,14 +129,14 @@ export function registerAdminRoutes(app: Express) {
     try {
       const { id } = idParamSchema.parse(req.params);
       const project = await storage.getProject(id);
-      
+
       if (!project) {
         return res.status(404).json({ message: "Project not found" });
       }
 
       await adminStorage.softDeleteProject(id);
       await createAuditLog(req, "project_delete", "project", id.toString(), { name: project.name });
-      
+
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting project:", error);
@@ -138,10 +147,10 @@ export function registerAdminRoutes(app: Express) {
   app.post("/api/admin/projects/:id/restore", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
       const { id } = idParamSchema.parse(req.params);
-      
+
       await adminStorage.restoreProject(id);
       await createAuditLog(req, "project_restore", "project", id.toString());
-      
+
       res.status(200).json({ message: "Project restored" });
     } catch (error) {
       console.error("Error restoring project:", error);
@@ -156,7 +165,7 @@ export function registerAdminRoutes(app: Express) {
       }
 
       const adminUser = (req as any).adminUser;
-      
+
       const importJob = await adminStorage.createImportJob({
         filename: req.file.originalname,
         status: "processing",
@@ -242,14 +251,14 @@ export function registerAdminRoutes(app: Express) {
     try {
       const { reason } = userBanSchema.parse(req.body);
       const user = await adminStorage.getUser(req.params.id);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
 
       await adminStorage.banUser(req.params.id, reason);
       await createAuditLog(req, "user_ban", "user", req.params.id, { email: user.email, reason });
-      
+
       res.json({ message: "User banned successfully" });
     } catch (error) {
       console.error("Error banning user:", error);
@@ -260,14 +269,14 @@ export function registerAdminRoutes(app: Express) {
   app.post("/api/admin/users/:id/unban", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
       const user = await adminStorage.getUser(req.params.id);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
 
       await adminStorage.unbanUser(req.params.id);
       await createAuditLog(req, "user_unban", "user", req.params.id, { email: user.email });
-      
+
       res.json({ message: "User unbanned successfully" });
     } catch (error) {
       console.error("Error unbanning user:", error);
@@ -279,10 +288,10 @@ export function registerAdminRoutes(app: Express) {
     try {
       const roleSchema = z.object({ role: z.enum(["user", "admin"]) });
       const { role } = roleSchema.parse(req.body);
-      
+
       await adminStorage.setUserRole(req.params.id, role);
       await createAuditLog(req, "user_role_change", "user", req.params.id, { newRole: role });
-      
+
       res.json({ message: "User role updated" });
     } catch (error) {
       console.error("Error updating user role:", error);
@@ -305,15 +314,15 @@ export function registerAdminRoutes(app: Express) {
     try {
       const data = ipBanSchema.parse(req.body);
       const adminUser = (req as any).adminUser;
-      
+
       const ban = await adminStorage.createIpBan({
         ...data,
         createdByAdminId: adminUser.id,
       });
-      
+
       invalidateIpBanCache();
       await createAuditLog(req, "ip_ban_add", "ip_ban", ban.id, { ip: data.ip, reason: data.reason });
-      
+
       res.status(201).json(ban);
     } catch (error) {
       console.error("Error creating IP ban:", error);
@@ -326,7 +335,7 @@ export function registerAdminRoutes(app: Express) {
       await adminStorage.deleteIpBan(req.params.id);
       invalidateIpBanCache();
       await createAuditLog(req, "ip_ban_remove", "ip_ban", req.params.id);
-      
+
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting IP ban:", error);
@@ -559,7 +568,6 @@ export function registerAdminRoutes(app: Express) {
       console.error("Error fetching session analytics:", error);
       res.status(500).json({ message: "Failed to fetch session analytics" });
     }
-  });
   });
 }
 

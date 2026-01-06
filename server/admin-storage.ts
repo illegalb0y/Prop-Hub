@@ -19,10 +19,10 @@ export interface PaginatedResult<T> {
 export class AdminStorage {
   async getUsers(page: number, limit: number, search?: string): Promise<PaginatedResult<User>> {
     const offset = (page - 1) * limit;
-    
+
     let query = db.select().from(users);
     let countQuery = db.select({ count: sql<number>`count(*)::int` }).from(users);
-    
+
     if (search) {
       const condition = or(
         ilike(users.email, `%${search}%`),
@@ -77,7 +77,7 @@ export class AdminStorage {
 
   async getIpBans(page: number, limit: number): Promise<PaginatedResult<IpBan>> {
     const offset = (page - 1) * limit;
-    
+
     const [data, [{ count }]] = await Promise.all([
       db.select().from(ipBans).orderBy(desc(ipBans.createdAt)).limit(limit).offset(offset),
       db.select({ count: sql<number>`count(*)::int` }).from(ipBans),
@@ -141,7 +141,7 @@ export class AdminStorage {
 
   async getImportJobs(page: number, limit: number): Promise<PaginatedResult<ImportJob>> {
     const offset = (page - 1) * limit;
-    
+
     const [data, [{ count }]] = await Promise.all([
       db.select().from(importJobs).orderBy(desc(importJobs.createdAt)).limit(limit).offset(offset),
       db.select({ count: sql<number>`count(*)::int` }).from(importJobs),
@@ -171,10 +171,10 @@ export class AdminStorage {
 
   async getAuditLogs(page: number, limit: number, filters?: { userId?: string; actionType?: string }): Promise<PaginatedResult<AuditLog>> {
     const offset = (page - 1) * limit;
-    
+
     let query = db.select().from(auditLogs);
     let countQuery = db.select({ count: sql<number>`count(*)::int` }).from(auditLogs);
-    
+
     const conditions = [];
     if (filters?.userId) {
       conditions.push(eq(auditLogs.adminId, filters.userId));
@@ -286,10 +286,10 @@ export class AdminStorage {
 
   async getDevelopers(page: number, limit: number, search?: string): Promise<PaginatedResult<Developer & { projectCount: number }>> {
     const offset = (page - 1) * limit;
-    
+
     let query = db.select().from(developers);
     let countQuery = db.select({ count: sql<number>`count(*)::int` }).from(developers);
-    
+
     if (search) {
       const condition = ilike(developers.name, `%${search}%`);
       query = query.where(condition) as typeof query;
@@ -340,10 +340,10 @@ export class AdminStorage {
 
   async getBanks(page: number, limit: number, search?: string): Promise<PaginatedResult<Bank>> {
     const offset = (page - 1) * limit;
-    
+
     let query = db.select().from(banks);
     let countQuery = db.select({ count: sql<number>`count(*)::int` }).from(banks);
-    
+
     if (search) {
       const condition = ilike(banks.name, `%${search}%`);
       query = query.where(condition) as typeof query;
@@ -378,22 +378,13 @@ export class AdminStorage {
     await db.delete(banks).where(eq(banks.id, id));
   }
 
-  async updateProject(id: number, data: Partial<InsertProject>): Promise<Project> {
-    const [updated] = await db
-      .update(projects)
-      .set({ ...data, updatedAt: new Date() })
-      .where(eq(projects.id, id))
-      .returning();
-    return updated;
-  }
-
   async getAllBanksForExport(): Promise<Bank[]> {
     return db.select().from(banks).orderBy(asc(banks.name));
   }
 
   async getAllProjectsForExport(): Promise<any[]> {
     const allProjects = await db.select().from(projects).where(isNull(projects.deletedAt)).orderBy(asc(projects.name));
-    
+
     const result = await Promise.all(
       allProjects.map(async (project) => {
         const [developer] = await db.select().from(developers).where(eq(developers.id, project.developerId));
@@ -407,7 +398,7 @@ export class AdminStorage {
         };
       })
     );
-    
+
     return result;
   }
 

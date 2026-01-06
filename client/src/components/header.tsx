@@ -1,5 +1,5 @@
 import { Heart, Map, User, Search, X, LogOut, Menu } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,7 @@ interface HeaderProps {
 export function Header({ searchQuery, onSearchChange }: HeaderProps) {
   const { t } = useTranslation();
   const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const [location] = useLocation();
 
   const getInitials = () => {
     if (user?.firstName && user?.lastName) {
@@ -77,7 +78,7 @@ export function Header({ searchQuery, onSearchChange }: HeaderProps) {
         </Button>
 
         <Button variant="ghost" size="icon" asChild data-testid="button-map">
-          <Link href="/map">
+          <Link href={location === "/map" ? "/" : "/map"}>
             <Map className="h-5 w-5" />
           </Link>
         </Button>

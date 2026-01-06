@@ -36,6 +36,25 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ArrowUpDown, RotateCcw } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -888,6 +907,12 @@ function ProjectsSection() {
   const { toast } = useToast();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<"active" | "deleted" | "all">("active");
+  const [sortBy, setSortBy] = useState<"name" | "createdAt" | "updatedAt">("updatedAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [bulkActionDialogOpen, setBulkActionDialogOpen] = useState(false);
+  const [bulkActionType, setBulkActionType] = useState<"delete" | "restore">("delete");
   const [importFile, setImportFile] = useState<File | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -911,16 +936,19 @@ function ProjectsSection() {
     isLoading,
     refetch,
   } = useQuery<PaginatedResult<Project>>({
-    queryKey: ["/api/admin/projects", { page, search }],
+    queryKey: ["/api/admin/projects", { page, search, status, sortBy, sortOrder }],
     queryFn: async ({ queryKey }) => {
       const [_base, params] = queryKey as [
         string,
-        { page: number; search: string },
+        { page: number; search: string; status: string; sortBy: string; sortOrder: string },
       ];
       const searchParams = new URLSearchParams({
         page: params.page.toString(),
         limit: "10",
         search: params.search,
+        status: params.status,
+        sortBy: params.sortBy,
+        sortOrder: params.sortOrder,
       });
       const res = await apiRequest(
         "GET",
@@ -1008,6 +1036,78 @@ function ProjectsSection() {
       toast({ title: "Failed to restore project", variant: "destructive" });
     },
   });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      const res = await apiRequest("POST", "/api/admin/projects/bulk-delete", { ids });
+      return res.json();
+    },
+    onSuccess: (result) => {
+      setSelectedIds([]);
+      setBulkActionDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
+      const successCount = result.succeededIds?.length || 0;
+      const failCount = result.failed?.length || 0;
+      if (failCount > 0) {
+        toast({ title: `Deleted ${successCount} projects, ${failCount} failed`, variant: "destructive" });
+      } else {
+        toast({ title: `Deleted ${successCount} projects successfully` });
+      }
+    },
+    onError: () => {
+      toast({ title: "Bulk delete failed", variant: "destructive" });
+    },
+  });
+
+  const bulkRestoreMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      const res = await apiRequest("POST", "/api/admin/projects/bulk-restore", { ids });
+      return res.json();
+    },
+    onSuccess: (result) => {
+      setSelectedIds([]);
+      setBulkActionDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
+      const successCount = result.succeededIds?.length || 0;
+      const failCount = result.failed?.length || 0;
+      if (failCount > 0) {
+        toast({ title: `Restored ${successCount} projects, ${failCount} failed`, variant: "destructive" });
+      } else {
+        toast({ title: `Restored ${successCount} projects successfully` });
+      }
+    },
+    onError: () => {
+      toast({ title: "Bulk restore failed", variant: "destructive" });
+    },
+  });
+
+  const handleSelectAll = () => {
+    if (!projects?.data) return;
+    if (selectedIds.length === projects.data.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(projects.data.map((p) => p.id));
+    }
+  };
+
+  const handleSelectItem = (id: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const openBulkActionDialog = (action: "delete" | "restore") => {
+    setBulkActionType(action);
+    setBulkActionDialogOpen(true);
+  };
+
+  const executeBulkAction = () => {
+    if (bulkActionType === "delete") {
+      bulkDeleteMutation.mutate(selectedIds);
+    } else {
+      bulkRestoreMutation.mutate(selectedIds);
+    }
+  };
 
   const importMutation = useMutation({
     mutationFn: async () => {
@@ -1169,6 +1269,34 @@ function ProjectsSection() {
             data-testid="input-search-projects"
           />
         </div>
+        <Select value={status} onValueChange={(v) => { setStatus(v as any); setPage(1); setSelectedIds([]); }}>
+          <SelectTrigger className="w-32" data-testid="select-project-status">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="deleted">Deleted</SelectItem>
+            <SelectItem value="all">All</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={sortBy} onValueChange={(v) => { setSortBy(v as any); setPage(1); }}>
+          <SelectTrigger className="w-36" data-testid="select-project-sort">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="name">Name</SelectItem>
+            <SelectItem value="createdAt">Created</SelectItem>
+            <SelectItem value="updatedAt">Updated</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+          data-testid="button-toggle-sort-order"
+        >
+          <ArrowUpDown className="h-4 w-4" />
+        </Button>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -1207,12 +1335,55 @@ function ProjectsSection() {
         </div>
       </div>
 
+      {selectedIds.length > 0 && (
+        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-md border">
+          <span className="text-sm font-medium">{selectedIds.length} selected</span>
+          {status === "active" || status === "all" ? (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => openBulkActionDialog("delete")}
+              data-testid="button-bulk-delete-projects"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Selected
+            </Button>
+          ) : null}
+          {status === "deleted" || status === "all" ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openBulkActionDialog("restore")}
+              data-testid="button-bulk-restore-projects"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Restore Selected
+            </Button>
+          ) : null}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelectedIds([])}
+            data-testid="button-clear-selection"
+          >
+            Clear
+          </Button>
+        </div>
+      )}
+
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="border-b bg-muted/30">
                 <tr>
+                  <th className="p-4 w-12">
+                    <Checkbox
+                      checked={projects?.data && projects.data.length > 0 && selectedIds.length === projects.data.length}
+                      onCheckedChange={handleSelectAll}
+                      data-testid="checkbox-select-all-projects"
+                    />
+                  </th>
                   <th className="text-left p-4 font-medium text-sm">ID</th>
                   <th className="text-left p-4 font-medium text-sm">Name</th>
                   <th className="text-left p-4 font-medium text-sm">Price</th>
@@ -1226,9 +1397,16 @@ function ProjectsSection() {
                 {projects?.data?.map((project) => (
                   <tr
                     key={project.id}
-                    className="border-b last:border-0"
+                    className={`border-b last:border-0 ${selectedIds.includes(project.id) ? 'bg-muted/30' : ''}`}
                     data-testid={`project-row-${project.id}`}
                   >
+                    <td className="p-4">
+                      <Checkbox
+                        checked={selectedIds.includes(project.id)}
+                        onCheckedChange={() => handleSelectItem(project.id)}
+                        data-testid={`checkbox-project-${project.id}`}
+                      />
+                    </td>
                     <td className="p-4 text-sm text-muted-foreground">
                       #{project.id}
                     </td>
@@ -1576,6 +1754,35 @@ function ProjectsSection() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={bulkActionDialogOpen} onOpenChange={setBulkActionDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {bulkActionType === "delete" ? "Delete Projects" : "Restore Projects"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {bulkActionType === "delete"
+                ? `Are you sure you want to delete ${selectedIds.length} project(s)? They can be restored later.`
+                : `Are you sure you want to restore ${selectedIds.length} project(s)?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-bulk-action">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={executeBulkAction}
+              className={bulkActionType === "delete" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+              data-testid="button-confirm-bulk-action"
+            >
+              {bulkDeleteMutation.isPending || bulkRestoreMutation.isPending
+                ? "Processing..."
+                : bulkActionType === "delete"
+                  ? "Delete"
+                  : "Restore"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -276,11 +276,77 @@ export class AdminStorage {
     };
   }
 
-  async updateProject(id: number, data: any): Promise<any> {
-    const [updated] = await db.update(projects).set({
-      ...data,
+  async createProject(data: {
+    name: string;
+    developerId: number;
+    cityId: number;
+    districtId: number;
+    latitude: number | null;
+    longitude: number | null;
+    address?: string | null;
+    shortDescription?: string | null;
+    description?: string | null;
+    priceFrom?: number | null;
+    currency?: string;
+    completionDate?: string | null;
+    coverImageUrl?: string | null;
+  }): Promise<any> {
+    const projectData = {
+      name: data.name,
+      developerId: data.developerId,
+      cityId: data.cityId,
+      districtId: data.districtId,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      address: data.address ?? null,
+      shortDescription: data.shortDescription ?? null,
+      description: data.description ?? null,
+      priceFrom: data.priceFrom ?? null,
+      currency: data.currency ?? "USD",
+      completionDate: data.completionDate ? new Date(data.completionDate) : null,
+      coverImageUrl: data.coverImageUrl ?? null,
+      createdAt: new Date(),
       updatedAt: new Date(),
-    }).where(eq(projects.id, id)).returning();
+    };
+    const [created] = await db.insert(projects).values(projectData).returning();
+    return created;
+  }
+
+  async updateProject(id: number, data: {
+    name?: string;
+    developerId?: number;
+    cityId?: number;
+    districtId?: number;
+    latitude?: number | null;
+    longitude?: number | null;
+    address?: string | null;
+    shortDescription?: string | null;
+    description?: string | null;
+    priceFrom?: number | null;
+    currency?: string;
+    completionDate?: string | null;
+    coverImageUrl?: string | null;
+  }): Promise<any> {
+    const updateData: Record<string, any> = {
+      updatedAt: new Date(),
+    };
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.developerId !== undefined) updateData.developerId = data.developerId;
+    if (data.cityId !== undefined) updateData.cityId = data.cityId;
+    if (data.districtId !== undefined) updateData.districtId = data.districtId;
+    if (data.latitude !== undefined) updateData.latitude = data.latitude;
+    if (data.longitude !== undefined) updateData.longitude = data.longitude;
+    if (data.address !== undefined) updateData.address = data.address;
+    if (data.shortDescription !== undefined) updateData.shortDescription = data.shortDescription;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.priceFrom !== undefined) updateData.priceFrom = data.priceFrom;
+    if (data.currency !== undefined) updateData.currency = data.currency;
+    if (data.completionDate !== undefined) {
+      updateData.completionDate = data.completionDate ? new Date(data.completionDate) : null;
+    }
+    if (data.coverImageUrl !== undefined) updateData.coverImageUrl = data.coverImageUrl;
+    
+    const [updated] = await db.update(projects).set(updateData).where(eq(projects.id, id)).returning();
     return updated;
   }
 

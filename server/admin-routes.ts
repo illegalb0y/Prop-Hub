@@ -10,6 +10,8 @@ import { z } from "zod";
 import multer from "multer";
 import { parse } from "csv-parse";
 import { Readable } from "stream";
+import { developers, cities, districts, banks } from "@shared/schema";
+import { db } from "./db"; 
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -67,23 +69,17 @@ export function registerAdminRoutes(app: Express) {
         developerId: z.number(),
         cityId: z.number(),
         districtId: z.number(),
-        latitude: z.number(),
-        longitude: z.number(),
+        latitude: z.number().nullable(),
+        longitude: z.number().nullable(),
         address: z.string().optional().nullable(),
         shortDescription: z.string().optional().nullable(),
         description: z.string().optional().nullable(),
         priceFrom: z.number().optional().nullable(),
         currency: z.string().default("USD"),
+        completionDate: z.string().datetime().optional().nullable(), // Добавить эту строку
+        coverImageUrl: z.string().optional().nullable(), // Добавить эту строку
       });
-      const data = projectSchema.parse(req.body);
-      const project = await storage.createProject(data as any);
-      await createAuditLog(req, "project_create", "project", project.id.toString(), { name: data.name });
-      res.status(201).json(project);
-    } catch (error) {
-      console.error("Error creating project:", error);
-      res.status(500).json({ message: "Failed to create project" });
-    }
-  });
+
 
   app.patch("/api/admin/projects/:id", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
@@ -93,17 +89,19 @@ export function registerAdminRoutes(app: Express) {
         developerId: z.number().optional(),
         cityId: z.number().optional(),
         districtId: z.number().optional(),
-        latitude: z.number().optional(),
-        longitude: z.number().optional(),
+        latitude: z.number().nullable().optional(),
+        longitude: z.number().nullable().optional(),
         address: z.string().optional().nullable(),
         shortDescription: z.string().optional().nullable(),
         description: z.string().optional().nullable(),
         priceFrom: z.number().optional().nullable(),
         currency: z.string().optional(),
+        completionDate: z.string().datetime().optional().nullable(), // Добавить эту строку
+        coverImageUrl: z.string().optional().nullable(), // Добавить эту строку
       });
+
       const data = projectSchema.parse(req.body);
       
-      // We need updateProject in adminStorage or storage. Let's check storage.ts
       const existingProject = await storage.getProject(id);
       if (!existingProject) {
         return res.status(404).json({ message: "Project not found" });
@@ -498,7 +496,7 @@ export function registerAdminRoutes(app: Express) {
   app.get("/api/admin/projects/export", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
       const projects = await adminStorage.getAllProjectsForExport();
-      const csv = convertToCSV(projects, ["id", "name", "developerName", "cityName", "districtName", "address", "priceFrom", "currency", "shortDescription"]);
+      const csv = convertToCSV(projects, ["id", "name", "developerName", "cityName", "districtName", "address", "priceFrom", "currency", "shortDescription", "completionDate", "coverImageUrl"]);
       res.setHeader("Content-Type", "text/csv");
       res.setHeader("Content-Disposition", "attachment; filename=projects.csv");
       res.send(csv);
@@ -589,7 +587,7 @@ async function processCSVImport(buffer: Buffer, jobId: string, adminId: string) 
   try {
     const csvString = buffer.toString("utf-8");
     const records: any[] = [];
-    
+
     const parser = parse(csvString, {
       columns: true,
       skip_empty_lines: true,
@@ -602,21 +600,135 @@ async function processCSVImport(buffer: Buffer, jobId: string, adminId: string) 
 
     totalRows = records.length;
 
+    // Предварительно загружаем все справочники для быстрого поиска
+    const allDevelopers = await db.select().from(developers);
+    const allCities = await db.select().from(cities);
+    const allDistricts = await db.select().from(districts);
+    const allBanks = await db.select().from(banks);
+
+    // Создаем мапы для быстрого поиска по имени
+    const developerMap = new Map(allDevelopers.map(d => [d.name.toLowerCase(), d]));
+    const cityMap = new Map(allCities.map(c => [c.name.toLowerCase(), c]));
+    const districtMap = new Map(allDistricts.map(d => [d.name.toLowerCase(), d]));
+    const bankMap = new Map(allBanks.map(b => [b.name.toLowerCase(), b]));
+
     for (let i = 0; i < records.length; i++) {
       const row = records[i];
       try {
+        // Проверяем обязательные поля
         if (!row.name || !row.developer || !row.city || !row.district) {
           throw new Error("Missing required fields: name, developer, city, district");
         }
+
+        // Ищем застройщика
+        const developer = developerMap.get(row.developer.toLowerCase().trim());
+        if (!developer) {
+          throw new Error(`Developer not found: ${row.developer}`);
+        }
+
+        // Ищем город
+        const city = cityMap.get(row.city.toLowerCase().trim());
+        if (!city) {
+          throw new Error(`City not found: ${row.city}`);
+        }
+
+        // Ищем район
+        const district = districtMap.get(row.district.toLowerCase().trim());
+        if (!district) {
+          throw new Error(`District not found: ${row.district}`);
+        }
+
+        // Проверяем, что район принадлежит указанному городу
+        if (district.cityId !== city.id) {
+          throw new Error(`District ${row.district} does not belong to city ${row.city}`);
+        }
+
+        // Парсим дату сдачи
+        let completionDate: Date | null = null;
+        if (row.completion_date) {
+          const dateStr = row.completion_date.trim();
+          if (dateStr) {
+            // Поддерживаем форматы YYYY-MM-DD и MM/DD/YYYY
+            if (dateStr.includes('/')) {
+              // MM/DD/YYYY формат
+              const [month, day, year] = dateStr.split('/');
+              completionDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            } else if (dateStr.includes('-')) {
+              // YYYY-MM-DD формат
+              completionDate = new Date(dateStr);
+            }
+
+            if (completionDate && isNaN(completionDate.getTime())) {
+              throw new Error(`Invalid completion date format: ${row.completion_date}`);
+            }
+          }
+        }
+
+        // Парсим цену
+        let priceFrom: number | null = null;
+        if (row.price_from) {
+          const price = parseFloat(row.price_from.toString().replace(/[^\d.]/g, ''));
+          if (!isNaN(price)) {
+            priceFrom = Math.round(price);
+          }
+        }
+
+        // Создаем проект
+        const projectData = {
+          name: row.name.trim(),
+          developerId: developer.id,
+          cityId: city.id,
+          districtId: district.id,
+          latitude: row.latitude ? parseFloat(row.latitude) : null,
+          longitude: row.longitude ? parseFloat(row.longitude) : null,
+          address: row.address?.trim() || null,
+          shortDescription: row.short_description?.trim() || null,
+          description: row.description?.trim() || null,
+          priceFrom,
+          currency: row.currency?.trim() || "USD",
+          completionDate,
+          coverImageUrl: row.cover_image_url?.trim() || null,
+        };
+
+        // Проверяем координаты
+        if (projectData.latitude !== null && projectData.longitude !== null) {
+          if (projectData.latitude < -90 || projectData.latitude > 90) {
+            throw new Error(`Invalid latitude: ${projectData.latitude}`);
+          }
+          if (projectData.longitude < -180 || projectData.longitude > 180) {
+            throw new Error(`Invalid longitude: ${projectData.longitude}`);
+          }
+        }
+
+        // Создаем проект в базе данных
+        const createdProject = await storage.createProject(projectData as any);
+
+        // Обрабатываем банки, если указаны
+        if (row.banks && typeof row.banks === 'string') {
+          const bankNames = row.banks.split(',').map(name => name.trim().toLowerCase());
+          for (const bankName of bankNames) {
+            if (bankName) {
+              const bank = bankMap.get(bankName);
+              if (bank) {
+                await storage.addProjectBank(createdProject.id, bank.id);
+              } else {
+                console.warn(`Bank not found for project ${createdProject.id}: ${bankName}`);
+              }
+            }
+          }
+        }
+
         insertedCount++;
+
       } catch (error: any) {
         failedCount++;
         await adminStorage.createImportJobError({
           importJobId: jobId,
-          rowNumber: (i + 2).toString(),
+          rowNumber: (i + 2).toString(), // +2 because of header row and 0-based index
           errorMessage: error.message,
           rawRowJson: row,
         });
+        console.error(`Error processing row ${i + 2}:`, error.message);
       }
     }
 
@@ -629,13 +741,17 @@ async function processCSVImport(buffer: Buffer, jobId: string, adminId: string) 
       completedAt: new Date(),
     });
 
+    console.log(`CSV import completed: ${insertedCount} inserted, ${failedCount} failed out of ${totalRows} total rows`);
+
   } catch (error: any) {
     console.error("CSV import failed:", error);
     await adminStorage.updateImportJob(jobId, {
       status: "failed",
       totalRows: totalRows.toString(),
-      failedCount: totalRows.toString(),
+      insertedCount: insertedCount.toString(),
+      failedCount: (totalRows - insertedCount).toString(),
       completedAt: new Date(),
     });
   }
 }
+

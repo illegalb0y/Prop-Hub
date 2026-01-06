@@ -95,7 +95,7 @@
   },
   "banks": {
     "title": "Banks",
-    "partnerDevelopers": "Partner developers",
+    "partnerDevelopers": "Banking partner",
     "viewDetails": "View details",
     "noBanks": "No banks found"
   },
@@ -105,8 +105,8 @@
     "emptyDescription": "Browse projects and click the heart icon to add them here",
     "browseProjects": "Browse projects",
     "loginRequired": "Please log in to view your favorites",
-    "added": "Added to favorites",
-    "removed": "Removed from favorites"
+    "added": "Add to favorites",
+    "removed": "Remove from favorites"
   },
   "account": {
     "title": "My Account",

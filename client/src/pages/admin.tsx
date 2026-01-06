@@ -24,6 +24,7 @@ import {
   TrendingUp,
   Activity,
   Shield,
+  Calendar as CalendarIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,6 +56,8 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";  // <- Добавить эту строку
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"; 
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -128,6 +131,7 @@ interface Project {
   longitude: number | null;
   priceFrom: string | null;
   currency: string | null;
+  completionDate: string | null;
   deletedAt: string | null;
 }
 
@@ -895,6 +899,7 @@ function ProjectsSection() {
     description: "",
     priceFrom: "",
     currency: "USD",
+    completionDate: "",
   });
 
   const {
@@ -1064,6 +1069,7 @@ function ProjectsSection() {
       description: "",
       priceFrom: "",
       currency: "USD",
+      completionDate: "",
     });
   };
 
@@ -1081,6 +1087,7 @@ function ProjectsSection() {
       description: "",
       priceFrom: "",
       currency: "USD",
+      completionDate: "",
     });
     setDialogOpen(true);
   };
@@ -1099,6 +1106,7 @@ function ProjectsSection() {
       description: project.description || "",
       priceFrom: project.priceFrom?.toString() || "",
       currency: project.currency || "USD",
+      completionDate: project.completionDate ? project.completionDate.split('T')[0] : "",
     });
     setDialogOpen(true);
   };
@@ -1112,6 +1120,7 @@ function ProjectsSection() {
       latitude: parseFloat(formData.latitude),
       longitude: parseFloat(formData.longitude),
       priceFrom: formData.priceFrom ? parseInt(formData.priceFrom) : null,
+      completionDate: formData.completionDate ? new Date(formData.completionDate).toISOString() : null,
     };
 
     if (editingProject) {
@@ -1422,6 +1431,39 @@ function ProjectsSection() {
                 placeholder="USD"
                 data-testid="input-project-currency"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="proj-completion">Completion date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                    data-testid="button-completion-date"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.completionDate ? 
+                      format(new Date(formData.completionDate), "dd.MM.yyyy") : 
+                      "Choose the date"
+                    }
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.completionDate ? new Date(formData.completionDate) : undefined}
+                    onSelect={(date) => 
+                      setFormData({ 
+                        ...formData, 
+                        completionDate: date ? date.toISOString().split('T')[0] : "" 
+                      })
+                    }
+                    disabled={(date) => date < new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">

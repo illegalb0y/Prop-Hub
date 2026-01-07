@@ -106,6 +106,7 @@ export function MiniMap({
         ref={mapRef}
         zoomControl={true}
         scrollWheelZoom={true}
+        attributionControl={false}
       >
         <TileLayer
           key={theme}

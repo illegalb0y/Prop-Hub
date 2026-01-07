@@ -137,6 +137,7 @@ export function FullMap({ projects }: FullMapProps) {
         className="h-full w-full"
         zoomControl={true}
         scrollWheelZoom={true}
+        attributionControl={false}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

@@ -331,6 +331,9 @@
   transform: translateY(-50%) !important;
   margin: 0 !important;
   z-index: 999 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 

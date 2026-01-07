@@ -84,6 +84,31 @@ function MapUpdater({ projects }: MapUpdaterProps) {
   return null;
 }
 
+// Новый компонент для настройки позиции zoom контролов
+function ZoomControlSetup() {
+  const map = useMap();
+
+  useEffect(() => {
+    // Удаляем стандартный zoom control (если есть)
+    if (map.zoomControl) {
+      map.zoomControl.remove();
+    }
+
+    // Добавляем новый zoom control в правую часть карты
+    const zoomControl = L.control.zoom({
+      position: 'topright'
+    });
+
+    zoomControl.addTo(map);
+
+    return () => {
+      map.removeControl(zoomControl);
+    };
+  }, [map]);
+
+  return null;
+}
+
 interface FullMapProps {
   projects: ProjectWithRelations[];
 }
@@ -135,13 +160,12 @@ export function FullMap({ projects }: FullMapProps) {
         center={center}
         zoom={defaultZoom}
         className="h-full w-full"
-        zoomControl={true}
+        zoomControl={false}
         scrollWheelZoom={true}
         attributionControl={false}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          //url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" - previous version
           url={
             theme === "dark"
               ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
@@ -149,6 +173,9 @@ export function FullMap({ projects }: FullMapProps) {
           }
           key={theme}
         />
+        {/* Добавляем компонент для настройки zoom контролов */}
+        <ZoomControlSetup />
+
 
         {districtBorders && (
           <GeoJSON

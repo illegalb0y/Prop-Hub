@@ -291,7 +291,7 @@
 .marker-dot:hover, .marker-dot-selected:hover {
   transform: scale(1.2);
   box-shadow: 0 6px 16px rgba(0,0,0,0.5);
-  z-index: 1000;
+  z-index: 998;
 }
 
 /* District borders tooltip styles */
@@ -307,4 +307,52 @@
 }
 .district-tooltip::before {
   border-top-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Исправление z-index для карты */
+.leaflet-container,
+.leaflet-pane,
+.leaflet-map-pane {
+  z-index: 1 !important;
+}
+
+.leaflet-control-container {
+  z-index: 999 !important;
+}
+
+/* Позиционирование zoom контролов справа по середине */
+.leaflet-control-zoom {
+  position: fixed !important;
+  top: 50vh !important;
+  right: 10px !important;
+  left: auto !important;
+  transform: translateY(-50%) !important;
+  margin: 0 !important;
+  z-index: 999 !important;
+}
+
+
+/* Стилизация кнопок zoom */
+.leaflet-control-zoom a {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.2s ease !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: rgba(255, 255, 255, 1) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Для темной темы */
+.dark .leaflet-control-zoom a {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  color: white !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.dark .leaflet-control-zoom a:hover {
+  background-color: rgba(0, 0, 0, 0.9) !important;
 }

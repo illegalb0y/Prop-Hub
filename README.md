@@ -16,7 +16,7 @@ PropertyHub is a professional web-based real estate aggregator that indexes new 
 ### Backend
 - **Framework**: Express.js with TypeScript
 - **Database**: PostgreSQL
-- **ORM**: Drizzle ORM
+- **ORM**: Drizzle kit ORM
 - **Authentication**: Replit Auth with OpenID Connect
 - **Session Management**: Passport.js with PostgreSQL-backed session storage
 

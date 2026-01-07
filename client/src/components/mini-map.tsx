@@ -104,7 +104,7 @@ export function MiniMap({
         zoom={defaultZoom}
         className="h-full w-full"
         ref={mapRef}
-        zoomControl={true}
+        zoomControl={false}
         scrollWheelZoom={true}
         attributionControl={false}
       >

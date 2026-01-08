@@ -47,7 +47,7 @@ export function ProjectMarkerPopup({ project }: ProjectMarkerPopupProps) {
       <Button
         variant="ghost"
         size="icon"
-        className={`absolute right-1 top-1 z-10 h-8 w-8 rounded-full backdrop-blur-md transition-all duration-200 ${
+        className={`absolute right-1 bottom-1 z-10 h-8 w-8 rounded-full backdrop-blur-md transition-all duration-200 ${
           isFavorite
             ? "bg-destructive/90 text-white"
             : "bg-background/60 text-foreground hover:bg-background/80"

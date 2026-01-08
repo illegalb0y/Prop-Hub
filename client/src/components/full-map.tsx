@@ -212,7 +212,7 @@ export function FullMap({ projects }: FullMapProps) {
             >
               <ProjectMarkerPopup project={project} />
             </Tooltip>
-            <Popup className="custom-marker-popup" offset={[0, -10]} direction="auto">
+            <Popup className="custom-marker-popup" offset={[0, -10]}>
               <div 
                 onClick={() => navigate(`/projects/${project.id}`)}
                 className="cursor-pointer"

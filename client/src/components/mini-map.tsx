@@ -145,7 +145,7 @@ export function MiniMap({
             >
               <ProjectMarkerPopup project={project} />
             </Tooltip>
-            <Popup className="custom-marker-popup" offset={[0, -10]} direction="auto">
+            <Popup className="custom-marker-popup" offset={[0, -10]}>
               <div 
                 onClick={() => onMarkerClick?.(project.id)}
                 className="cursor-pointer"

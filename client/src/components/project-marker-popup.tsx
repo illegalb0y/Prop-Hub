@@ -17,10 +17,10 @@ export function ProjectMarkerPopup({ project }: ProjectMarkerPopupProps) {
           />
         </div>
       )}
-      <div className="p-2 bg-background">
-        <h3 className="font-semibold text-sm line-clamp-1">{project.name}</h3>
+      <div className="p-2 bg-background font-mono">
+        <h3 className="font-bold text-sm line-clamp-1">{project.name}</h3>
         {project.priceFrom && (
-          <p className="text-xs font-medium text-muted-foreground mt-1">
+          <p className="text-xs font-normal text-muted-foreground mt-1">
             from{" "}
             <span className="text-foreground">
               {new Intl.NumberFormat("en-US", {

@@ -8,9 +8,13 @@ import { useToast } from "@/hooks/use-toast";
 
 interface ProjectMarkerPopupProps {
   project: ProjectWithRelations;
+  showFavoriteButton?: boolean;
 }
 
-export function ProjectMarkerPopup({ project }: ProjectMarkerPopupProps) {
+export function ProjectMarkerPopup({ 
+  project, 
+  showFavoriteButton = true 
+}: ProjectMarkerPopupProps) {
   const { toast } = useToast();
   
   const { data: favorites = [] } = useQuery<number[]>({
@@ -68,21 +72,23 @@ export function ProjectMarkerPopup({ project }: ProjectMarkerPopupProps) {
               </span>
             </p>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 hover:bg-transparent shrink-0"
-            onClick={handleFavoriteClick}
-            disabled={favoriteMutation.isPending}
-          >
-            <Heart 
-              className={`h-4 w-4 transition-colors ${
-                isFavorite 
-                  ? "fill-destructive text-destructive" 
-                  : "text-muted-foreground hover:text-foreground"
-              }`} 
-            />
-          </Button>
+          {showFavoriteButton && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 hover:bg-transparent shrink-0"
+              onClick={handleFavoriteClick}
+              disabled={favoriteMutation.isPending}
+            >
+              <Heart 
+                className={`h-4 w-4 transition-colors ${
+                  isFavorite 
+                    ? "fill-destructive text-destructive" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`} 
+              />
+            </Button>
+          )}
         </div>
       </div>
     </Card>

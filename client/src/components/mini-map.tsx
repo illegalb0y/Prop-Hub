@@ -143,7 +143,7 @@ export function MiniMap({
               sticky={false}
               permanent={false}
             >
-              <ProjectMarkerPopup project={project} />
+              <ProjectMarkerPopup project={project} showFavoriteButton={false} />
             </Tooltip>
             <Popup className="custom-marker-popup" offset={[0, -10]}>
               <div 

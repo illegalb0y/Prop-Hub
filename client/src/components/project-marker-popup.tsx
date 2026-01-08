@@ -88,6 +88,7 @@ export function ProjectMarkerPopup({
               className="h-6 w-6 hover:bg-transparent shrink-0"
               onClick={handleFavoriteClick}
               disabled={favoriteMutation.isPending}
+              data-favorite-button="true"
             >
               <Heart
                 className={`h-4 w-4 transition-colors duration-200 heart-shake-hover ${

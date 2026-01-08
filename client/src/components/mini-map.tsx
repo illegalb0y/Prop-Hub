@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap, Tooltip } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap,
+  Tooltip,
+} from "react-leaflet";
 import L from "leaflet";
 import type { ProjectWithRelations } from "@shared/schema";
 import { useTheme } from "@/lib/theme-provider";
@@ -89,7 +96,9 @@ export function MiniMap({
 }: MiniMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const { theme } = useTheme();
-  const [openPopupMarkerId, setOpenPopupMarkerId] = useState<number | null>(null);
+  const [openPopupMarkerId, setOpenPopupMarkerId] = useState<number | null>(
+    null,
+  );
 
   const center: [number, number] =
     projects.length > 0
@@ -154,11 +163,23 @@ export function MiniMap({
               sticky={false}
               permanent={false}
             >
-              <ProjectMarkerPopup project={project} showFavoriteButton={false} />
+              <ProjectMarkerPopup
+                project={project}
+                showFavoriteButton={false}
+              />
             </Tooltip>
             <Popup className="custom-marker-popup" offset={[0, -10]}>
               <div
-                onClick={() => onMarkerClick?.(project.id)}
+                onClick={(e) => {
+                  // Проверяем, что клик не был по кнопке сердечка или её дочерним элементам
+                  const target = e.target as HTMLElement;
+                  const isHeartButton = target.closest(
+                    "button[data-favorite-button]",
+                  );
+                  if (!isHeartButton) {
+                    onMarkerClick?.(project.id);
+                  }
+                }}
                 className="cursor-pointer"
               >
                 <ProjectMarkerPopup project={project} />

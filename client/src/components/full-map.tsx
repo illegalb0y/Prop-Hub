@@ -229,7 +229,14 @@ export function FullMap({ projects }: FullMapProps) {
             </Tooltip>
             <Popup className="custom-marker-popup" offset={[0, -10]}>
               <div
-                onClick={() => navigate(`/projects/${project.id}`)}
+                onClick={(e) => {
+                  // Проверяем, что клик не был по кнопке сердечка или её дочерним элементам
+                  const target = e.target as HTMLElement;
+                  const isHeartButton = target.closest('button[data-favorite-button]');
+                  if (!isHeartButton) {
+                    navigate(`/projects/${project.id}`);
+                  }
+                }}
                 className="cursor-pointer"
               >
                 <ProjectMarkerPopup project={project} />

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -98,7 +98,7 @@ function ZoomControlSetup() {
 
     // Добавляем новый zoom control в правую часть карты
     const zoomControl = L.control.zoom({
-      position: 'topright'
+      position: "topright",
     });
 
     zoomControl.addTo(map);
@@ -118,6 +118,9 @@ interface FullMapProps {
 export function FullMap({ projects }: FullMapProps) {
   const { theme } = useTheme();
   const [, navigate] = useLocation();
+  const [openPopupMarkerId, setOpenPopupMarkerId] = useState<number | null>(
+    null,
+  );
 
   const { data: districtBorders } = useQuery<GeoJSON.FeatureCollection>({
     queryKey: ["/api/geo/district-borders", YEREVAN_CITY_ID],
@@ -178,7 +181,6 @@ export function FullMap({ projects }: FullMapProps) {
         {/* Добавляем компонент для настройки zoom контролов */}
         <ZoomControlSetup />
 
-
         {districtBorders && (
           <GeoJSON
             key="district-borders"
@@ -199,21 +201,34 @@ export function FullMap({ projects }: FullMapProps) {
               popupopen: (e) => {
                 const marker = e.target;
                 marker.closeTooltip();
+                setOpenPopupMarkerId(project.id);
+              },
+              popupclose: () => {
+                setOpenPopupMarkerId(null);
+              },
+              mouseover: (e) => {
+                if (openPopupMarkerId === project.id) {
+                  const marker = e.target;
+                  marker.closeTooltip();
+                }
               },
             }}
           >
-            <Tooltip 
-              direction="auto" 
-              offset={[0, -10]} 
-              opacity={1} 
+            <Tooltip
+              direction="auto"
+              offset={[0, -10]}
+              opacity={openPopupMarkerId === project.id ? 0 : 1}
               className="custom-marker-tooltip"
               sticky={false}
               permanent={false}
             >
-              <ProjectMarkerPopup project={project} showFavoriteButton={false} />
+              <ProjectMarkerPopup
+                project={project}
+                showFavoriteButton={false}
+              />
             </Tooltip>
             <Popup className="custom-marker-popup" offset={[0, -10]}>
-              <div 
+              <div
                 onClick={() => navigate(`/projects/${project.id}`)}
                 className="cursor-pointer"
               >

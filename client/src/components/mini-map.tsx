@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, Tooltip } from "react-leaflet";
 import L from "leaflet";
 import type { ProjectWithRelations } from "@shared/schema";
@@ -89,6 +89,7 @@ export function MiniMap({
 }: MiniMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const { theme } = useTheme();
+  const [openPopupMarkerId, setOpenPopupMarkerId] = useState<number | null>(null);
 
   const center: [number, number] =
     projects.length > 0
@@ -132,13 +133,23 @@ export function MiniMap({
               popupopen: (e) => {
                 const marker = e.target;
                 marker.closeTooltip();
+                setOpenPopupMarkerId(project.id);
+              },
+              popupclose: () => {
+                setOpenPopupMarkerId(null);
+              },
+              mouseover: (e) => {
+                if (openPopupMarkerId === project.id) {
+                  const marker = e.target;
+                  marker.closeTooltip();
+                }
               },
             }}
           >
-            <Tooltip 
-              direction="auto" 
-              offset={[0, -10]} 
-              opacity={1} 
+            <Tooltip
+              direction="auto"
+              offset={[0, -10]}
+              opacity={openPopupMarkerId === project.id ? 0 : 1}
               className="custom-marker-tooltip"
               sticky={false}
               permanent={false}
@@ -146,7 +157,7 @@ export function MiniMap({
               <ProjectMarkerPopup project={project} showFavoriteButton={false} />
             </Tooltip>
             <Popup className="custom-marker-popup" offset={[0, -10]}>
-              <div 
+              <div
                 onClick={() => onMarkerClick?.(project.id)}
                 className="cursor-pointer"
               >

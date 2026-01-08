@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, Tooltip } from "react-leaflet";
 import L from "leaflet";
 import type { ProjectWithRelations } from "@shared/schema";
 import { useTheme } from "@/lib/theme-provider";
+import { ProjectMarkerPopup } from "./project-marker-popup";
 
 const defaultCenter: [number, number] = [40.1792, 44.5152];
 const defaultZoom = 13;
@@ -131,6 +132,15 @@ export function MiniMap({
               click: () => onMarkerClick?.(project.id),
             }}
           >
+            <Tooltip 
+              direction="top" 
+              offset={[0, -10]} 
+              opacity={1} 
+              className="custom-marker-tooltip"
+              sticky={false}
+            >
+              <ProjectMarkerPopup project={project} />
+            </Tooltip>
             <Popup>
               <div className="min-w-[180px]">
                 {project.coverImageUrl && (

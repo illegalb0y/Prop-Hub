@@ -6,12 +6,14 @@ import {
   Popup,
   useMap,
   GeoJSON,
+  Tooltip,
 } from "react-leaflet";
 import L from "leaflet";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import type { ProjectWithRelations } from "@shared/schema";
 import { useTheme } from "@/lib/theme-provider";
+import { ProjectMarkerPopup } from "./project-marker-popup";
 
 const defaultCenter: [number, number] = [40.1792, 44.5152];
 const defaultZoom = 13;
@@ -197,37 +199,15 @@ export function FullMap({ projects }: FullMapProps) {
               click: () => navigate(`/projects/${project.id}`),
             }}
           >
-            <Popup>
-              <div className="min-w-[200px]">
-                {project.coverImageUrl && (
-                  <img
-                    src={project.coverImageUrl}
-                    alt={project.name}
-                    className="w-full h-20 object-cover rounded-t-sm mb-2"
-                  />
-                )}
-                <h3 className="font-semibold">{project.name}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {project.district?.name}, {project.city?.name}
-                </p>
-                {project.priceFrom && (
-                  <p className="text-sm font-medium mt-1">
-                    From{" "}
-                    {new Intl.NumberFormat("en-US", {
-                      style: "currency",
-                      currency: project.currency || "USD",
-                      maximumFractionDigits: 0,
-                    }).format(project.priceFrom)}
-                  </p>
-                )}
-                <button
-                  onClick={() => navigate(`/projects/${project.id}`)}
-                  className="text-sm text-primary hover:underline mt-2 font-medium"
-                >
-                  View details
-                </button>
-              </div>
-            </Popup>
+            <Tooltip 
+              direction="top" 
+              offset={[0, -10]} 
+              opacity={1} 
+              className="custom-marker-tooltip"
+              sticky={false}
+            >
+              <ProjectMarkerPopup project={project} />
+            </Tooltip>
           </Marker>
         ))}
       </MapContainer>

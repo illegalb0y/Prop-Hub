@@ -11,7 +11,8 @@ import multer from "multer";
 import { parse } from "csv-parse";
 import { Readable } from "stream";
 import { developers, cities, districts, banks } from "@shared/schema";
-import { db } from "./db"; 
+import { db } from "./db";
+import { analyticsStorage } from "./analytics-storage"; 
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -672,6 +673,188 @@ export function registerAdminRoutes(app: Express) {
     } catch (error) {
       console.error("Error fetching session analytics:", error);
       res.status(500).json({ message: "Failed to fetch session analytics" });
+    }
+  });
+
+  // Product Analytics Routes
+  const analyticsRangeSchema = z.object({
+    period: z.enum(["day", "week", "month", "quarter", "year"]).optional().default("month"),
+  });
+
+  function getDateRange(period: string): { startDate: Date; endDate: Date } {
+    const endDate = new Date();
+    const startDate = new Date();
+
+    switch (period) {
+      case "day":
+        startDate.setDate(startDate.getDate() - 1);
+        break;
+      case "week":
+        startDate.setDate(startDate.getDate() - 7);
+        break;
+      case "month":
+        startDate.setMonth(startDate.getMonth() - 1);
+        break;
+      case "quarter":
+        startDate.setMonth(startDate.getMonth() - 3);
+        break;
+      case "year":
+        startDate.setFullYear(startDate.getFullYear() - 1);
+        break;
+      default:
+        startDate.setMonth(startDate.getMonth() - 1);
+    }
+
+    return { startDate, endDate };
+  }
+
+  app.get("/api/admin/analytics/overview", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { period } = analyticsRangeSchema.parse(req.query);
+      const range = getDateRange(period);
+      const overview = await analyticsStorage.getOverview(range);
+      res.json(overview);
+    } catch (error) {
+      console.error("Error fetching analytics overview:", error);
+      res.status(500).json({ message: "Failed to fetch analytics overview" });
+    }
+  });
+
+  app.get("/api/admin/analytics/dau-mau", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { period } = analyticsRangeSchema.parse(req.query);
+      const range = getDateRange(period);
+      const data = await analyticsStorage.getDAUMAU(range);
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching DAU/MAU:", error);
+      res.status(500).json({ message: "Failed to fetch DAU/MAU data" });
+    }
+  });
+
+  app.get("/api/admin/analytics/retention", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { period } = analyticsRangeSchema.parse(req.query);
+      const range = getDateRange(period);
+      const cohorts = await analyticsStorage.getRetentionCohorts(range);
+      res.json(cohorts);
+    } catch (error) {
+      console.error("Error fetching retention cohorts:", error);
+      res.status(500).json({ message: "Failed to fetch retention data" });
+    }
+  });
+
+  app.get("/api/admin/analytics/funnel", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { period } = analyticsRangeSchema.parse(req.query);
+      const range = getDateRange(period);
+      const funnel = await analyticsStorage.getConversionFunnel(range);
+      res.json(funnel);
+    } catch (error) {
+      console.error("Error fetching conversion funnel:", error);
+      res.status(500).json({ message: "Failed to fetch conversion funnel" });
+    }
+  });
+
+  app.get("/api/admin/analytics/geo", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { period } = analyticsRangeSchema.parse(req.query);
+      const range = getDateRange(period);
+      const geo = await analyticsStorage.getGeoDistribution(range);
+      res.json(geo);
+    } catch (error) {
+      console.error("Error fetching geo distribution:", error);
+      res.status(500).json({ message: "Failed to fetch geo data" });
+    }
+  });
+
+  app.get("/api/admin/analytics/devices", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { period } = analyticsRangeSchema.parse(req.query);
+      const range = getDateRange(period);
+      const devices = await analyticsStorage.getDeviceDistribution(range);
+      res.json(devices);
+    } catch (error) {
+      console.error("Error fetching device distribution:", error);
+      res.status(500).json({ message: "Failed to fetch device data" });
+    }
+  });
+
+  app.get("/api/admin/analytics/browsers", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { period } = analyticsRangeSchema.parse(req.query);
+      const range = getDateRange(period);
+      const browsers = await analyticsStorage.getBrowserDistribution(range);
+      res.json(browsers);
+    } catch (error) {
+      console.error("Error fetching browser distribution:", error);
+      res.status(500).json({ message: "Failed to fetch browser data" });
+    }
+  });
+
+  app.get("/api/admin/analytics/os", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { period } = analyticsRangeSchema.parse(req.query);
+      const range = getDateRange(period);
+      const os = await analyticsStorage.getOSDistribution(range);
+      res.json(os);
+    } catch (error) {
+      console.error("Error fetching OS distribution:", error);
+      res.status(500).json({ message: "Failed to fetch OS data" });
+    }
+  });
+
+  app.get("/api/admin/analytics/traffic-sources", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { period } = analyticsRangeSchema.parse(req.query);
+      const range = getDateRange(period);
+      const sources = await analyticsStorage.getTrafficSources(range);
+      res.json(sources);
+    } catch (error) {
+      console.error("Error fetching traffic sources:", error);
+      res.status(500).json({ message: "Failed to fetch traffic sources" });
+    }
+  });
+
+  app.post("/api/admin/analytics/seed", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      await analyticsStorage.seedAnalyticsData();
+      res.json({ message: "Analytics data seeded successfully" });
+    } catch (error) {
+      console.error("Error seeding analytics data:", error);
+      res.status(500).json({ message: "Failed to seed analytics data" });
+    }
+  });
+
+  app.get("/api/admin/analytics/export", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { period } = analyticsRangeSchema.parse(req.query);
+      const range = getDateRange(period);
+      
+      const [overview, dauMau, geo, devices, browsers, os, sources] = await Promise.all([
+        analyticsStorage.getOverview(range),
+        analyticsStorage.getDAUMAU(range),
+        analyticsStorage.getGeoDistribution(range),
+        analyticsStorage.getDeviceDistribution(range),
+        analyticsStorage.getBrowserDistribution(range),
+        analyticsStorage.getOSDistribution(range),
+        analyticsStorage.getTrafficSources(range),
+      ]);
+
+      res.json({
+        period,
+        exportDate: new Date().toISOString(),
+        overview,
+        dauMau,
+        geo,
+        devices,
+        browsers,
+        os,
+        sources,
+      });
+    } catch (error) {
+      console.error("Error exporting analytics:", error);
+      res.status(500).json({ message: "Failed to export analytics" });
     }
   });
 }

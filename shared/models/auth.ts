@@ -104,3 +104,59 @@ export const auditLogs = pgTable("audit_logs", {
 export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true, createdAt: true });
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
+
+// Analytics: User Sessions table
+export const userSessions = pgTable("user_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  sessionId: varchar("session_id").notNull(),
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  endedAt: timestamp("ended_at"),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  country: varchar("country", { length: 100 }),
+  countryCode: varchar("country_code", { length: 10 }),
+  city: varchar("city", { length: 100 }),
+  region: varchar("region", { length: 100 }),
+  latitude: varchar("latitude", { length: 20 }),
+  longitude: varchar("longitude", { length: 20 }),
+  deviceType: varchar("device_type", { length: 50 }),
+  browser: varchar("browser", { length: 100 }),
+  browserVersion: varchar("browser_version", { length: 50 }),
+  os: varchar("os", { length: 100 }),
+  osVersion: varchar("os_version", { length: 50 }),
+  referrer: text("referrer"),
+  utmSource: varchar("utm_source", { length: 100 }),
+  utmMedium: varchar("utm_medium", { length: 100 }),
+  utmCampaign: varchar("utm_campaign", { length: 255 }),
+}, (table) => [
+  index("idx_user_sessions_user").on(table.userId),
+  index("idx_user_sessions_started").on(table.startedAt),
+  index("idx_user_sessions_country").on(table.countryCode),
+  index("idx_user_sessions_device").on(table.deviceType),
+]);
+
+export const insertUserSessionSchema = createInsertSchema(userSessions).omit({ id: true });
+export type InsertUserSession = z.infer<typeof insertUserSessionSchema>;
+export type UserSession = typeof userSessions.$inferSelect;
+
+// Analytics: User Actions table
+export const userActions = pgTable("user_actions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  sessionId: varchar("session_id"),
+  actionType: varchar("action_type", { length: 50 }).notNull(),
+  pageUrl: text("page_url"),
+  targetType: varchar("target_type", { length: 50 }),
+  targetId: varchar("target_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_user_actions_user").on(table.userId),
+  index("idx_user_actions_type").on(table.actionType),
+  index("idx_user_actions_created").on(table.createdAt),
+  index("idx_user_actions_session").on(table.sessionId),
+]);
+
+export const insertUserActionSchema = createInsertSchema(userActions).omit({ id: true, createdAt: true });
+export type InsertUserAction = z.infer<typeof insertUserActionSchema>;
+export type UserAction = typeof userActions.$inferSelect;

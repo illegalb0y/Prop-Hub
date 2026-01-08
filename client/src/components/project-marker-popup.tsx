@@ -44,20 +44,6 @@ export function ProjectMarkerPopup({ project }: ProjectMarkerPopupProps) {
 
   return (
     <Card className="min-w-[180px] overflow-hidden border-none shadow-lg relative group">
-      <Button
-        variant="ghost"
-        size="icon"
-        className={`absolute right-1 bottom-1 z-10 h-8 w-8 rounded-full backdrop-blur-md transition-all duration-200 ${
-          isFavorite
-            ? "bg-destructive/90 text-white"
-            : "bg-background/60 text-foreground hover:bg-background/80"
-        }`}
-        onClick={handleFavoriteClick}
-        disabled={favoriteMutation.isPending}
-      >
-        <Heart className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
-      </Button>
-
       {project.coverImageUrl && (
         <div className="h-24 w-full relative">
           <img
@@ -67,8 +53,8 @@ export function ProjectMarkerPopup({ project }: ProjectMarkerPopupProps) {
           />
         </div>
       )}
-      <div className="p-2 bg-background font-mono">
-        <h3 className="font-bold text-sm line-clamp-1">{project.name}</h3>
+      <div className="p-2 bg-background font-mono relative">
+        <h3 className="font-bold text-sm line-clamp-1 pr-8">{project.name}</h3>
         {project.priceFrom && (
           <p className="text-xs font-normal text-muted-foreground mt-1">
             from{" "}
@@ -81,6 +67,21 @@ export function ProjectMarkerPopup({ project }: ProjectMarkerPopupProps) {
             </span>
           </p>
         )}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute right-0 bottom-0 h-8 w-8 hover:bg-transparent"
+          onClick={handleFavoriteClick}
+          disabled={favoriteMutation.isPending}
+        >
+          <Heart 
+            className={`h-5 w-5 transition-colors ${
+              isFavorite 
+                ? "fill-destructive text-destructive" 
+                : "text-muted-foreground hover:text-foreground"
+            }`} 
+          />
+        </Button>
       </div>
     </Card>
   );

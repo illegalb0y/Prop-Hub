@@ -128,9 +128,6 @@ export function MiniMap({
             icon={
               project.id === selectedProjectId ? selectedMarkerIcon : markerIcon
             }
-            eventHandlers={{
-              click: () => onMarkerClick?.(project.id),
-            }}
           >
             <Tooltip 
               direction="auto" 

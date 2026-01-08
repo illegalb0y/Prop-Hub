@@ -195,9 +195,6 @@ export function FullMap({ projects }: FullMapProps) {
             key={project.id}
             position={[project.latitude, project.longitude]}
             icon={markerIcon}
-            eventHandlers={{
-              click: () => navigate(`/projects/${project.id}`),
-            }}
           >
             <Tooltip 
               direction="auto" 

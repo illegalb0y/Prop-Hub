@@ -405,3 +405,25 @@
 .dark .leaflet-control-zoom a:hover {
   background-color: rgba(0, 0, 0, 0.9) !important;
 }
+
+/* Heart shake animation for favorite button */
+@keyframes heart-shake {
+  0%, 100% { transform: translateX(0) scale(1); }
+  10% { transform: translateX(-1px) scale(1.05); }
+  20% { transform: translateX(1px) scale(1.1); }
+  30% { transform: translateX(-1px) scale(1.05); }
+  40% { transform: translateX(1px) scale(1.1); }
+  50% { transform: translateX(-0.5px) scale(1.05); }
+  60% { transform: translateX(0.5px) scale(1.1); }
+  70% { transform: translateX(-0.5px) scale(1.05); }
+  80% { transform: translateX(0.5px) scale(1.1); }
+  90% { transform: translateX(0) scale(1.05); }
+}
+
+.heart-shake {
+  animation: heart-shake 0.6s ease-in-out;
+}
+
+.heart-shake-hover:hover {
+  animation: heart-shake 0.6s ease-in-out;
+}

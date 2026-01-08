@@ -5,20 +5,23 @@ import { Heart } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 interface ProjectMarkerPopupProps {
   project: ProjectWithRelations;
   showFavoriteButton?: boolean;
 }
 
-export function ProjectMarkerPopup({ 
-  project, 
-  showFavoriteButton = true 
+export function ProjectMarkerPopup({
+  project,
+  showFavoriteButton = true,
 }: ProjectMarkerPopupProps) {
   const { toast } = useToast();
-  
+  const { isAuthenticated } = useAuth();
+
   const { data: favorites = [] } = useQuery<number[]>({
     queryKey: ["/api/me/favorites"],
+    enabled: isAuthenticated,
   });
 
   const isFavorite = favorites.includes(project.id);
@@ -27,7 +30,7 @@ export function ProjectMarkerPopup({
     mutationFn: async () => {
       const res = await apiRequest(
         isFavorite ? "DELETE" : "POST",
-        `/api/me/favorites/${project.id}`
+        `/api/me/favorites/${project.id}`,
       );
       return res.json();
     },
@@ -43,6 +46,12 @@ export function ProjectMarkerPopup({
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!isAuthenticated) {
+      window.location.href = "/api/login";
+      return;
+    }
+
     favoriteMutation.mutate();
   };
 
@@ -80,12 +89,12 @@ export function ProjectMarkerPopup({
               onClick={handleFavoriteClick}
               disabled={favoriteMutation.isPending}
             >
-              <Heart 
-                className={`h-4 w-4 transition-colors ${
-                  isFavorite 
-                    ? "fill-destructive text-destructive" 
+              <Heart
+                className={`h-4 w-4 transition-colors duration-200 heart-shake-hover ${
+                  isFavorite
+                    ? "fill-destructive text-destructive"
                     : "text-muted-foreground hover:text-foreground"
-                }`} 
+                }`}
               />
             </Button>
           )}

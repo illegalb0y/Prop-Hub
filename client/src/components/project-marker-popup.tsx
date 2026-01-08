@@ -30,11 +30,11 @@ export function ProjectMarkerPopup({
 
   const favoriteMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest(
-        isFavorite ? "DELETE" : "POST",
-        `/api/me/favorites/${project.id}`,
-      );
-      return res.json();
+      if (isFavorite) {
+        await apiRequest("DELETE", `/api/me/favorites/${project.id}`);
+      } else {
+        await apiRequest("POST", "/api/me/favorites", { projectId: project.id });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/me/favorites"] });
@@ -43,7 +43,8 @@ export function ProjectMarkerPopup({
         description: project.name,
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
+      console.error("Favorite mutation error:", error);
       toast({
         title: "Error",
         description: "Failed to update favorites",

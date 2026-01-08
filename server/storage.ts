@@ -94,7 +94,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDevelopers(): Promise<DeveloperWithStats[]> {
-    const devs = await db.select().from(developers).orderBy(asc(developers.name));
+    const devs = await db
+      .select()
+      .from(developers)
+      .where(isNull(developers.deletedAt))
+      .orderBy(asc(developers.name));
     const result: DeveloperWithStats[] = [];
     
     for (const dev of devs) {
@@ -109,7 +113,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDeveloper(id: number): Promise<Developer | undefined> {
-    const [developer] = await db.select().from(developers).where(eq(developers.id, id));
+    const [developer] = await db
+      .select()
+      .from(developers)
+      .where(and(eq(developers.id, id), isNull(developers.deletedAt)));
     return developer;
   }
 
@@ -119,11 +126,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getBanks(): Promise<Bank[]> {
-    return db.select().from(banks).orderBy(asc(banks.name));
+    return db
+      .select()
+      .from(banks)
+      .where(isNull(banks.deletedAt))
+      .orderBy(asc(banks.name));
   }
 
   async getBank(id: number): Promise<Bank | undefined> {
-    const [bank] = await db.select().from(banks).where(eq(banks.id, id));
+    const [bank] = await db
+      .select()
+      .from(banks)
+      .where(and(eq(banks.id, id), isNull(banks.deletedAt)));
     return bank;
   }
 

@@ -195,7 +195,20 @@ export function FullMap({ projects }: FullMapProps) {
             key={project.id}
             position={[project.latitude, project.longitude]}
             icon={markerIcon}
+            eventHandlers={{
+              click: () => navigate(`/projects/${project.id}`),
+            }}
           >
+            <Tooltip 
+              direction="auto" 
+              offset={[0, -10]} 
+              opacity={1} 
+              className="custom-marker-tooltip"
+              sticky={false}
+              permanent={false}
+            >
+              <ProjectMarkerPopup project={project} />
+            </Tooltip>
             <Popup className="custom-marker-popup">
               <div 
                 onClick={() => navigate(`/projects/${project.id}`)}

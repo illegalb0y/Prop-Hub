@@ -128,7 +128,20 @@ export function MiniMap({
             icon={
               project.id === selectedProjectId ? selectedMarkerIcon : markerIcon
             }
+            eventHandlers={{
+              click: () => onMarkerClick?.(project.id),
+            }}
           >
+            <Tooltip 
+              direction="auto" 
+              offset={[0, -10]} 
+              opacity={1} 
+              className="custom-marker-tooltip"
+              sticky={false}
+              permanent={false}
+            >
+              <ProjectMarkerPopup project={project} />
+            </Tooltip>
             <Popup className="custom-marker-popup">
               <div 
                 onClick={() => onMarkerClick?.(project.id)}

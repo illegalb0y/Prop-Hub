@@ -133,11 +133,12 @@ export function MiniMap({
             }}
           >
             <Tooltip 
-              direction="top" 
+              direction="auto" 
               offset={[0, -10]} 
               opacity={1} 
               className="custom-marker-tooltip"
               sticky={false}
+              permanent={false}
             >
               <ProjectMarkerPopup project={project} />
             </Tooltip>

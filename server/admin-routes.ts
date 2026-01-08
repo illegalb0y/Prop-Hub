@@ -679,6 +679,7 @@ export function registerAdminRoutes(app: Express) {
   // Product Analytics Routes
   const analyticsRangeSchema = z.object({
     period: z.enum(["day", "week", "month", "quarter", "year"]).optional().default("month"),
+    userType: z.enum(["all", "authenticated", "anonymous"]).optional().default("all"),
   });
 
   function getDateRange(period: string): { startDate: Date; endDate: Date } {
@@ -710,9 +711,9 @@ export function registerAdminRoutes(app: Express) {
 
   app.get("/api/admin/analytics/overview", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
-      const { period } = analyticsRangeSchema.parse(req.query);
+      const { period, userType } = analyticsRangeSchema.parse(req.query);
       const range = getDateRange(period);
-      const overview = await analyticsStorage.getOverview(range);
+      const overview = await analyticsStorage.getOverview(range, userType);
       res.json(overview);
     } catch (error) {
       console.error("Error fetching analytics overview:", error);
@@ -722,9 +723,9 @@ export function registerAdminRoutes(app: Express) {
 
   app.get("/api/admin/analytics/dau-mau", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
-      const { period } = analyticsRangeSchema.parse(req.query);
+      const { period, userType } = analyticsRangeSchema.parse(req.query);
       const range = getDateRange(period);
-      const data = await analyticsStorage.getDAUMAU(range);
+      const data = await analyticsStorage.getDAUMAU(range, userType);
       res.json(data);
     } catch (error) {
       console.error("Error fetching DAU/MAU:", error);
@@ -734,9 +735,9 @@ export function registerAdminRoutes(app: Express) {
 
   app.get("/api/admin/analytics/retention", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
-      const { period } = analyticsRangeSchema.parse(req.query);
+      const { period, userType } = analyticsRangeSchema.parse(req.query);
       const range = getDateRange(period);
-      const cohorts = await analyticsStorage.getRetentionCohorts(range);
+      const cohorts = await analyticsStorage.getRetentionCohorts(range, userType);
       res.json(cohorts);
     } catch (error) {
       console.error("Error fetching retention cohorts:", error);
@@ -746,9 +747,9 @@ export function registerAdminRoutes(app: Express) {
 
   app.get("/api/admin/analytics/funnel", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
-      const { period } = analyticsRangeSchema.parse(req.query);
+      const { period, userType } = analyticsRangeSchema.parse(req.query);
       const range = getDateRange(period);
-      const funnel = await analyticsStorage.getConversionFunnel(range);
+      const funnel = await analyticsStorage.getConversionFunnel(range, userType);
       res.json(funnel);
     } catch (error) {
       console.error("Error fetching conversion funnel:", error);
@@ -758,9 +759,9 @@ export function registerAdminRoutes(app: Express) {
 
   app.get("/api/admin/analytics/geo", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
-      const { period } = analyticsRangeSchema.parse(req.query);
+      const { period, userType } = analyticsRangeSchema.parse(req.query);
       const range = getDateRange(period);
-      const geo = await analyticsStorage.getGeoDistribution(range);
+      const geo = await analyticsStorage.getGeoDistribution(range, userType);
       res.json(geo);
     } catch (error) {
       console.error("Error fetching geo distribution:", error);
@@ -770,9 +771,9 @@ export function registerAdminRoutes(app: Express) {
 
   app.get("/api/admin/analytics/devices", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
-      const { period } = analyticsRangeSchema.parse(req.query);
+      const { period, userType } = analyticsRangeSchema.parse(req.query);
       const range = getDateRange(period);
-      const devices = await analyticsStorage.getDeviceDistribution(range);
+      const devices = await analyticsStorage.getDeviceDistribution(range, userType);
       res.json(devices);
     } catch (error) {
       console.error("Error fetching device distribution:", error);
@@ -782,9 +783,9 @@ export function registerAdminRoutes(app: Express) {
 
   app.get("/api/admin/analytics/browsers", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
-      const { period } = analyticsRangeSchema.parse(req.query);
+      const { period, userType } = analyticsRangeSchema.parse(req.query);
       const range = getDateRange(period);
-      const browsers = await analyticsStorage.getBrowserDistribution(range);
+      const browsers = await analyticsStorage.getBrowserDistribution(range, userType);
       res.json(browsers);
     } catch (error) {
       console.error("Error fetching browser distribution:", error);
@@ -794,9 +795,9 @@ export function registerAdminRoutes(app: Express) {
 
   app.get("/api/admin/analytics/os", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
-      const { period } = analyticsRangeSchema.parse(req.query);
+      const { period, userType } = analyticsRangeSchema.parse(req.query);
       const range = getDateRange(period);
-      const os = await analyticsStorage.getOSDistribution(range);
+      const os = await analyticsStorage.getOSDistribution(range, userType);
       res.json(os);
     } catch (error) {
       console.error("Error fetching OS distribution:", error);
@@ -806,9 +807,9 @@ export function registerAdminRoutes(app: Express) {
 
   app.get("/api/admin/analytics/traffic-sources", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
-      const { period } = analyticsRangeSchema.parse(req.query);
+      const { period, userType } = analyticsRangeSchema.parse(req.query);
       const range = getDateRange(period);
-      const sources = await analyticsStorage.getTrafficSources(range);
+      const sources = await analyticsStorage.getTrafficSources(range, userType);
       res.json(sources);
     } catch (error) {
       console.error("Error fetching traffic sources:", error);

@@ -4,12 +4,14 @@ import {
   type UserSession, type UserAction,
   type InsertUserSession, type InsertUserAction,
 } from "@shared/schema";
-import { eq, sql, and, gte, lte, desc, count, countDistinct } from "drizzle-orm";
+import { eq, sql, and, gte, lte, desc, count, countDistinct, isNotNull, isNull } from "drizzle-orm";
 
 export interface DateRange {
   startDate: Date;
   endDate: Date;
 }
+
+export type UserTypeFilter = "all" | "authenticated" | "anonymous";
 
 export interface DAUMAUData {
   date: string;
@@ -77,10 +79,22 @@ export interface TrafficSource {
 }
 
 class AnalyticsStorage {
-  async getOverview(range: DateRange): Promise<AnalyticsOverview> {
+  private getUserFilter(table: any, userType: UserTypeFilter) {
+    if (userType === "authenticated") {
+      return isNotNull(table.userId);
+    } else if (userType === "anonymous") {
+      return isNull(table.userId);
+    }
+    return undefined;
+  }
+
+  async getOverview(range: DateRange, userType: UserTypeFilter = "all"): Promise<AnalyticsOverview> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    const userFilter = this.getUserFilter(userSessions, userType);
+    const actionFilter = this.getUserFilter(userActions, userType);
 
     const [totalUsersResult] = await db
       .select({ count: count() })
@@ -91,7 +105,7 @@ class AnalyticsStorage {
       .from(userSessions)
       .where(and(
         gte(userSessions.startedAt, today),
-        sql`${userSessions.userId} IS NOT NULL`
+        userFilter
       ));
 
     const [activeUsersMonthResult] = await db
@@ -99,7 +113,7 @@ class AnalyticsStorage {
       .from(userSessions)
       .where(and(
         gte(userSessions.startedAt, monthStart),
-        sql`${userSessions.userId} IS NOT NULL`
+        userFilter
       ));
 
     const [totalSessionsResult] = await db
@@ -107,7 +121,8 @@ class AnalyticsStorage {
       .from(userSessions)
       .where(and(
         gte(userSessions.startedAt, range.startDate),
-        lte(userSessions.startedAt, range.endDate)
+        lte(userSessions.startedAt, range.endDate),
+        userFilter
       ));
 
     const [newUsersTodayResult] = await db
@@ -127,9 +142,10 @@ class AnalyticsStorage {
     };
   }
 
-  async getDAUMAU(range: DateRange): Promise<DAUMAUData[]> {
+  async getDAUMAU(range: DateRange, userType: UserTypeFilter = "all"): Promise<DAUMAUData[]> {
     const result: DAUMAUData[] = [];
     const currentDate = new Date(range.startDate);
+    const userFilter = this.getUserFilter(userSessions, userType);
 
     while (currentDate <= range.endDate) {
       const dayStart = new Date(currentDate);
@@ -147,7 +163,8 @@ class AnalyticsStorage {
         .from(userSessions)
         .where(and(
           gte(userSessions.startedAt, dayStart),
-          lte(userSessions.startedAt, dayEnd)
+          lte(userSessions.startedAt, dayEnd),
+          userFilter
         ));
 
       const [mauResult] = await db
@@ -155,14 +172,22 @@ class AnalyticsStorage {
         .from(userSessions)
         .where(and(
           gte(userSessions.startedAt, monthStart),
-          lte(userSessions.startedAt, dayEnd)
+          lte(userSessions.startedAt, dayEnd),
+          userFilter
         ));
 
       const dauUsers = dauResult?.count || 0;
       const dauSessions = dauResult?.sessionCount || 0;
-      const dau = dauUsers > 0 ? dauUsers : (dauSessions > 0 ? Math.ceil(dauSessions / 5) : 0);
+      
+      // If filtering for anonymous, we use session count as proxy since userId is null
+      const dau = (userType === "anonymous") 
+        ? Math.ceil(dauSessions / 5) 
+        : (dauUsers > 0 ? dauUsers : (dauSessions > 0 && userType === "all" ? Math.ceil(dauSessions / 5) : 0));
+      
       const mauUsers = mauResult?.count || 0;
-      const mau = mauUsers > 0 ? mauUsers : (dau > 0 ? dau * 10 : 0);
+      const mau = (userType === "anonymous")
+        ? (dau * 8) // Proxy for anonymous MAU
+        : (mauUsers > 0 ? mauUsers : (dau > 0 && userType === "all" ? dau * 10 : 0));
 
       result.push({
         date: currentDate.toISOString().split('T')[0],
@@ -177,9 +202,12 @@ class AnalyticsStorage {
     return result;
   }
 
-  async getRetentionCohorts(range: DateRange): Promise<RetentionCohort[]> {
+  async getRetentionCohorts(range: DateRange, userType: UserTypeFilter = "all"): Promise<RetentionCohort[]> {
     const cohorts: RetentionCohort[] = [];
     const currentDate = new Date(range.startDate);
+
+    // Retention is primarily for authenticated users
+    if (userType === "anonymous") return [];
 
     while (currentDate <= range.endDate) {
       const cohortStart = new Date(currentDate);
@@ -213,7 +241,7 @@ class AnalyticsStorage {
     return cohorts;
   }
 
-  async getConversionFunnel(range: DateRange): Promise<ConversionFunnelStep[]> {
+  async getConversionFunnel(range: DateRange, userType: UserTypeFilter = "all"): Promise<ConversionFunnelStep[]> {
     const steps = [
       { step: "Visit", actionType: "page_view" },
       { step: "View Project", actionType: "project_view" },
@@ -223,6 +251,7 @@ class AnalyticsStorage {
 
     const funnel: ConversionFunnelStep[] = [];
     let previousCount = 0;
+    const userFilter = this.getUserFilter(userActions, userType);
 
     for (let i = 0; i < steps.length; i++) {
       const [result] = await db
@@ -234,7 +263,8 @@ class AnalyticsStorage {
         .where(and(
           eq(userActions.actionType, steps[i].actionType),
           gte(userActions.createdAt, range.startDate),
-          lte(userActions.createdAt, range.endDate)
+          lte(userActions.createdAt, range.endDate),
+          userFilter
         ));
 
       const users = result?.userCount || 0;
@@ -256,7 +286,8 @@ class AnalyticsStorage {
     return funnel;
   }
 
-  async getGeoDistribution(range: DateRange): Promise<GeoData[]> {
+  async getGeoDistribution(range: DateRange, userType: UserTypeFilter = "all"): Promise<GeoData[]> {
+    const userFilter = this.getUserFilter(userSessions, userType);
     const result = await db
       .select({
         country: userSessions.country,
@@ -267,7 +298,8 @@ class AnalyticsStorage {
       .from(userSessions)
       .where(and(
         gte(userSessions.startedAt, range.startDate),
-        lte(userSessions.startedAt, range.endDate)
+        lte(userSessions.startedAt, range.endDate),
+        userFilter
       ))
       .groupBy(userSessions.country, userSessions.countryCode)
       .orderBy(desc(count()));
@@ -284,7 +316,8 @@ class AnalyticsStorage {
     });
   }
 
-  async getDeviceDistribution(range: DateRange): Promise<DeviceData[]> {
+  async getDeviceDistribution(range: DateRange, userType: UserTypeFilter = "all"): Promise<DeviceData[]> {
+    const userFilter = this.getUserFilter(userSessions, userType);
     const result = await db
       .select({
         deviceType: userSessions.deviceType,
@@ -293,7 +326,8 @@ class AnalyticsStorage {
       .from(userSessions)
       .where(and(
         gte(userSessions.startedAt, range.startDate),
-        lte(userSessions.startedAt, range.endDate)
+        lte(userSessions.startedAt, range.endDate),
+        userFilter
       ))
       .groupBy(userSessions.deviceType)
       .orderBy(desc(count()));
@@ -307,7 +341,8 @@ class AnalyticsStorage {
     }));
   }
 
-  async getBrowserDistribution(range: DateRange): Promise<BrowserData[]> {
+  async getBrowserDistribution(range: DateRange, userType: UserTypeFilter = "all"): Promise<BrowserData[]> {
+    const userFilter = this.getUserFilter(userSessions, userType);
     const result = await db
       .select({
         browser: userSessions.browser,
@@ -316,7 +351,8 @@ class AnalyticsStorage {
       .from(userSessions)
       .where(and(
         gte(userSessions.startedAt, range.startDate),
-        lte(userSessions.startedAt, range.endDate)
+        lte(userSessions.startedAt, range.endDate),
+        userFilter
       ))
       .groupBy(userSessions.browser)
       .orderBy(desc(count()));
@@ -330,7 +366,8 @@ class AnalyticsStorage {
     }));
   }
 
-  async getOSDistribution(range: DateRange): Promise<OSData[]> {
+  async getOSDistribution(range: DateRange, userType: UserTypeFilter = "all"): Promise<OSData[]> {
+    const userFilter = this.getUserFilter(userSessions, userType);
     const result = await db
       .select({
         os: userSessions.os,
@@ -339,7 +376,8 @@ class AnalyticsStorage {
       .from(userSessions)
       .where(and(
         gte(userSessions.startedAt, range.startDate),
-        lte(userSessions.startedAt, range.endDate)
+        lte(userSessions.startedAt, range.endDate),
+        userFilter
       ))
       .groupBy(userSessions.os)
       .orderBy(desc(count()));
@@ -353,7 +391,8 @@ class AnalyticsStorage {
     }));
   }
 
-  async getTrafficSources(range: DateRange): Promise<TrafficSource[]> {
+  async getTrafficSources(range: DateRange, userType: UserTypeFilter = "all"): Promise<TrafficSource[]> {
+    const userFilter = this.getUserFilter(userSessions, userType);
     const result = await db
       .select({
         source: userSessions.utmSource,
@@ -363,7 +402,8 @@ class AnalyticsStorage {
       .from(userSessions)
       .where(and(
         gte(userSessions.startedAt, range.startDate),
-        lte(userSessions.startedAt, range.endDate)
+        lte(userSessions.startedAt, range.endDate),
+        userFilter
       ))
       .groupBy(userSessions.utmSource)
       .orderBy(desc(count()));

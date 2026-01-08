@@ -52,6 +52,7 @@ import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 type AnalyticsPeriod = "day" | "week" | "month" | "quarter" | "year";
+type UserType = "all" | "authenticated" | "anonymous";
 
 interface AnalyticsOverview {
   totalUsers: number;
@@ -136,77 +137,78 @@ const countryCoordinates: Record<string, [number, number]> = {
 export function AnalyticsDashboard() {
   const { toast } = useToast();
   const [period, setPeriod] = useState<AnalyticsPeriod>("month");
+  const [userType, setUserType] = useState<UserType>("all");
   const [isExporting, setIsExporting] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
 
   const { data: overview, isLoading: overviewLoading, refetch: refetchOverview } = useQuery<AnalyticsOverview>({
-    queryKey: ["/api/admin/analytics/overview", period],
+    queryKey: ["/api/admin/analytics/overview", period, userType],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/admin/analytics/overview?period=${period}`);
+      const res = await apiRequest("GET", `/api/admin/analytics/overview?period=${period}&userType=${userType}`);
       return res.json();
     },
   });
 
   const { data: dauMau, isLoading: dauMauLoading, refetch: refetchDauMau } = useQuery<DAUMAUData[]>({
-    queryKey: ["/api/admin/analytics/dau-mau", period],
+    queryKey: ["/api/admin/analytics/dau-mau", period, userType],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/admin/analytics/dau-mau?period=${period}`);
+      const res = await apiRequest("GET", `/api/admin/analytics/dau-mau?period=${period}&userType=${userType}`);
       return res.json();
     },
   });
 
   const { data: retention } = useQuery<RetentionCohort[]>({
-    queryKey: ["/api/admin/analytics/retention", period],
+    queryKey: ["/api/admin/analytics/retention", period, userType],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/admin/analytics/retention?period=${period}`);
+      const res = await apiRequest("GET", `/api/admin/analytics/retention?period=${period}&userType=${userType}`);
       return res.json();
     },
   });
 
   const { data: funnel } = useQuery<ConversionFunnelStep[]>({
-    queryKey: ["/api/admin/analytics/funnel", period],
+    queryKey: ["/api/admin/analytics/funnel", period, userType],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/admin/analytics/funnel?period=${period}`);
+      const res = await apiRequest("GET", `/api/admin/analytics/funnel?period=${period}&userType=${userType}`);
       return res.json();
     },
   });
 
   const { data: geoData, isLoading: geoLoading } = useQuery<GeoData[]>({
-    queryKey: ["/api/admin/analytics/geo", period],
+    queryKey: ["/api/admin/analytics/geo", period, userType],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/admin/analytics/geo?period=${period}`);
+      const res = await apiRequest("GET", `/api/admin/analytics/geo?period=${period}&userType=${userType}`);
       return res.json();
     },
   });
 
   const { data: deviceData } = useQuery<DeviceData[]>({
-    queryKey: ["/api/admin/analytics/devices", period],
+    queryKey: ["/api/admin/analytics/devices", period, userType],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/admin/analytics/devices?period=${period}`);
+      const res = await apiRequest("GET", `/api/admin/analytics/devices?period=${period}&userType=${userType}`);
       return res.json();
     },
   });
 
   const { data: browserData } = useQuery<BrowserData[]>({
-    queryKey: ["/api/admin/analytics/browsers", period],
+    queryKey: ["/api/admin/analytics/browsers", period, userType],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/admin/analytics/browsers?period=${period}`);
+      const res = await apiRequest("GET", `/api/admin/analytics/browsers?period=${period}&userType=${userType}`);
       return res.json();
     },
   });
 
   const { data: osData } = useQuery<OSData[]>({
-    queryKey: ["/api/admin/analytics/os", period],
+    queryKey: ["/api/admin/analytics/os", period, userType],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/admin/analytics/os?period=${period}`);
+      const res = await apiRequest("GET", `/api/admin/analytics/os?period=${period}&userType=${userType}`);
       return res.json();
     },
   });
 
   const { data: trafficSources } = useQuery<TrafficSource[]>({
-    queryKey: ["/api/admin/analytics/traffic-sources", period],
+    queryKey: ["/api/admin/analytics/traffic-sources", period, userType],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/admin/analytics/traffic-sources?period=${period}`);
+      const res = await apiRequest("GET", `/api/admin/analytics/traffic-sources?period=${period}&userType=${userType}`);
       return res.json();
     },
   });
@@ -285,6 +287,17 @@ export function AnalyticsDashboard() {
               <SelectItem value="month">Last 30 Days</SelectItem>
               <SelectItem value="quarter">Last 90 Days</SelectItem>
               <SelectItem value="year">Last Year</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={userType} onValueChange={(v) => setUserType(v as UserType)}>
+            <SelectTrigger className="w-[180px]" data-testid="select-user-type">
+              <Users className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Users</SelectItem>
+              <SelectItem value="authenticated">Authenticated</SelectItem>
+              <SelectItem value="anonymous">Anonymous</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="outline" size="icon" onClick={handleRefresh} data-testid="button-refresh">

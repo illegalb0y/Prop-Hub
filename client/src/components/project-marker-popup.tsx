@@ -111,12 +111,12 @@ export function ProjectMarkerPopup({
               type="button"
               variant="ghost"
               size="icon"
-              className="h-6 w-6 hover:bg-transparent shrink-0"
+              className="h-6 w-6 hover:bg-transparent shrink-0 group/heart"
               disabled={favoriteMutation.isPending}
               data-favorite-button="true"
             >
               <Heart
-                className={`h-4 w-4 transition-colors duration-200 heart-shake-hover ${
+                className={`h-4 w-4 transition-colors duration-200 group-hover/heart:animate-heart-shake ${
                   isFavorite
                     ? "fill-destructive text-destructive"
                     : "text-muted-foreground hover:text-foreground"

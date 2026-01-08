@@ -53,35 +53,37 @@ export function ProjectMarkerPopup({ project }: ProjectMarkerPopupProps) {
           />
         </div>
       )}
-      <div className="p-2 bg-background font-mono relative">
-        <h3 className="font-bold text-sm line-clamp-1 pr-8">{project.name}</h3>
-        {project.priceFrom && (
-          <p className="text-xs font-normal text-muted-foreground mt-1">
-            from{" "}
-            <span className="text-foreground">
-              {new Intl.NumberFormat("en-US", {
-                style: "currency",
-                currency: project.currency || "USD",
-                maximumFractionDigits: 0,
-              }).format(project.priceFrom)}
-            </span>
-          </p>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute right-0 bottom-0 h-8 w-8 hover:bg-transparent"
-          onClick={handleFavoriteClick}
-          disabled={favoriteMutation.isPending}
-        >
-          <Heart 
-            className={`h-5 w-5 transition-colors ${
-              isFavorite 
-                ? "fill-destructive text-destructive" 
-                : "text-muted-foreground hover:text-foreground"
-            }`} 
-          />
-        </Button>
+      <div className="p-2 bg-background font-mono">
+        <h3 className="font-bold text-sm line-clamp-1">{project.name}</h3>
+        <div className="flex items-center justify-between mt-1 gap-1">
+          {project.priceFrom && (
+            <p className="text-xs font-normal text-muted-foreground truncate flex-1">
+              from{" "}
+              <span className="text-foreground">
+                {new Intl.NumberFormat("en-US", {
+                  style: "currency",
+                  currency: project.currency || "USD",
+                  maximumFractionDigits: 0,
+                }).format(project.priceFrom)}
+              </span>
+            </p>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 hover:bg-transparent shrink-0"
+            onClick={handleFavoriteClick}
+            disabled={favoriteMutation.isPending}
+          >
+            <Heart 
+              className={`h-4 w-4 transition-colors ${
+                isFavorite 
+                  ? "fill-destructive text-destructive" 
+                  : "text-muted-foreground hover:text-foreground"
+              }`} 
+            />
+          </Button>
+        </div>
       </div>
     </Card>
   );

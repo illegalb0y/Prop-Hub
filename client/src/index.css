@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  /* Leaflet Tooltip overrides */
+  .leaflet-tooltip.custom-marker-tooltip {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  .leaflet-tooltip-top.custom-marker-tooltip:before {
+    display: none;
+  }
+}
+
 /* LIGHT MODE */
 :root {
   --button-outline: rgba(0, 0, 0, .10);

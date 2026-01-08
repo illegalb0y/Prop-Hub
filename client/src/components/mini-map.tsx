@@ -128,6 +128,12 @@ export function MiniMap({
             icon={
               project.id === selectedProjectId ? selectedMarkerIcon : markerIcon
             }
+            eventHandlers={{
+              popupopen: (e) => {
+                const marker = e.target;
+                marker.closeTooltip();
+              },
+            }}
           >
             <Tooltip 
               direction="auto" 
@@ -139,7 +145,7 @@ export function MiniMap({
             >
               <ProjectMarkerPopup project={project} />
             </Tooltip>
-            <Popup className="custom-marker-popup">
+            <Popup className="custom-marker-popup" offset={[0, -10]} direction="auto">
               <div 
                 onClick={() => onMarkerClick?.(project.id)}
                 className="cursor-pointer"

@@ -195,6 +195,12 @@ export function FullMap({ projects }: FullMapProps) {
             key={project.id}
             position={[project.latitude, project.longitude]}
             icon={markerIcon}
+            eventHandlers={{
+              popupopen: (e) => {
+                const marker = e.target;
+                marker.closeTooltip();
+              },
+            }}
           >
             <Tooltip 
               direction="auto" 
@@ -206,7 +212,7 @@ export function FullMap({ projects }: FullMapProps) {
             >
               <ProjectMarkerPopup project={project} />
             </Tooltip>
-            <Popup className="custom-marker-popup">
+            <Popup className="custom-marker-popup" offset={[0, -10]} direction="auto">
               <div 
                 onClick={() => navigate(`/projects/${project.id}`)}
                 className="cursor-pointer"

@@ -21,12 +21,14 @@ export function ProjectMarkerPopup({
   const { isAuthenticated } = useAuth();
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  const { data: favorites = [] } = useQuery<number[]>({
+  const favoritesQuery = useQuery<any[]>({
     queryKey: ["/api/me/favorites"],
     enabled: isAuthenticated,
   });
 
-  const isFavorite = favorites.includes(project.id);
+  const isFavorite = Array.isArray(favoritesQuery.data) 
+    ? favoritesQuery.data.some((f: any) => f.projectId === project.id)
+    : false;
 
   const favoriteMutation = useMutation({
     mutationFn: async () => {

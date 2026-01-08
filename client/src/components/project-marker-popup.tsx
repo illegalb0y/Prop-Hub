@@ -1,3 +1,4 @@
+import { useRef, useEffect, useCallback } from "react";
 import type { ProjectWithRelations } from "@shared/schema";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ export function ProjectMarkerPopup({
 }: ProjectMarkerPopupProps) {
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   const { data: favorites = [] } = useQuery<number[]>({
     queryKey: ["/api/me/favorites"],
@@ -41,19 +43,38 @@ export function ProjectMarkerPopup({
         description: project.name,
       });
     },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update favorites",
+        variant: "destructive",
+      });
+    },
   });
 
-  const handleFavoriteClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
+  const handleFavoriteAction = useCallback(() => {
     if (!isAuthenticated) {
       window.location.href = "/api/login";
       return;
     }
-
     favoriteMutation.mutate();
-  };
+  }, [isAuthenticated, favoriteMutation]);
+
+  useEffect(() => {
+    const button = buttonRef.current;
+    if (!button) return;
+
+    const handleClick = (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handleFavoriteAction();
+    };
+
+    button.addEventListener("click", handleClick, true);
+    return () => {
+      button.removeEventListener("click", handleClick, true);
+    };
+  }, [handleFavoriteAction]);
 
   return (
     <Card className="min-w-[180px] overflow-hidden border-none shadow-lg relative group">
@@ -83,10 +104,11 @@ export function ProjectMarkerPopup({
           )}
           {showFavoriteButton && (
             <Button
+              ref={buttonRef}
+              type="button"
               variant="ghost"
               size="icon"
               className="h-6 w-6 hover:bg-transparent shrink-0"
-              onClick={handleFavoriteClick}
               disabled={favoriteMutation.isPending}
               data-favorite-button="true"
             >

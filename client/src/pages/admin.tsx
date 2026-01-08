@@ -1529,67 +1529,70 @@ function ProjectsSection() {
 
             <div className="space-y-2">
               <Label htmlFor="proj-developer">Developer</Label>
-              <select
-                id="proj-developer"
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              <Select
                 value={formData.developerId}
-                onChange={(e) =>
-                  setFormData({ ...formData, developerId: e.target.value })
+                onValueChange={(value) =>
+                  setFormData({ ...formData, developerId: value })
                 }
-                data-testid="select-project-developer"
               >
-                <option value="">Select Developer</option>
-                {developers?.map((dev) => (
-                  <option key={dev.id} value={dev.id}>
-                    {dev.name}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger data-testid="select-project-developer">
+                  <SelectValue placeholder="Select Developer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {developers?.map((dev) => (
+                    <SelectItem key={dev.id} value={dev.id.toString()}>
+                      {dev.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="proj-city">City</Label>
-              <select
-                id="proj-city"
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              <Select
                 value={formData.cityId}
-                onChange={(e) =>
+                onValueChange={(value) =>
                   setFormData({
                     ...formData,
-                    cityId: e.target.value,
+                    cityId: value,
                     districtId: "",
                   })
                 }
-                data-testid="select-project-city"
               >
-                <option value="">Select City</option>
-                {cities?.map((city) => (
-                  <option key={city.id} value={city.id}>
-                    {city.name}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger data-testid="select-project-city">
+                  <SelectValue placeholder="Select City" />
+                </SelectTrigger>
+                <SelectContent>
+                  {cities?.map((city) => (
+                    <SelectItem key={city.id} value={city.id.toString()}>
+                      {city.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="proj-district">District</Label>
-              <select
-                id="proj-district"
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              <Select
                 value={formData.districtId}
-                onChange={(e) =>
-                  setFormData({ ...formData, districtId: e.target.value })
+                onValueChange={(value) =>
+                  setFormData({ ...formData, districtId: value })
                 }
                 disabled={!formData.cityId}
-                data-testid="select-project-district"
               >
-                <option value="">Select District</option>
-                {districts?.map((district) => (
-                  <option key={district.id} value={district.id}>
-                    {district.name}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger data-testid="select-project-district">
+                  <SelectValue placeholder="Select District" />
+                </SelectTrigger>
+                <SelectContent>
+                  {districts?.map((district) => (
+                    <SelectItem key={district.id} value={district.id.toString()}>
+                      {district.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

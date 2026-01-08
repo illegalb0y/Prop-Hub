@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
+import { AnalyticsDashboard } from "@/components/analytics-dashboard";
 import {
   LayoutDashboard,
   Users,
@@ -382,146 +383,7 @@ function AdminSidebar({
 }
 
 function DashboardSection() {
-  const { data: stats, isLoading } = useQuery<DashboardStats>({
-    queryKey: ["/api/admin/dashboard"],
-  });
-
-  if (isLoading) {
-    return <SectionSkeleton title="Dashboard" />;
-  }
-
-  const kpiCards = [
-    {
-      label: "Total Users",
-      value: stats?.userCount || 0,
-      icon: Users,
-      color: "text-blue-500",
-    },
-    {
-      label: "Total Projects",
-      value: stats?.projectCount || 0,
-      icon: FolderKanban,
-      color: "text-green-500",
-    },
-    {
-      label: "Developers",
-      value: stats?.developerCount || 0,
-      icon: Building2,
-      color: "text-purple-500",
-    },
-    {
-      label: "Banks",
-      value: stats?.bankCount || 0,
-      icon: Landmark,
-      color: "text-orange-500",
-    },
-    {
-      label: "Banned Users",
-      value: stats?.bannedUserCount || 0,
-      icon: Ban,
-      color: "text-red-500",
-    },
-    {
-      label: "IP Bans",
-      value: stats?.ipBanCount || 0,
-      icon: ShieldCheck,
-      color: "text-yellow-500",
-    },
-  ];
-
-  return (
-    <div className="space-y-6" data-testid="dashboard-section">
-      <SectionHeader
-        title="Dashboard"
-        description="Overview of your platform's key metrics"
-      />
-
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {kpiCards.map((kpi) => {
-          const Icon = kpi.icon;
-          return (
-            <Card
-              key={kpi.label}
-              data-testid={`kpi-${kpi.label.toLowerCase().replace(/\s+/g, "-")}`}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <Icon className={`h-4 w-4 ${kpi.color}`} />
-                  <TrendingUp className="h-3 w-3 text-muted-foreground" />
-                </div>
-                <p className="text-2xl font-bold">
-                  {kpi.value.toLocaleString()}
-                </p>
-                <p className="text-xs text-muted-foreground">{kpi.label}</p>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Activity className="h-4 w-4" />
-              Recent Imports
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {stats?.recentImports && stats.recentImports.length > 0 ? (
-              <div className="space-y-3">
-                {stats.recentImports.map((job: any) => (
-                  <div
-                    key={job.id}
-                    className="flex items-center justify-between gap-3 text-sm"
-                    data-testid={`import-${job.id}`}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      <span className="truncate">{job.filename}</span>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <Badge
-                        variant={
-                          job.status === "completed"
-                            ? "default"
-                            : job.status === "failed"
-                              ? "destructive"
-                              : "secondary"
-                        }
-                        className="text-xs"
-                      >
-                        {job.status}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {format(new Date(job.createdAt), "MMM d")}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No recent imports</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Quick Actions
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <QuickExportButton entity="projects" label="Export Projects" />
-            <QuickExportButton entity="developers" label="Export Developers" />
-            <QuickExportButton entity="banks" label="Export Banks" />
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
+  return <AnalyticsDashboard />;
 }
 
 function QuickExportButton({

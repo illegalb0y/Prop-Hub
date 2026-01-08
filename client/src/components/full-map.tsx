@@ -206,6 +206,7 @@ export function FullMap({ projects }: FullMapProps) {
               className="custom-marker-tooltip"
               sticky={false}
               permanent={false}
+              container={document.querySelector('.leaflet-container') as HTMLElement}
             >
               <ProjectMarkerPopup project={project} />
             </Tooltip>

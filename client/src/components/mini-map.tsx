@@ -128,46 +128,13 @@ export function MiniMap({
             icon={
               project.id === selectedProjectId ? selectedMarkerIcon : markerIcon
             }
-            eventHandlers={{
-              click: () => onMarkerClick?.(project.id),
-            }}
           >
-            <Tooltip 
-              direction="auto" 
-              offset={[0, -10]} 
-              opacity={1} 
-              className="custom-marker-tooltip"
-              sticky={false}
-              permanent={false}
-            >
-              <ProjectMarkerPopup project={project} />
-            </Tooltip>
-            <Popup>
-              <div className="min-w-[180px]">
-                {project.coverImageUrl && (
-                  <img
-                    src={project.coverImageUrl}
-                    alt={project.name}
-                    className="w-full h-16 object-cover rounded-t-sm mb-2"
-                  />
-                )}
-                <h3 className="font-semibold text-sm">{project.name}</h3>
-                {project.priceFrom && (
-                  <p className="text-sm font-medium">
-                    From{" "}
-                    {new Intl.NumberFormat("en-US", {
-                      style: "currency",
-                      currency: project.currency || "USD",
-                      maximumFractionDigits: 0,
-                    }).format(project.priceFrom)}
-                  </p>
-                )}
-                <a
-                  href={`/projects/${project.id}`}
-                  className="text-xs text-primary hover:underline mt-1 inline-block"
-                >
-                  View details
-                </a>
+            <Popup className="custom-marker-popup">
+              <div 
+                onClick={() => onMarkerClick?.(project.id)}
+                className="cursor-pointer"
+              >
+                <ProjectMarkerPopup project={project} />
               </div>
             </Popup>
           </Marker>

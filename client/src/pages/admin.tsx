@@ -1170,13 +1170,13 @@ function ProjectsSection() {
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
-          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-md border">
-            <div className="relative flex items-center">
+          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-md border flex-1 min-w-0">
+            <div className="relative flex items-center flex-1 min-w-0">
               <Input
                 type="file"
                 accept=".csv"
                 onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                className="h-8 text-xs border-0 bg-transparent focus-visible:ring-0 w-72"
+                className="h-8 text-xs border-0 bg-transparent focus-visible:ring-0 w-full pr-8"
                 data-testid="input-import-projects"
                 key={importFile ? 'file-selected' : 'file-cleared'}
               />
@@ -1184,7 +1184,7 @@ function ProjectsSection() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 absolute right-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  className="h-6 w-6 absolute right-1 text-destructive hover:text-destructive hover:bg-destructive/10"
                   onClick={() => setImportFile(null)}
                   data-testid="button-clear-import-projects"
                 >
@@ -1196,6 +1196,7 @@ function ProjectsSection() {
               size="sm"
               onClick={() => importMutation.mutate()}
               disabled={!importFile || importMutation.isPending}
+              className="shrink-0"
               data-testid="button-import-projects"
             >
               <Upload className="h-3.5 w-3.5 mr-1.5" />
@@ -1989,13 +1990,13 @@ function DevelopersSection() {
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
-          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-md border">
-            <div className="relative flex items-center">
+          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-md border flex-1 min-w-0">
+            <div className="relative flex items-center flex-1 min-w-0">
               <Input
                 type="file"
                 accept=".csv"
                 onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                className="h-8 text-xs border-0 bg-transparent focus-visible:ring-0 w-48"
+                className="h-8 text-xs border-0 bg-transparent focus-visible:ring-0 w-full pr-8"
                 data-testid="input-import-developers"
                 key={importFile ? 'file-selected' : 'file-cleared'}
               />
@@ -2003,7 +2004,7 @@ function DevelopersSection() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 absolute right-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  className="h-6 w-6 absolute right-1 text-destructive hover:text-destructive hover:bg-destructive/10"
                   onClick={() => setImportFile(null)}
                   data-testid="button-clear-import-developers"
                 >
@@ -2015,6 +2016,7 @@ function DevelopersSection() {
               size="sm"
               onClick={() => importMutation.mutate()}
               disabled={!importFile || importMutation.isPending}
+              className="shrink-0"
               data-testid="button-import-developers"
             >
               <Upload className="h-3.5 w-3.5 mr-1.5" />
@@ -2623,13 +2625,13 @@ function BanksSection() {
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
-          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-md border">
-            <div className="relative flex items-center">
+          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-md border flex-1 min-w-0">
+            <div className="relative flex items-center flex-1 min-w-0">
               <Input
                 type="file"
                 accept=".csv"
                 onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                className="h-8 text-xs border-0 bg-transparent focus-visible:ring-0 w-48"
+                className="h-8 text-xs border-0 bg-transparent focus-visible:ring-0 w-full pr-8"
                 data-testid="input-import-banks"
                 key={importFile ? 'file-selected' : 'file-cleared'}
               />
@@ -2637,7 +2639,7 @@ function BanksSection() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 absolute right-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  className="h-6 w-6 absolute right-1 text-destructive hover:text-destructive hover:bg-destructive/10"
                   onClick={() => setImportFile(null)}
                   data-testid="button-clear-import-banks"
                 >
@@ -2649,6 +2651,7 @@ function BanksSection() {
               size="sm"
               onClick={() => importMutation.mutate()}
               disabled={!importFile || importMutation.isPending}
+              className="shrink-0"
               data-testid="button-import-banks"
             >
               <Upload className="h-3.5 w-3.5 mr-1.5" />

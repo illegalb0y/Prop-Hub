@@ -25,9 +25,9 @@
     "favorites": "Favorites",
     "account": "My account",
     "settings": "Settings",
-    "login": "Log in",
-    "signup": "Sign up",
-    "logout": "Log out"
+    "login": "[LOG IN]",
+    "signup": "[SIGN UP]",
+    "logout": "[LOG OUT]"
   },
   "header": {
     "searchPlaceholder": "Search...",

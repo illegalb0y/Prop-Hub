@@ -195,8 +195,8 @@ export default function ProjectDetailPage() {
           <div className="space-y-4">
             <Button
               size="lg"
-              className="w-full font-medium bg-[#003630] text-primary-foreground border border-primary-border"
-              variant={isFavorite ? "destructive" : "default"}
+              className="w-full font-medium bg-[#003630] hover:bg-[#003630]/90 text-primary-foreground border-none"
+              variant="default"
               onClick={handleFavoriteToggle}
               disabled={addFavoriteMutation.isPending || removeFavoriteMutation.isPending}
               data-testid="button-toggle-favorite"

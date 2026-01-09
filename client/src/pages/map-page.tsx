@@ -4,9 +4,21 @@ import { FullMap } from "@/components/full-map";
 import { ProjectFilters, type SortOption } from "@/components/project-filters";
 import { MapSkeleton, FiltersSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Filter } from "lucide-react";
-import type { ProjectWithRelations, City, District, Developer, Bank } from "@shared/schema";
+import type {
+  ProjectWithRelations,
+  City,
+  District,
+  Developer,
+  Bank,
+} from "@shared/schema";
 
 interface MapPageProps {
   searchQuery: string;
@@ -21,20 +33,33 @@ export default function MapPage({ searchQuery }: MapPageProps) {
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const { data: cities = [] } = useQuery<City[]>({ queryKey: ["/api/cities"] });
-  const { data: districts = [] } = useQuery<District[]>({ queryKey: ["/api/districts"] });
-  const { data: developers = [] } = useQuery<Developer[]>({ queryKey: ["/api/developers"] });
+  const { data: districts = [] } = useQuery<District[]>({
+    queryKey: ["/api/districts"],
+  });
+  const { data: developers = [] } = useQuery<Developer[]>({
+    queryKey: ["/api/developers"],
+  });
   const { data: banks = [] } = useQuery<Bank[]>({ queryKey: ["/api/banks"] });
 
   const queryParams = useMemo(() => {
     const params = new URLSearchParams();
     if (searchQuery) params.set("q", searchQuery);
-    selectedCities.forEach(id => params.append("cityId", String(id)));
-    selectedDistricts.forEach(id => params.append("districtId", String(id)));
-    selectedDevelopers.forEach(id => params.append("developerId", String(id)));
-    selectedBanks.forEach(id => params.append("bankId", String(id)));
+    selectedCities.forEach((id) => params.append("cityId", String(id)));
+    selectedDistricts.forEach((id) => params.append("districtId", String(id)));
+    selectedDevelopers.forEach((id) =>
+      params.append("developerId", String(id)),
+    );
+    selectedBanks.forEach((id) => params.append("bankId", String(id)));
     params.set("sort", sortBy);
     return params.toString();
-  }, [searchQuery, selectedCities, selectedDistricts, selectedDevelopers, selectedBanks, sortBy]);
+  }, [
+    searchQuery,
+    selectedCities,
+    selectedDistricts,
+    selectedDevelopers,
+    selectedBanks,
+    sortBy,
+  ]);
 
   const { data: projects = [], isLoading } = useQuery<ProjectWithRelations[]>({
     queryKey: ["/api/projects", queryParams],
@@ -52,8 +77,11 @@ export default function MapPage({ searchQuery }: MapPageProps) {
     setSelectedBanks([]);
   };
 
-  const hasFilters = selectedCities.length > 0 || selectedDistricts.length > 0 || 
-                     selectedDevelopers.length > 0 || selectedBanks.length > 0;
+  const hasFilters =
+    selectedCities.length > 0 ||
+    selectedDistricts.length > 0 ||
+    selectedDevelopers.length > 0 ||
+    selectedBanks.length > 0;
 
   return (
     <div className="h-full relative">
@@ -66,17 +94,20 @@ export default function MapPage({ searchQuery }: MapPageProps) {
               data-testid="button-open-filters"
             >
               <Filter className="h-4 w-4 mr-2" />
-              Filters
+              filters
               {hasFilters && (
                 <span className="ml-2 bg-primary text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs">
-                  {selectedCities.length + selectedDistricts.length + selectedDevelopers.length + selectedBanks.length}
+                  {selectedCities.length +
+                    selectedDistricts.length +
+                    selectedDevelopers.length +
+                    selectedBanks.length}
                 </span>
               )}
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-[320px] p-0">
             <SheetHeader className="p-4 border-b">
-              <SheetTitle>Filters</SheetTitle>
+              <SheetTitle>filters</SheetTitle>
             </SheetHeader>
             <div className="p-4 space-y-4">
               <ProjectFilters
@@ -107,11 +138,7 @@ export default function MapPage({ searchQuery }: MapPageProps) {
         </p>
       </div>
 
-      {isLoading ? (
-        <MapSkeleton />
-      ) : (
-        <FullMap projects={projects} />
-      )}
+      {isLoading ? <MapSkeleton /> : <FullMap projects={projects} />}
     </div>
   );
 }

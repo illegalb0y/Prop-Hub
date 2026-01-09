@@ -68,6 +68,17 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Middleware для обогащения сессий IP-адресом и user-agent
+  app.use((req, res, next) => {
+    if (req.session) {
+      const ip = (req.ip || req.socket.remoteAddress || "").replace(/^::ffff:/, "");
+      (req.session as any).ip = ip;
+      (req.session as any).userAgent = req.get("user-agent");
+      (req.session as any).lastActivity = new Date().toISOString();
+    }
+    next();
+  });
+
   const config = await getOidcConfig();
 
   const verify: VerifyFunction = async (

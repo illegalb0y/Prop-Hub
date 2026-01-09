@@ -139,12 +139,40 @@ export class AdminStorage {
     return job;
   }
 
-  async getImportJobs(page: number, limit: number): Promise<PaginatedResult<ImportJob>> {
+  async getImportJobs(
+    page: number,
+    limit: number,
+    filters?: {
+      search?: string;
+      entityType?: string;
+      status?: string;
+    }
+  ): Promise<PaginatedResult<ImportJob>> {
     const offset = (page - 1) * limit;
 
+    const conditions: any[] = [];
+
+    if (filters?.search) {
+      conditions.push(ilike(importJobs.filename, `%${filters.search}%`));
+    }
+
+    if (filters?.entityType) {
+      conditions.push(eq(importJobs.entityType, filters.entityType));
+    }
+
+    if (filters?.status) {
+      conditions.push(eq(importJobs.status, filters.status));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
     const [data, [{ count }]] = await Promise.all([
-      db.select().from(importJobs).orderBy(desc(importJobs.createdAt)).limit(limit).offset(offset),
-      db.select({ count: sql<number>`count(*)::int` }).from(importJobs),
+      db.select().from(importJobs)
+        .where(whereClause)
+        .orderBy(desc(importJobs.createdAt))
+        .limit(limit)
+        .offset(offset),
+      db.select({ count: sql<number>`count(*)::int` }).from(importJobs).where(whereClause),
     ]);
 
     return {
@@ -283,7 +311,7 @@ export class AdminStorage {
     const offset = (page - 1) * limit;
 
     const conditions: any[] = [];
-    
+
     if (status === "active") {
       conditions.push(isNull(projects.deletedAt));
     } else if (status === "deleted") {
@@ -298,7 +326,7 @@ export class AdminStorage {
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-    
+
     const orderColumn = sortBy === "name" ? projects.name : 
                         sortBy === "createdAt" ? projects.createdAt : 
                         projects.updatedAt;
@@ -457,7 +485,7 @@ export class AdminStorage {
       updateData.completionDate = data.completionDate ? new Date(data.completionDate) : null;
     }
     if (data.coverImageUrl !== undefined) updateData.coverImageUrl = data.coverImageUrl;
-    
+
     const [updated] = await db.update(projects).set(updateData).where(eq(projects.id, id)).returning();
     return updated;
   }
@@ -473,7 +501,7 @@ export class AdminStorage {
     const offset = (page - 1) * limit;
 
     const conditions: any[] = [];
-    
+
     if (status === "active") {
       conditions.push(isNull(developers.deletedAt));
     } else if (status === "deleted") {
@@ -488,7 +516,7 @@ export class AdminStorage {
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-    
+
     const orderColumn = sortBy === "name" ? developers.name : 
                         sortBy === "createdAt" ? developers.createdAt : 
                         developers.updatedAt;
@@ -608,7 +636,7 @@ export class AdminStorage {
     const offset = (page - 1) * limit;
 
     const conditions: any[] = [];
-    
+
     if (status === "active") {
       conditions.push(isNull(banks.deletedAt));
     } else if (status === "deleted") {
@@ -623,7 +651,7 @@ export class AdminStorage {
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-    
+
     const orderColumn = sortBy === "name" ? banks.name : 
                         sortBy === "createdAt" ? banks.createdAt : 
                         banks.updatedAt;

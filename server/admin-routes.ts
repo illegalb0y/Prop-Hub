@@ -306,7 +306,15 @@ export function registerAdminRoutes(app: Express) {
   app.get("/api/admin/imports", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
       const { page, limit } = paginationSchema.parse(req.query);
-      const imports = await adminStorage.getImportJobs(page, limit);
+      const { search, entityType, status } = req.query;
+
+      const filters = {
+        search: search as string | undefined,
+        entityType: entityType as string | undefined,
+        status: status as string | undefined,
+      };
+
+      const imports = await adminStorage.getImportJobs(page, limit, filters);
       res.json(imports);
     } catch (error) {
       console.error("Error fetching imports:", error);
@@ -341,9 +349,9 @@ export function registerAdminRoutes(app: Express) {
     try {
       const jobId = req.params.id;
       const result = await adminStorage.undoImport(jobId);
-      
+
       await createAuditLog(req, "csv_import_undo", "import_job", jobId, { undoneCount: result.undoneCount });
-      
+
       res.json({ 
         message: `Successfully undid import. ${result.undoneCount} record(s) removed.`,
         undoneCount: result.undoneCount,
@@ -1031,7 +1039,7 @@ export function registerAdminRoutes(app: Express) {
     try {
       const { period } = analyticsRangeSchema.parse(req.query);
       const range = getDateRange(period);
-      
+
       const [overview, dauMau, geo, devices, browsers, os, sources] = await Promise.all([
         analyticsStorage.getOverview(range),
         analyticsStorage.getDAUMAU(range),

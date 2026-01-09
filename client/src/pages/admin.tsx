@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
 import { AnalyticsDashboard } from "@/components/analytics-dashboard";
+import ImportLogsSection from "@/components/import-logs-section";
 import {
   LayoutDashboard,
   Users,
@@ -95,7 +96,8 @@ type AdminSection =
   | "security"
   | "ip-bans"
   | "sessions"
-  | "audit-logs";
+  | "audit-logs"
+  | "import-logs";
 
 interface PaginatedResult<T> {
   data: T[];
@@ -264,6 +266,7 @@ const navigationItems = [
         icon: Building2,
       },
       { id: "banks" as AdminSection, label: "Banks", icon: Landmark },
+      { id: "import-logs" as AdminSection, label: "Data Import Logs", icon: FileText },
     ],
   },
   {
@@ -326,6 +329,7 @@ export default function AdminPage() {
           {activeSection === "ip-bans" && <IpBansSection />}
           {activeSection === "sessions" && <SessionsSection />}
           {activeSection === "audit-logs" && <AuditLogsSection />}
+          {activeSection === "import-logs" && <ImportLogsSection />}
         </div>
       </main>
     </div>
@@ -3123,14 +3127,24 @@ function AuditLogsSection() {
         title="Audit Logs"
         description="Track all administrative actions and system events"
         actions={
-          <Button
-            variant="outline"
-            onClick={() => setShowFilters(!showFilters)}
-            data-testid="button-toggle-filters"
-          >
-            <Search className="h-4 w-4 mr-2" />
-            {showFilters ? "Hide Filters" : "Show Filters"}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => refetch()}
+              data-testid="button-refresh-audit-logs"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              data-testid="button-toggle-filters"
+            >
+              <Search className="h-4 w-4 mr-2" />
+              {showFilters ? "Hide Filters" : "Show Filters"}
+            </Button>
+          </div>
         }
       />
 

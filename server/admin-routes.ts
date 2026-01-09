@@ -1091,24 +1091,27 @@ async function processCSVImport(buffer: Buffer, jobId: string, adminId: string) 
         }
 
         // Ищем застройщика
-        const developerName = (row.developer || row.developer_name || "").toLowerCase().trim();
+        const developerField = row.developer || row.developer_name || "";
+        const developerName = developerField.toString().toLowerCase().trim();
         const developer = developerMap.get(developerName);
         if (!developer) {
-          throw new Error(`Developer not found: ${row.developer || row.developer_name}`);
+          throw new Error(`Developer not found: ${developerField}`);
         }
 
         // Ищем город
-        const cityName = (row.city || row.city_name || "").toLowerCase().trim();
+        const cityField = row.city || row.city_name || "";
+        const cityName = cityField.toString().toLowerCase().trim();
         const city = cityMap.get(cityName);
         if (!city) {
-          throw new Error(`City not found: ${row.city || row.city_name}`);
+          throw new Error(`City not found: ${cityField}`);
         }
 
         // Ищем район
-        const districtName = (row.district || row.district_name || "").toLowerCase().trim();
+        const districtField = row.district || row.district_name || "";
+        const districtName = districtField.toString().toLowerCase().trim();
         const district = districtMap.get(districtName);
         if (!district) {
-          throw new Error(`District not found: ${row.district || row.district_name}`);
+          throw new Error(`District not found: ${districtField}`);
         }
 
         // Проверяем, что район принадлежит указанному городу

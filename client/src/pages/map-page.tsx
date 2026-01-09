@@ -62,7 +62,7 @@ export default function MapPage({ searchQuery }: MapPageProps) {
           <SheetTrigger asChild>
             <Button
               variant="secondary"
-              className="shadow-lg"
+              className="shadow-lg font-mono"
               data-testid="button-open-filters"
             >
               <Filter className="h-4 w-4 mr-2" />

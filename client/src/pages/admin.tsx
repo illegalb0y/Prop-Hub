@@ -778,6 +778,7 @@ function ProjectsSection() {
   const [bulkActionDialogOpen, setBulkActionDialogOpen] = useState(false);
   const [bulkActionType, setBulkActionType] = useState<"delete" | "restore">("delete");
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [lastImportJobId, setLastImportJobId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [formData, setFormData] = useState({
@@ -991,13 +992,32 @@ function ProjectsSection() {
       if (!response.ok) throw new Error("Import failed");
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       toast({ title: "Import started successfully" });
       setImportFile(null);
+      if (data?.jobId) {
+        setLastImportJobId(data.jobId);
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
     },
     onError: () => {
       toast({ title: "Import failed", variant: "destructive" });
+    },
+  });
+
+  const undoImportMutation = useMutation({
+    mutationFn: async (jobId: string) => {
+      return apiRequest("POST", `/api/admin/imports/${jobId}/undo`);
+    },
+    onSuccess: async (response) => {
+      const data = await response.json();
+      toast({ title: data.message || "Import undone successfully" });
+      setLastImportJobId(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
+    },
+    onError: async (error: any) => {
+      const message = error?.message || "Failed to undo import";
+      toast({ title: message, variant: "destructive" });
     },
   });
 
@@ -1203,6 +1223,19 @@ function ProjectsSection() {
               Import CSV
             </Button>
           </div>
+          {lastImportJobId && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => undoImportMutation.mutate(lastImportJobId)}
+              disabled={undoImportMutation.isPending}
+              className="text-destructive hover:text-destructive"
+              data-testid="button-undo-import-projects"
+            >
+              <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+              {undoImportMutation.isPending ? "Undoing..." : "Undo Import"}
+            </Button>
+          )}
           <Button
             variant="outline"
             size="icon"
@@ -1689,6 +1722,7 @@ function DevelopersSection() {
     description: "",
   });
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [lastImportJobId, setLastImportJobId] = useState<string | null>(null);
 
   const {
     data: developers,
@@ -1861,13 +1895,32 @@ function DevelopersSection() {
       if (!response.ok) throw new Error("Import failed");
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       toast({ title: "Import started successfully" });
       setImportFile(null);
+      if (data?.jobId) {
+        setLastImportJobId(data.jobId);
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/admin/developers"] });
     },
     onError: () => {
       toast({ title: "Import failed", variant: "destructive" });
+    },
+  });
+
+  const undoImportMutation = useMutation({
+    mutationFn: async (jobId: string) => {
+      return apiRequest("POST", `/api/admin/imports/${jobId}/undo`);
+    },
+    onSuccess: async (response) => {
+      const data = await response.json();
+      toast({ title: data.message || "Import undone successfully" });
+      setLastImportJobId(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/developers"] });
+    },
+    onError: async (error: any) => {
+      const message = error?.message || "Failed to undo import";
+      toast({ title: message, variant: "destructive" });
     },
   });
 
@@ -2023,6 +2076,19 @@ function DevelopersSection() {
               Import CSV
             </Button>
           </div>
+          {lastImportJobId && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => undoImportMutation.mutate(lastImportJobId)}
+              disabled={undoImportMutation.isPending}
+              className="text-destructive hover:text-destructive"
+              data-testid="button-undo-import-developers"
+            >
+              <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+              {undoImportMutation.isPending ? "Undoing..." : "Undo Import"}
+            </Button>
+          )}
           <Button
             variant="outline"
             size="icon"
@@ -2324,6 +2390,7 @@ function BanksSection() {
     description: "",
   });
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [lastImportJobId, setLastImportJobId] = useState<string | null>(null);
 
   const {
     data: banks,
@@ -2496,13 +2563,32 @@ function BanksSection() {
       if (!response.ok) throw new Error("Import failed");
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       toast({ title: "Import started successfully" });
       setImportFile(null);
+      if (data?.jobId) {
+        setLastImportJobId(data.jobId);
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/admin/banks"] });
     },
     onError: () => {
       toast({ title: "Import failed", variant: "destructive" });
+    },
+  });
+
+  const undoImportMutation = useMutation({
+    mutationFn: async (jobId: string) => {
+      return apiRequest("POST", `/api/admin/imports/${jobId}/undo`);
+    },
+    onSuccess: async (response) => {
+      const data = await response.json();
+      toast({ title: data.message || "Import undone successfully" });
+      setLastImportJobId(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/banks"] });
+    },
+    onError: async (error: any) => {
+      const message = error?.message || "Failed to undo import";
+      toast({ title: message, variant: "destructive" });
     },
   });
 
@@ -2658,6 +2744,19 @@ function BanksSection() {
               Import CSV
             </Button>
           </div>
+          {lastImportJobId && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => undoImportMutation.mutate(lastImportJobId)}
+              disabled={undoImportMutation.isPending}
+              className="text-destructive hover:text-destructive"
+              data-testid="button-undo-import-banks"
+            >
+              <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+              {undoImportMutation.isPending ? "Undoing..." : "Undo Import"}
+            </Button>
+          )}
           <Button
             variant="outline"
             size="icon"

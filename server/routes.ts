@@ -6,6 +6,7 @@ import { projectsRateLimit, projectDetailRateLimit, userActionsRateLimit, authRa
 import { checkUserNotBanned } from "./middleware/rbac";
 import { projectFiltersSchema, idParamSchema, favoriteSchema, historySchema } from "./middleware/validation";
 import { registerAdminRoutes } from "./admin-routes";
+import { trackAnalytics } from "./middleware/analytics-tracking";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -14,6 +15,9 @@ export async function registerRoutes(
   await setupAuth(app);
   registerAuthRoutes(app);
   registerAdminRoutes(app);
+
+  // Analytics tracking - отслеживаем активность пользователей
+  app.use(trackAnalytics);
 
   app.get("/api/cities", async (req, res) => {
     try {
@@ -44,9 +48,9 @@ export async function registerRoutes(
       if (!cityId) {
         return res.status(400).json({ message: "cityId is required" });
       }
-      
+
       const geometries = await storage.getDistrictGeometries(cityId);
-      
+
       const featureCollection = {
         type: "FeatureCollection",
         features: geometries.map((geo) => ({
@@ -59,7 +63,7 @@ export async function registerRoutes(
           geometry: geo.geojson,
         })),
       };
-      
+
       res.setHeader("Cache-Control", "public, max-age=86400");
       res.json(featureCollection);
     } catch (error) {
@@ -131,7 +135,7 @@ export async function registerRoutes(
     try {
       const validatedQuery = projectFiltersSchema.safeParse(req.query);
       const query = validatedQuery.success ? validatedQuery.data : req.query;
-      
+
       const filters: ProjectFilters = {
         q: query.q as string | undefined,
         cityIds: req.query.cityId ? (Array.isArray(req.query.cityId) 
@@ -148,7 +152,7 @@ export async function registerRoutes(
           : [parseInt(req.query.bankId as string)]) : undefined,
         sort: req.query.sort as ProjectFilters["sort"] || "newest",
       };
-      
+
       const projects = await storage.getProjects(filters);
       res.json(projects);
     } catch (error) {
@@ -200,11 +204,11 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const result = favoriteSchema.safeParse(req.body);
-      
+
       if (!result.success) {
         return res.status(400).json({ message: "projectId is required" });
       }
-      
+
       const { projectId } = result.data;
 
       const exists = await storage.isFavorite(userId, projectId);
@@ -224,7 +228,7 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const projectId = parseInt(req.params.projectId);
-      
+
       await storage.removeFavorite(userId, projectId);
       res.status(204).send();
     } catch (error) {
@@ -248,11 +252,11 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const result = historySchema.safeParse(req.body);
-      
+
       if (!result.success) {
         return res.status(400).json({ message: "projectId is required" });
       }
-      
+
       const { projectId, source } = result.data;
 
       const history = await storage.addToHistory({ userId, projectId, source });

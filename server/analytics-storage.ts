@@ -101,7 +101,10 @@ class AnalyticsStorage {
       .from(users);
 
     const [activeUsersTodayResult] = await db
-      .select({ count: countDistinct(userSessions.userId) })
+      .select({
+        count: countDistinct(userSessions.userId),
+        sessionCount: count()
+      })
       .from(userSessions)
       .where(and(
         gte(userSessions.startedAt, today),
@@ -109,7 +112,10 @@ class AnalyticsStorage {
       ));
 
     const [activeUsersMonthResult] = await db
-      .select({ count: countDistinct(userSessions.userId) })
+      .select({
+        count: countDistinct(userSessions.userId),
+        sessionCount: count()
+      })
       .from(userSessions)
       .where(and(
         gte(userSessions.startedAt, monthStart),
@@ -130,10 +136,19 @@ class AnalyticsStorage {
       .from(users)
       .where(gte(users.createdAt, today));
 
+    const dauUsers = activeUsersTodayResult?.count || 0;
+    const dauSessions = activeUsersTodayResult?.sessionCount || 0;
+    const mauUsers = activeUsersMonthResult?.count || 0;
+    const mauSessions = activeUsersMonthResult?.sessionCount || 0;
+
     return {
       totalUsers: totalUsersResult?.count || 0,
-      activeUsersToday: activeUsersTodayResult?.count || 0,
-      activeUsersThisMonth: activeUsersMonthResult?.count || 0,
+      activeUsersToday: (userType === "anonymous")
+        ? Math.ceil(dauSessions / 5)
+        : (dauUsers > 0 ? dauUsers : (dauSessions > 0 && userType === "all" ? Math.ceil(dauSessions / 5) : 0)),
+      activeUsersThisMonth: (userType === "anonymous")
+        ? Math.ceil(mauSessions / 3)
+        : (mauUsers > 0 ? mauUsers : (mauSessions > 0 && userType === "all" ? Math.ceil(mauSessions / 3) : 0)),
       totalSessions: totalSessionsResult?.count || 0,
       avgSessionDuration: 0,
       bounceRate: 0,
@@ -178,12 +193,12 @@ class AnalyticsStorage {
 
       const dauUsers = dauResult?.count || 0;
       const dauSessions = dauResult?.sessionCount || 0;
-      
+
       // If filtering for anonymous, we use session count as proxy since userId is null
       const dau = (userType === "anonymous") 
         ? Math.ceil(dauSessions / 5) 
         : (dauUsers > 0 ? dauUsers : (dauSessions > 0 && userType === "all" ? Math.ceil(dauSessions / 5) : 0));
-      
+
       const mauUsers = mauResult?.count || 0;
       const mau = (userType === "anonymous")
         ? (dau * 8) // Proxy for anonymous MAU
@@ -270,9 +285,9 @@ class AnalyticsStorage {
       const users = result?.userCount || 0;
       const actions = result?.actionCount || 0;
       const countValue = users > 0 ? users : (actions > 0 ? Math.ceil(actions / 2) : 0);
-      
+
       const percentage = i === 0 ? 100 : (previousCount > 0 ? Math.round((countValue / previousCount) * 100) : 0);
-      
+
       funnel.push({
         step: steps[i].step,
         count: countValue,
@@ -466,9 +481,9 @@ class AnalyticsStorage {
     for (let daysAgo = 90; daysAgo >= 0; daysAgo--) {
       const date = new Date();
       date.setDate(date.getDate() - daysAgo);
-      
+
       const sessionsPerDay = Math.floor(50 + Math.random() * 150);
-      
+
       for (let s = 0; s < sessionsPerDay; s++) {
         const country = countries[Math.floor(Math.random() * countries.length)];
         const sessionId = `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

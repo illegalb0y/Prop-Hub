@@ -80,7 +80,7 @@ export const developersRelations = relations(developers, ({ many }) => ({
   developerBanks: many(developerBanks),
 }));
 
-export const insertDeveloperSchema = createInsertSchema(developers).omit({ id: true, deletedAt: true, createdAt: true, updatedAt: true });
+export const insertDeveloperSchema = createInsertSchema(developers).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertDeveloper = z.infer<typeof insertDeveloperSchema>;
 export type Developer = typeof developers.$inferSelect;
 
@@ -101,7 +101,7 @@ export const banksRelations = relations(banks, ({ many }) => ({
   projectBanks: many(projectBanks),
 }));
 
-export const insertBankSchema = createInsertSchema(banks).omit({ id: true, deletedAt: true, createdAt: true, updatedAt: true });
+export const insertBankSchema = createInsertSchema(banks).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertBank = z.infer<typeof insertBankSchema>;
 export type Bank = typeof banks.$inferSelect;
 

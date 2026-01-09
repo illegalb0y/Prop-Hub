@@ -55,7 +55,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowUpDown, RotateCcw } from "lucide-react";
+import { ArrowUpDown, RotateCcw, X } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -132,6 +132,7 @@ interface Developer {
   name: string;
   logoUrl: string | null;
   description: string | null;
+  deletedAt: string | null;
   projectCount?: number;
 }
 
@@ -140,6 +141,7 @@ interface Bank {
   name: string;
   logoUrl: string | null;
   description: string | null;
+  deletedAt: string | null;
 }
 
 interface Project {

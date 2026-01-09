@@ -25,9 +25,9 @@
     "favorites": "Избранное",
     "account": "Мой аккаунт",
     "settings": "Настройки",
-    "login": "Войти",
-    "signup": "Регистрация",
-    "logout": "Выйти"
+    "login": "[ВОЙТИ]",
+    "signup": "[РЕГИСТРАЦИЯ]",
+    "logout": "[ВЫЙТИ]"
   },
   "header": {
     "searchPlaceholder": "Поиск...",

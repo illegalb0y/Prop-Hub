@@ -224,5 +224,9 @@ export type DeveloperWithStats = Developer & {
 };
 
 export type BankWithDevelopers = Bank & {
-  developers: Developer[];
+  developers?: Developer[];
+};
+
+export type BankWithDevelopersAdmin = Bank & {
+  developers?: Developer[];
 };

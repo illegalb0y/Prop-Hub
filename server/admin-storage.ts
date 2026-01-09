@@ -1,12 +1,12 @@
 import { db } from "./db";
 import {
   users, projects, ipBans, importJobs, importJobErrors, auditLogs, sessions,
-  developers, banks, cities, districts,
+  developers, banks, cities, districts, developerBanks,
   type User, type IpBan, type ImportJob, type ImportJobError, type AuditLog,
   type InsertIpBan, type InsertImportJob, type InsertImportJobError, type InsertAuditLog,
   type Developer, type InsertDeveloper, type Bank, type InsertBank,
 } from "@shared/schema";
-import { eq, isNull, or, gt, ilike, desc, sql, and, asc } from "drizzle-orm";
+import { eq, isNull, or, gt, ilike, desc, sql, and, asc, inArray } from "drizzle-orm";
 
 export interface PaginatedResult<T> {
   data: T[];
@@ -748,6 +748,48 @@ export class AdminStorage {
 
   async getAllBanksForExport(): Promise<Bank[]> {
     return db.select().from(banks).where(isNull(banks.deletedAt)).orderBy(asc(banks.name));
+  }
+
+  // Developer-Bank relationship methods
+  async getBankDevelopers(bankId: number): Promise<Developer[]> {
+    const devBanks = await db
+      .select()
+      .from(developerBanks)
+      .where(eq(developerBanks.bankId, bankId));
+
+    if (devBanks.length === 0) return [];
+
+    const devIds = devBanks.map((rel: any) => rel.developerId);
+    const devs = await db.select().from(developers).where(inArray(developers.id, devIds));
+
+    return devs;
+  }
+
+  async setBankDevelopers(bankId: number, developerIds: number[]): Promise<void> {
+    // Удаляем все существующие связи
+    await db.delete(developerBanks).where(eq(developerBanks.bankId, bankId));
+
+    // Добавляем новые связи
+    if (developerIds.length > 0) {
+      const values = developerIds.map(developerId => ({
+        bankId,
+        developerId,
+      }));
+      await db.insert(developerBanks).values(values);
+    }
+  }
+
+  async addBankDeveloper(bankId: number, developerId: number): Promise<void> {
+    await db.insert(developerBanks).values({ bankId, developerId }).onConflictDoNothing();
+  }
+
+  async removeBankDeveloper(bankId: number, developerId: number): Promise<void> {
+    await db.delete(developerBanks).where(
+      and(
+        eq(developerBanks.bankId, bankId),
+        eq(developerBanks.developerId, developerId)
+      )
+    );
   }
 
   async getAllProjectsForExport(): Promise<any[]> {

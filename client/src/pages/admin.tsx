@@ -144,6 +144,7 @@ interface Bank {
   logoUrl: string | null;
   description: string | null;
   deletedAt: string | null;
+  developers?: Developer[];
 }
 
 interface Project {
@@ -2392,6 +2393,7 @@ function BanksSection() {
     name: "",
     logoUrl: "",
     description: "",
+    developerIds: [] as number[],
   });
   const [importFile, setImportFile] = useState<File | null>(null);
   const [lastImportJobId, setLastImportJobId] = useState<string | null>(null);
@@ -2419,6 +2421,15 @@ function BanksSection() {
         "GET",
         `/api/admin/banks?${searchParams.toString()}`,
       );
+      return res.json();
+    },
+  });
+
+  // Загрузка списка застройщиков
+  const { data: developers } = useQuery<Developer[]>({
+    queryKey: ["/api/developers"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/developers");
       return res.json();
     },
   });
@@ -2599,21 +2610,33 @@ function BanksSection() {
   const closeDialog = () => {
     setDialogOpen(false);
     setEditingBank(null);
-    setFormData({ name: "", logoUrl: "", description: "" });
+    setFormData({ name: "", logoUrl: "", description: "", developerIds: [] });
   };
 
   const openCreateDialog = () => {
     setEditingBank(null);
-    setFormData({ name: "", logoUrl: "", description: "" });
+    setFormData({ name: "", logoUrl: "", description: "", developerIds: [] });
     setDialogOpen(true);
   };
 
-  const openEditDialog = (bank: Bank) => {
+  const openEditDialog = async (bank: Bank) => {
     setEditingBank(bank);
+
+    // Загрузить список застройщиков для банка
+    let bankDeveloperIds: number[] = [];
+    try {
+      const res = await apiRequest("GET", `/api/admin/banks/${bank.id}/developers`);
+      const bankDevelopers = await res.json();
+      bankDeveloperIds = bankDevelopers.map((d: Developer) => d.id);
+    } catch (error) {
+      console.error("Failed to load bank developers:", error);
+    }
+
     setFormData({
       name: bank.name,
       logoUrl: bank.logoUrl || "",
       description: bank.description || "",
+      developerIds: bankDeveloperIds,
     });
     setDialogOpen(true);
   };
@@ -2645,6 +2668,15 @@ function BanksSection() {
     } catch (error) {
       toast({ title: "Export failed", variant: "destructive" });
     }
+  };
+
+  const toggleDeveloper = (developerId: number) => {
+    setFormData(prev => ({
+      ...prev,
+      developerIds: prev.developerIds.includes(developerId)
+        ? prev.developerIds.filter(id => id !== developerId)
+        : [...prev.developerIds, developerId]
+    }));
   };
 
   if (isLoading) {
@@ -2983,6 +3015,36 @@ function BanksSection() {
                 placeholder="Brief description..."
                 data-testid="input-bank-description"
               />
+            </div>
+            {/* Partner Developers */}
+            <div className="space-y-2">
+              <Label>Partner Developers (Optional)</Label>
+              <ScrollArea className="border rounded-md p-3 max-h-48">
+                {developers && developers.length > 0 ? (
+                  <div className="space-y-2">
+                    {developers.map((dev) => (
+                      <div key={dev.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`dev-${dev.id}`}
+                          checked={formData.developerIds.includes(dev.id)}
+                          onCheckedChange={() => toggleDeveloper(dev.id)}
+                        />
+                        <label
+                          htmlFor={`dev-${dev.id}`}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                        >
+                          {dev.name}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No developers available</p>
+                )}
+              </ScrollArea>
+              <p className="text-xs text-muted-foreground">
+                Select developers that partner with this bank
+              </p>
             </div>
           </div>
           <DialogFooter>

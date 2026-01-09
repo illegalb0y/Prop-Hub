@@ -268,6 +268,21 @@ export function registerAdminRoutes(app: Express) {
             description: row.description?.trim() || null,
           });
 
+          // Обработка developerIds если указаны
+          if (row.developerIds || row.developer_ids) {
+            const developerIdsStr = row.developerIds?.trim() || row.developer_ids?.trim();
+            if (developerIdsStr) {
+              const developerIds = developerIdsStr
+                .split(',')
+                .map((id: string) => parseInt(id.trim()))
+                .filter((id: number) => !isNaN(id));
+
+              if (developerIds.length > 0) {
+                await adminStorage.setBankDevelopers(createdBank.id, developerIds);
+              }
+            }
+          }
+
           createdRecordIds.push(createdBank.id);
           insertedCount++;
         } catch (error: any) {
@@ -749,10 +764,18 @@ export function registerAdminRoutes(app: Express) {
         name: z.string().min(1),
         logoUrl: z.string().optional().nullable(),
         description: z.string().optional().nullable(),
+        developerIds: z.array(z.number()).optional(),
       });
       const data = bankSchema.parse(req.body);
-      const bank = await adminStorage.createBank(data);
-      await createAuditLog(req, "bank_create", "bank", bank.id.toString(), { name: data.name });
+      const { developerIds, ...bankData } = data;
+      const bank = await adminStorage.createBank(bankData);
+
+      // Установить связи с застройщиками если указаны
+      if (developerIds && developerIds.length > 0) {
+        await adminStorage.setBankDevelopers(bank.id, developerIds);
+      }
+
+      await createAuditLog(req, "bank_create", "bank", bank.id.toString(), { name: data.name, developerIds });
       res.status(201).json(bank);
     } catch (error) {
       console.error("Error creating bank:", error);
@@ -767,9 +790,17 @@ export function registerAdminRoutes(app: Express) {
         name: z.string().min(1).optional(),
         logoUrl: z.string().optional().nullable(),
         description: z.string().optional().nullable(),
+        developerIds: z.array(z.number()).optional(),
       });
       const data = bankSchema.parse(req.body);
-      const bank = await adminStorage.updateBank(id, data);
+      const { developerIds, ...bankData } = data;
+      const bank = await adminStorage.updateBank(id, bankData);
+
+      // Обновить связи с застройщиками если указаны
+      if (developerIds !== undefined) {
+        await adminStorage.setBankDevelopers(id, developerIds);
+      }
+
       await createAuditLog(req, "bank_update", "bank", id.toString(), data);
       res.json(bank);
     } catch (error) {

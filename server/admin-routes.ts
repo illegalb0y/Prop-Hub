@@ -186,7 +186,7 @@ export function registerAdminRoutes(app: Express) {
     }
   });
 
-  app.post("/api/admin/projects/import", isAuthenticated, isAdmin, adminRateLimit, upload.single("file"), async (req: Request, res: Response) => {
+  app.post("/api/admin/banks/import", isAuthenticated, isAdmin, adminRateLimit, upload.single("file"), async (req: Request, res: Response) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -202,14 +202,75 @@ export function registerAdminRoutes(app: Express) {
 
       await createAuditLog(req, "csv_import_start", "import_job", importJob.id, { filename: req.file.originalname });
 
-      processCSVImport(req.file.buffer, importJob.id, adminUser.id);
+      processBankCSVImport(req.file.buffer, importJob.id, adminUser.id);
 
       res.status(202).json({ importJobId: importJob.id, message: "Import started" });
     } catch (error) {
-      console.error("Error starting import:", error);
-      res.status(500).json({ message: "Failed to start import" });
+      console.error("Error starting bank import:", error);
+      res.status(500).json({ message: "Failed to start bank import" });
     }
   });
+
+  async function processBankCSVImport(buffer: Buffer, jobId: string, adminId: string) {
+    let totalRows = 0;
+    let insertedCount = 0;
+    let failedCount = 0;
+
+    try {
+      const csvContent = buffer.toString("utf-8");
+      const records: any[] = await new Promise((resolve, reject) => {
+        parse(csvContent, { columns: true, skip_empty_lines: true }, (err, data) => {
+          if (err) reject(err);
+          else resolve(data);
+        });
+      });
+
+      totalRows = records.length;
+
+      for (let i = 0; i < records.length; i++) {
+        const row = records[i];
+        try {
+          if (!row.name) {
+            throw new Error("Missing bank name");
+          }
+
+          await adminStorage.createBank({
+            name: row.name.trim(),
+            logoUrl: row.logoUrl?.trim() || row.logo_url?.trim() || null,
+            description: row.description?.trim() || null,
+          });
+
+          insertedCount++;
+        } catch (error: any) {
+          failedCount++;
+          await adminStorage.createImportJobError({
+            importJobId: jobId,
+            rowNumber: (i + 2).toString(),
+            errorMessage: error.message,
+            rawRowJson: row,
+          });
+        }
+      }
+
+      await adminStorage.updateImportJob(jobId, {
+        status: "completed",
+        totalRows: totalRows.toString(),
+        insertedCount: insertedCount.toString(),
+        failedCount: failedCount.toString(),
+        completedAt: new Date(),
+      });
+
+    } catch (error: any) {
+      console.error("Bank CSV import failed:", error);
+      await adminStorage.updateImportJob(jobId, {
+        status: "failed",
+        totalRows: totalRows.toString(),
+        insertedCount: insertedCount.toString(),
+        failedCount: (totalRows - insertedCount).toString(),
+        completedAt: new Date(),
+      });
+    }
+  }
 
   app.get("/api/admin/imports", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {

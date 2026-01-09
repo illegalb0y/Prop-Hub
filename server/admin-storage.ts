@@ -164,6 +164,45 @@ export class AdminStorage {
     return db.select().from(importJobErrors).where(eq(importJobErrors.importJobId, jobId));
   }
 
+  async undoImport(jobId: string): Promise<{ undoneCount: number }> {
+    const job = await this.getImportJob(jobId);
+    if (!job) {
+      throw new Error("Import job not found");
+    }
+    if (job.undoneAt) {
+      throw new Error("Import has already been undone");
+    }
+    if (!job.createdRecordIds || !Array.isArray(job.createdRecordIds) || job.createdRecordIds.length === 0) {
+      throw new Error("No records to undo for this import");
+    }
+
+    const entityType = job.entityType || "projects";
+    const recordIds = job.createdRecordIds as number[];
+    let undoneCount = 0;
+
+    for (const id of recordIds) {
+      try {
+        if (entityType === "projects") {
+          await this.softDeleteProject(id);
+        } else if (entityType === "developers") {
+          await this.softDeleteDeveloper(id);
+        } else if (entityType === "banks") {
+          await this.softDeleteBank(id);
+        }
+        undoneCount++;
+      } catch (error) {
+        console.error(`Failed to undo record ${id}:`, error);
+      }
+    }
+
+    await this.updateImportJob(jobId, {
+      undoneAt: new Date(),
+      status: "undone",
+    });
+
+    return { undoneCount };
+  }
+
   async createAuditLog(log: InsertAuditLog): Promise<AuditLog> {
     const [created] = await db.insert(auditLogs).values(log).returning();
     return created;

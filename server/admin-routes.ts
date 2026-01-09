@@ -196,11 +196,12 @@ export function registerAdminRoutes(app: Express) {
 
       const importJob = await adminStorage.createImportJob({
         filename: req.file.originalname,
+        entityType: "projects",
         status: "processing",
         createdByAdminId: adminUser.id,
       });
 
-      await createAuditLog(req, "csv_import_start", "import_job", importJob.id, { filename: req.file.originalname });
+      await createAuditLog(req, "csv_import_start", "import_job", importJob.id, { filename: req.file.originalname, entityType: "projects" });
 
       processCSVImport(req.file.buffer, importJob.id, adminUser.id);
 
@@ -221,11 +222,12 @@ export function registerAdminRoutes(app: Express) {
 
       const importJob = await adminStorage.createImportJob({
         filename: req.file.originalname,
+        entityType: "banks",
         status: "processing",
         createdByAdminId: adminUser.id,
       });
 
-      await createAuditLog(req, "csv_import_start", "import_job", importJob.id, { filename: req.file.originalname });
+      await createAuditLog(req, "csv_import_start", "import_job", importJob.id, { filename: req.file.originalname, entityType: "banks" });
 
       processBankCSVImport(req.file.buffer, importJob.id, adminUser.id);
 
@@ -240,6 +242,7 @@ export function registerAdminRoutes(app: Express) {
     let totalRows = 0;
     let insertedCount = 0;
     let failedCount = 0;
+    const createdRecordIds: number[] = [];
 
     try {
       const csvContent = buffer.toString("utf-8");
@@ -259,12 +262,13 @@ export function registerAdminRoutes(app: Express) {
             throw new Error("Missing bank name");
           }
 
-          await adminStorage.createBank({
+          const createdBank = await adminStorage.createBank({
             name: row.name.trim(),
             logoUrl: row.logoUrl?.trim() || row.logo_url?.trim() || null,
             description: row.description?.trim() || null,
           });
 
+          createdRecordIds.push(createdBank.id);
           insertedCount++;
         } catch (error: any) {
           failedCount++;
@@ -282,6 +286,7 @@ export function registerAdminRoutes(app: Express) {
         totalRows: totalRows.toString(),
         insertedCount: insertedCount.toString(),
         failedCount: failedCount.toString(),
+        createdRecordIds,
         completedAt: new Date(),
       });
 
@@ -292,6 +297,7 @@ export function registerAdminRoutes(app: Express) {
         totalRows: totalRows.toString(),
         insertedCount: insertedCount.toString(),
         failedCount: (totalRows - insertedCount).toString(),
+        createdRecordIds,
         completedAt: new Date(),
       });
     }
@@ -328,6 +334,23 @@ export function registerAdminRoutes(app: Express) {
     } catch (error) {
       console.error("Error fetching import errors:", error);
       res.status(500).json({ message: "Failed to fetch import errors" });
+    }
+  });
+
+  app.post("/api/admin/imports/:id/undo", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const jobId = req.params.id;
+      const result = await adminStorage.undoImport(jobId);
+      
+      await createAuditLog(req, "csv_import_undo", "import_job", jobId, { undoneCount: result.undoneCount });
+      
+      res.json({ 
+        message: `Successfully undid import. ${result.undoneCount} record(s) removed.`,
+        undoneCount: result.undoneCount,
+      });
+    } catch (error: any) {
+      console.error("Error undoing import:", error);
+      res.status(400).json({ message: error.message || "Failed to undo import" });
     }
   });
 
@@ -579,11 +602,12 @@ export function registerAdminRoutes(app: Express) {
 
       const importJob = await adminStorage.createImportJob({
         filename: req.file.originalname,
+        entityType: "developers",
         status: "processing",
         createdByAdminId: adminUser.id,
       });
 
-      await createAuditLog(req, "csv_import_start", "import_job", importJob.id, { filename: req.file.originalname });
+      await createAuditLog(req, "csv_import_start", "import_job", importJob.id, { filename: req.file.originalname, entityType: "developers" });
 
       processDeveloperCSVImport(req.file.buffer, importJob.id, adminUser.id);
 
@@ -598,6 +622,7 @@ export function registerAdminRoutes(app: Express) {
     let totalRows = 0;
     let insertedCount = 0;
     let failedCount = 0;
+    const createdRecordIds: number[] = [];
 
     try {
       const csvContent = buffer.toString("utf-8");
@@ -617,12 +642,13 @@ export function registerAdminRoutes(app: Express) {
             throw new Error("Missing developer name");
           }
 
-          await adminStorage.createDeveloper({
+          const createdDeveloper = await adminStorage.createDeveloper({
             name: row.name.trim(),
             logoUrl: row.logoUrl?.trim() || row.logo_url?.trim() || null,
             description: row.description?.trim() || null,
           });
 
+          createdRecordIds.push(createdDeveloper.id);
           insertedCount++;
         } catch (error: any) {
           failedCount++;
@@ -640,6 +666,7 @@ export function registerAdminRoutes(app: Express) {
         totalRows: totalRows.toString(),
         insertedCount: insertedCount.toString(),
         failedCount: failedCount.toString(),
+        createdRecordIds,
         completedAt: new Date(),
       });
 
@@ -650,6 +677,7 @@ export function registerAdminRoutes(app: Express) {
         totalRows: totalRows.toString(),
         insertedCount: insertedCount.toString(),
         failedCount: (totalRows - insertedCount).toString(),
+        createdRecordIds,
         completedAt: new Date(),
       });
     }
@@ -1053,6 +1081,7 @@ async function processCSVImport(buffer: Buffer, jobId: string, adminId: string) 
   let insertedCount = 0;
   let updatedCount = 0;
   let failedCount = 0;
+  const createdRecordIds: number[] = [];
 
   try {
     const csvString = buffer.toString("utf-8");
@@ -1196,6 +1225,7 @@ async function processCSVImport(buffer: Buffer, jobId: string, adminId: string) 
           }
         }
 
+        createdRecordIds.push(createdProject.id);
         insertedCount++;
 
       } catch (error: any) {
@@ -1216,6 +1246,7 @@ async function processCSVImport(buffer: Buffer, jobId: string, adminId: string) 
       insertedCount: insertedCount.toString(),
       updatedCount: updatedCount.toString(),
       failedCount: failedCount.toString(),
+      createdRecordIds,
       completedAt: new Date(),
     });
 
@@ -1228,6 +1259,7 @@ async function processCSVImport(buffer: Buffer, jobId: string, adminId: string) 
       totalRows: totalRows.toString(),
       insertedCount: insertedCount.toString(),
       failedCount: (totalRows - insertedCount).toString(),
+      createdRecordIds,
       completedAt: new Date(),
     });
   }

@@ -186,6 +186,31 @@ export function registerAdminRoutes(app: Express) {
     }
   });
 
+  app.post("/api/admin/projects/import", isAuthenticated, isAdmin, adminRateLimit, upload.single("file"), async (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const adminUser = (req as any).adminUser;
+
+      const importJob = await adminStorage.createImportJob({
+        filename: req.file.originalname,
+        status: "processing",
+        createdByAdminId: adminUser.id,
+      });
+
+      await createAuditLog(req, "csv_import_start", "import_job", importJob.id, { filename: req.file.originalname });
+
+      processCSVImport(req.file.buffer, importJob.id, adminUser.id);
+
+      res.status(202).json({ importJobId: importJob.id, message: "Import started" });
+    } catch (error) {
+      console.error("Error starting project import:", error);
+      res.status(500).json({ message: "Failed to start project import" });
+    }
+  });
+
   app.post("/api/admin/banks/import", isAuthenticated, isAdmin, adminRateLimit, upload.single("file"), async (req: Request, res: Response) => {
     try {
       if (!req.file) {

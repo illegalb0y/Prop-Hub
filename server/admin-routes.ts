@@ -1091,21 +1091,24 @@ async function processCSVImport(buffer: Buffer, jobId: string, adminId: string) 
         }
 
         // Ищем застройщика
-        const developer = developerMap.get(row.developer.toLowerCase().trim());
+        const developerName = (row.developer || row.developer_name || "").toLowerCase().trim();
+        const developer = developerMap.get(developerName);
         if (!developer) {
-          throw new Error(`Developer not found: ${row.developer}`);
+          throw new Error(`Developer not found: ${row.developer || row.developer_name}`);
         }
 
         // Ищем город
-        const city = cityMap.get(row.city.toLowerCase().trim());
+        const cityName = (row.city || row.city_name || "").toLowerCase().trim();
+        const city = cityMap.get(cityName);
         if (!city) {
-          throw new Error(`City not found: ${row.city}`);
+          throw new Error(`City not found: ${row.city || row.city_name}`);
         }
 
         // Ищем район
-        const district = districtMap.get(row.district.toLowerCase().trim());
+        const districtName = (row.district || row.district_name || "").toLowerCase().trim();
+        const district = districtMap.get(districtName);
         if (!district) {
-          throw new Error(`District not found: ${row.district}`);
+          throw new Error(`District not found: ${row.district || row.district_name}`);
         }
 
         // Проверяем, что район принадлежит указанному городу
@@ -1115,8 +1118,9 @@ async function processCSVImport(buffer: Buffer, jobId: string, adminId: string) 
 
         // Парсим дату сдачи
         let completionDate: Date | null = null;
-        if (row.completion_date) {
-          const dateStr = row.completion_date.trim();
+        const rawCompletionDate = row.completion_date || row.completionDate;
+        if (rawCompletionDate) {
+          const dateStr = rawCompletionDate.trim();
           if (dateStr) {
             // Поддерживаем форматы YYYY-MM-DD и MM/DD/YYYY
             if (dateStr.includes('/')) {
@@ -1129,15 +1133,16 @@ async function processCSVImport(buffer: Buffer, jobId: string, adminId: string) 
             }
 
             if (completionDate && isNaN(completionDate.getTime())) {
-              throw new Error(`Invalid completion date format: ${row.completion_date}`);
+              throw new Error(`Invalid completion date format: ${rawCompletionDate}`);
             }
           }
         }
 
         // Парсим цену
         let priceFrom: number | null = null;
-        if (row.price_from) {
-          const price = parseFloat(row.price_from.toString().replace(/[^\d.]/g, ''));
+        const rawPriceFrom = row.price_from || row.priceFrom;
+        if (rawPriceFrom) {
+          const price = parseFloat(rawPriceFrom.toString().replace(/[^\d.]/g, ''));
           if (!isNaN(price)) {
             priceFrom = Math.round(price);
           }
@@ -1149,15 +1154,15 @@ async function processCSVImport(buffer: Buffer, jobId: string, adminId: string) 
           developerId: developer.id,
           cityId: city.id,
           districtId: district.id,
-          latitude: row.latitude ? parseFloat(row.latitude) : null,
-          longitude: row.longitude ? parseFloat(row.longitude) : null,
+          latitude: (row.latitude || row.lat) ? parseFloat(row.latitude || row.lat) : null,
+          longitude: (row.longitude || row.lng || row.lon) ? parseFloat(row.longitude || row.lng || row.lon) : null,
           address: row.address?.trim() || null,
-          shortDescription: row.short_description?.trim() || null,
+          shortDescription: (row.short_description || row.shortDescription)?.trim() || null,
           description: row.description?.trim() || null,
           priceFrom,
           currency: row.currency?.trim() || "USD",
           completionDate,
-          coverImageUrl: row.cover_image_url?.trim() || null,
+          coverImageUrl: (row.cover_image_url || row.coverImageUrl)?.trim() || null,
         };
 
         // Проверяем координаты

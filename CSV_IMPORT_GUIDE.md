@@ -1,25 +1,194 @@
-# CSV Import Guide for PropertyHub Admin
+# Руководство по импорту проектов через CSV
 
-To import real estate projects into PropertyHub, your CSV file must follow the structure below. Each row represents a single project.
+## Обзор
 
-### Required CSV Columns
+Админ-панель поддерживает массовый импорт проектов через CSV файлы. Этот документ описывает формат файла и процесс импорта.
 
-The header row of your CSV should include these exact column names:
+## Формат CSV файла
 
-1.  **name**: The name of the project (e.g., "Skyline Towers").
-2.  **city**: The city name. Must match an existing city in the database.
-3.  **district**: The district name. Must match an existing district within the specified city.
-4.  **developer**: The name of the developer company. Must match an existing developer.
-5.  **price_from**: Numerical value for the starting price (e.g., `250000`).
-6.  **currency**: 3-letter currency code (e.g., `USD`, `AMD`, `RUB`).
-7.  **completion_date**: Estimated completion date in `YYYY-MM-DD` or `MM/DD/YYYY` format.
-8.  **address**: Full physical address of the project.
-9.  **description**: A detailed description of the project features and amenities.
-10. **cover_image_url**: URL to the project's main hero image.
-11. **banks**: A comma-separated list of bank names that partner with this project (e.g., "Ameriabank, HSBC").
+### Обязательные поля
 
-### Important Tips
+| Поле | Описание | Формат | Пример |
+|------|----------|--------|--------|
+| `name` | Название проекта | Текст | "Residential Complex Aurora" |
+| `developer` | Название застройщика | Текст (должно существовать в БД) | "Tashir Group" |
+| `city` | Город | Текст (должно существовать в БД) | "Yerevan" |
+| `district` | Район города | Текст (должно существовать в БД) | "Kentron" |
 
-*   **Case Sensitivity**: Names for cities, districts, and developers should match the existing records exactly.
-*   **Encoding**: Ensure your file is saved with **UTF-8** encoding to preserve Armenian or Russian characters.
-*   **Empty Values**: If a field is not available, leave the cell empty, but keep the column in the CSV.
+### Опциональные поля
+
+| Поле | Описание | Формат | Пример |
+|------|----------|--------|--------|
+| `address` | Адрес проекта | Текст | "Northern Ave 5" |
+| `latitude` / `lat` | Широта | Число (-90 до 90) | "40.177200" |
+| `longitude` / `lng` / `lon` | Долгота | Число (-180 до 180) | "44.512400" |
+| `short_description` / `shortDescription` | Краткое описание | Текст | "Modern residential complex" |
+| `description` | Полное описание | Текст | "Luxury apartments in city center..." |
+| `website` | Вебсайт проекта | URL | "https://example.com" |
+| `cover_image_url` / `coverImageUrl` | URL обложки проекта | URL | "https://example.com/cover.jpg" |
+| `price_from` / `priceFrom` | Начальная цена | Число | "50000" |
+| `currency` | Валюта | Код валюты (3 символа) | "USD" |
+| `completion_date` / `completionDate` | Дата сдачи | YYYY-MM-DD или MM/DD/YYYY | "2025-12-31" |
+| `banks` | Банки-партнеры | Названия через запятую | "ACBA Bank,Ameriabank" |
+
+**Примечание**: Для обратной совместимости поддерживаются старые названия полей `logo_url` / `logoUrl`, которые будут автоматически использоваться как `cover_image_url`.
+
+## Ограничения и рекомендации
+
+### Ограничения
+
+- **Максимальный размер файла**: 10 МБ
+- **Рекомендуемое количество записей**: до 1000 проектов за один импорт
+- **Формат файла**: CSV с заголовками
+- **Кодировка**: UTF-8
+
+### Валидация данных
+
+1. **Застройщик, город и район** должны существовать в базе данных
+2. **Координаты**:
+   - Широта: от -90 до 90
+   - Долгота: от -180 до 180
+3. **Цена**: Только положительные числа
+4. **Дата сдачи**: В формате YYYY-MM-DD или MM/DD/YYYY
+5. **Банки**: Названия должны точно совпадать с существующими в БД (регистр не важен)
+
+### Рекомендации
+
+1. **Используйте точные названия** для застройщиков, городов, районов и банков
+2. **Проверяйте координаты** - они должны соответствовать реальному местоположению
+3. **Указывайте URL** в полном формате с протоколом (https://)
+4. **Тестируйте на малой выборке** - сначала импортируйте 5-10 записей для проверки
+5. **Проверяйте логи** после импорта для выявления ошибок
+
+## Примеры CSV файлов
+
+### Минимальный пример (только обязательные поля)
+
+```csv
+name,developer,city,district
+Residential Complex Aurora,Tashir Group,Yerevan,Kentron
+Green Valley Apartments,Base Group,Yerevan,Arabkir
+```
+
+### Полный пример (все поля)
+
+```csv
+name,developer,city,district,address,latitude,longitude,short_description,description,website,cover_image_url,price_from,currency,completion_date,banks
+Residential Complex Aurora,Tashir Group,Yerevan,Kentron,Northern Ave 5,40.177200,44.512400,Modern residential complex,Luxury apartments in city center with all amenities,https://aurora-residence.am,https://aurora-residence.am/cover.jpg,75000,USD,2025-12-31,"ACBA Bank,Ameriabank"
+Green Valley Apartments,Base Group,Yerevan,Arabkir,Komitas Ave 12,40.200000,44.480000,Family-friendly apartments,Comfortable living spaces with green surroundings,https://greenvalley.am,https://greenvalley.am/cover.jpg,60000,USD,2024-06-30,ACBA Bank
+```
+
+## Процесс импорта
+
+### Шаг 1: Подготовка файла
+
+1. Создайте CSV файл с правильными заголовками
+2. Заполните данные, убедитесь что обязательные поля присутствуют
+3. Проверьте кодировку файла (должна быть UTF-8)
+
+### Шаг 2: Загрузка файла
+
+1. Откройте админ-панель
+2. Перейдите в раздел "Projects"
+3. Нажмите кнопку выбора файла в секции "Import CSV"
+4. Выберите подготовленный CSV файл
+5. Нажмите кнопку "Import CSV"
+
+### Шаг 3: Мониторинг импорта
+
+1. После начала импорта появится уведомление
+2. Импорт выполняется в фоновом режиме
+3. Перейдите в раздел "Data Import Logs" для просмотра статуса
+4. Проверьте результаты импорта:
+   - **Total Rows**: Общее количество строк в файле
+   - **Inserted**: Успешно импортированные проекты
+   - **Failed**: Количество ошибок
+
+### Шаг 4: Проверка ошибок
+
+Если есть ошибки импорта:
+
+1. Откройте детали задачи импорта в "Data Import Logs"
+2. Нажмите "View Errors" для просмотра списка ошибок
+3. Для каждой ошибки указаны:
+   - Номер строки в CSV файле
+   - Описание ошибки
+   - Исходные данные строки
+
+### Шаг 5: Исправление и повторный импорт
+
+1. Исправьте ошибки в CSV файле на основе информации из логов
+2. Создайте новый CSV файл только с исправленными записями
+3. Выполните импорт снова
+
+## Откат импорта
+
+Если импорт выполнен ошибочно:
+
+1. Перейдите в "Data Import Logs"
+2. Найдите нужную задачу импорта
+3. Нажмите кнопку "Undo Import"
+4. Все проекты из этого импорта будут помечены как удаленные
+
+**Примечание**: Откат импорта выполняет "мягкое" удаление (soft delete). Проекты можно восстановить через интерфейс управления проектами.
+
+## Типичные ошибки и решения
+
+### "Developer not found"
+
+**Проблема**: Указанный застройщик не найден в базе данных.
+
+**Решение**: 
+- Проверьте точность написания названия
+- Убедитесь что застройщик существует в разделе "Developers"
+- Создайте застройщика, если его нет
+
+### "City not found" / "District not found"
+
+**Проблема**: Указанный город или район не найден в БД.
+
+**Решение**:
+- Проверьте правильность написания
+- Убедитесь что город и район существуют в системе
+- Проверьте что район принадлежит указанному городу
+
+### "Invalid latitude/longitude"
+
+**Проблема**: Координаты вне допустимого диапазона.
+
+**Решение**:
+- Проверьте что широта в диапазоне -90 до 90
+- Проверьте что долгота в диапазоне -180 до 180
+- Используйте точку как разделитель дробной части
+
+### "Invalid completion date format"
+
+**Проблема**: Дата сдачи в неправильном формате.
+
+**Решение**:
+- Используйте формат YYYY-MM-DD (например: 2025-12-31)
+- Или формат MM/DD/YYYY (например: 12/31/2025)
+
+## Экспорт проектов
+
+Для получения примера формата CSV:
+
+1. Перейдите в раздел "Projects"
+2. Нажмите кнопку "Export CSV"
+3. Откройте скачанный файл - он содержит все текущие проекты в правильном формате
+4. Используйте его как шаблон для создания новых импортов
+
+## Поддержка
+
+При возникновении проблем с импортом:
+
+1. Проверьте логи импорта в разделе "Data Import Logs"
+2. Убедитесь что формат CSV соответствует описанному в этом документе
+3. Проверьте что все справочные данные (застройщики, города, районы, банки) существуют в системе
+4. Попробуйте импортировать меньшее количество записей для локализации проблемы
+
+## История изменений
+
+- **v1.1** (2026-01-09): Обновлено поле `logoUrl` → `coverImageUrl` для соответствия схеме БД (с обратной совместимостью)
+- **v1.0** (2026-01-09): Добавлена поддержка полей `website` и `coverImageUrl`
+- **v1.0** (2026-01-09): Добавлена поддержка привязки проектов к банкам через поле `banks`

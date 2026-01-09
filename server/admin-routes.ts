@@ -102,15 +102,24 @@ export function registerAdminRoutes(app: Express) {
         address: z.string().optional().nullable(),
         shortDescription: z.string().optional().nullable(),
         description: z.string().optional().nullable(),
+        website: z.string().optional().nullable(),
+        coverImageUrl: z.string().optional().nullable(),
         priceFrom: z.number().optional().nullable(),
         currency: z.string().default("USD"),
         completionDate: z.string().datetime().optional().nullable(),
-        coverImageUrl: z.string().optional().nullable(),
+        bankIds: z.array(z.number()).optional(),
       });
 
       const data = projectSchema.parse(req.body);
-      const project = await adminStorage.createProject(data);
-      await createAuditLog(req, "project_create", "project", project.id.toString(), { name: data.name });
+      const { bankIds, ...projectData } = data;
+      const project = await adminStorage.createProject(projectData);
+
+      // Установить связи с банками если указаны
+      if (bankIds && bankIds.length > 0) {
+        await adminStorage.setProjectBanks(project.id, bankIds);
+      }
+
+      await createAuditLog(req, "project_create", "project", project.id.toString(), { name: data.name, bankIds });
       res.status(201).json(project);
     } catch (error) {
       console.error("Error creating project:", error);
@@ -131,20 +140,29 @@ export function registerAdminRoutes(app: Express) {
         address: z.string().optional().nullable(),
         shortDescription: z.string().optional().nullable(),
         description: z.string().optional().nullable(),
+        website: z.string().optional().nullable(),
+        coverImageUrl: z.string().optional().nullable(),
         priceFrom: z.number().optional().nullable(),
         currency: z.string().optional(),
-        completionDate: z.string().datetime().optional().nullable(), // Добавить эту строку
-        coverImageUrl: z.string().optional().nullable(), // Добавить эту строку
+        completionDate: z.string().datetime().optional().nullable(),
+        bankIds: z.array(z.number()).optional(),
       });
 
       const data = projectSchema.parse(req.body);
+      const { bankIds, ...projectData } = data;
 
       const existingProject = await storage.getProject(id);
       if (!existingProject) {
         return res.status(404).json({ message: "Project not found" });
       }
 
-      const updated = await adminStorage.updateProject(id, data);
+      const updated = await adminStorage.updateProject(id, projectData);
+
+      // Обновить связи с банками если указаны
+      if (bankIds !== undefined) {
+        await adminStorage.setProjectBanks(id, bankIds);
+      }
+
       await createAuditLog(req, "project_update", "project", id.toString(), data);
       res.json(updated);
     } catch (error) {
@@ -1230,10 +1248,11 @@ async function processCSVImport(buffer: Buffer, jobId: string, adminId: string) 
           address: row.address?.trim() || null,
           shortDescription: (row.short_description || row.shortDescription)?.trim() || null,
           description: row.description?.trim() || null,
+          website: row.website?.trim() || null,
           priceFrom,
           currency: row.currency?.trim() || "USD",
           completionDate,
-          coverImageUrl: (row.cover_image_url || row.coverImageUrl)?.trim() || null,
+          coverImageUrl: (row.cover_image_url || row.coverImageUrl || row.logo_url || row.logoUrl)?.trim() || null,
         };
 
         // Проверяем координаты

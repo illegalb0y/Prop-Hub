@@ -156,12 +156,15 @@ interface Project {
   address: string | null;
   shortDescription: string | null;
   description: string | null;
+  website: string | null;
+  coverImageUrl: string | null;
   latitude: number | null;
   longitude: number | null;
   priceFrom: string | null;
   currency: string | null;
   completionDate: string | null;
   deletedAt: string | null;
+  banks?: Bank[];
 }
 
 interface City {
@@ -796,9 +799,12 @@ function ProjectsSection() {
     address: "",
     shortDescription: "",
     description: "",
+    website: "",
+    coverImageUrl: "",
     priceFrom: "",
     currency: "USD",
     completionDate: "",
+    bankIds: [] as number[],
   });
 
   const {
@@ -851,6 +857,14 @@ function ProjectsSection() {
       return res.json();
     },
     enabled: !!formData.cityId,
+  });
+
+  const { data: banks } = useQuery<Bank[]>({
+    queryKey: ["/api/banks"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/banks");
+      return res.json();
+    },
   });
 
   const createMutation = useMutation({
@@ -1060,9 +1074,12 @@ function ProjectsSection() {
       address: "",
       shortDescription: "",
       description: "",
+      website: "",
+      coverImageUrl: "",
       priceFrom: "",
       currency: "USD",
       completionDate: "",
+      bankIds: [],
     });
   };
 
@@ -1078,15 +1095,29 @@ function ProjectsSection() {
       address: "",
       shortDescription: "",
       description: "",
+      website: "",
+      coverImageUrl: "",
       priceFrom: "",
       currency: "USD",
       completionDate: "",
+      bankIds: [],
     });
     setDialogOpen(true);
   };
 
-  const openEditDialog = (project: Project) => {
+  const openEditDialog = async (project: Project) => {
     setEditingProject(project);
+
+    // Загрузить банки проекта
+    let projectBankIds: number[] = [];
+    try {
+      const response = await apiRequest("GET", `/api/projects/${project.id}`);
+      const projectDetails = await response.json();
+      projectBankIds = projectDetails.banks?.map((b: Bank) => b.id) || [];
+    } catch (error) {
+      console.error("Failed to load project banks:", error);
+    }
+
     setFormData({
       name: project.name,
       developerId: project.developerId.toString(),
@@ -1097,11 +1128,14 @@ function ProjectsSection() {
       address: project.address || "",
       shortDescription: project.shortDescription || "",
       description: project.description || "",
+      website: project.website || "",
+      coverImageUrl: project.coverImageUrl || "",
       priceFrom: project.priceFrom?.toString() || "",
       currency: project.currency || "USD",
       completionDate: project.completionDate
         ? project.completionDate.split("T")[0]
         : "",
+      bankIds: projectBankIds,
     });
     setDialogOpen(true);
   };
@@ -1114,10 +1148,13 @@ function ProjectsSection() {
       districtId: parseInt(formData.districtId),
       latitude: parseFloat(formData.latitude),
       longitude: parseFloat(formData.longitude),
+      website: formData.website || null,
+      coverImageUrl: formData.coverImageUrl || null,
       priceFrom: formData.priceFrom ? parseInt(formData.priceFrom) : null,
       completionDate: formData.completionDate
         ? new Date(formData.completionDate).toISOString()
         : null,
+      bankIds: formData.bankIds,
     };
 
     if (editingProject) {
@@ -1645,6 +1682,70 @@ function ProjectsSection() {
                 className="h-32"
                 data-testid="input-project-description"
               />
+            </div>
+
+            <div className="space-y-2 col-span-full">
+              <Label htmlFor="proj-website">Website</Label>
+              <Input
+                id="proj-website"
+                value={formData.website}
+                onChange={(e) =>
+                  setFormData({ ...formData, website: e.target.value })
+                }
+                placeholder="https://example.com"
+                data-testid="input-project-website"
+              />
+            </div>
+
+            <div className="space-y-2 col-span-full">
+              <Label htmlFor="proj-cover-image">Cover Image URL</Label>
+              <Input
+                id="proj-cover-image"
+                value={formData.coverImageUrl}
+                onChange={(e) =>
+                  setFormData({ ...formData, coverImageUrl: e.target.value })
+                }
+                placeholder="https://example.com/cover.png"
+                data-testid="input-project-cover-image"
+              />
+            </div>
+
+            <div className="space-y-2 col-span-full">
+              <Label>Associated Banks</Label>
+              <div className="border rounded-md p-4 space-y-2 max-h-48 overflow-y-auto">
+                {banks && banks.length > 0 ? (
+                  banks.map((bank) => (
+                    <div key={bank.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`bank-${bank.id}`}
+                        checked={formData.bankIds.includes(bank.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setFormData({
+                              ...formData,
+                              bankIds: [...formData.bankIds, bank.id],
+                            });
+                          } else {
+                            setFormData({
+                              ...formData,
+                              bankIds: formData.bankIds.filter((id) => id !== bank.id),
+                            });
+                          }
+                        }}
+                        data-testid={`checkbox-bank-${bank.id}`}
+                      />
+                      <Label
+                        htmlFor={`bank-${bank.id}`}
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        {bank.name}
+                      </Label>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">No banks available</p>
+                )}
+              </div>
             </div>
           </div>
           <DialogFooter>

@@ -1,7 +1,7 @@
 import { db } from "./db";
 import {
   users, projects, ipBans, importJobs, importJobErrors, auditLogs, sessions,
-  developers, banks, cities, districts, developerBanks,
+  developers, banks, cities, districts, developerBanks, projectBanks,
   type User, type IpBan, type ImportJob, type ImportJobError, type AuditLog,
   type InsertIpBan, type InsertImportJob, type InsertImportJobError, type InsertAuditLog,
   type Developer, type InsertDeveloper, type Bank, type InsertBank,
@@ -426,10 +426,11 @@ export class AdminStorage {
     address?: string | null;
     shortDescription?: string | null;
     description?: string | null;
+    website?: string | null;
+    coverImageUrl?: string | null;
     priceFrom?: number | null;
     currency?: string;
     completionDate?: string | null;
-    coverImageUrl?: string | null;
   }): Promise<any> {
     const projectData = {
       name: data.name,
@@ -441,10 +442,11 @@ export class AdminStorage {
       address: data.address ?? null,
       shortDescription: data.shortDescription ?? null,
       description: data.description ?? null,
+      website: data.website ?? null,
+      coverImageUrl: data.coverImageUrl ?? null,
       priceFrom: data.priceFrom ?? null,
       currency: data.currency ?? "USD",
       completionDate: data.completionDate ? new Date(data.completionDate) : null,
-      coverImageUrl: data.coverImageUrl ?? null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -462,10 +464,11 @@ export class AdminStorage {
     address?: string | null;
     shortDescription?: string | null;
     description?: string | null;
+    website?: string | null;
+    coverImageUrl?: string | null;
     priceFrom?: number | null;
     currency?: string;
     completionDate?: string | null;
-    coverImageUrl?: string | null;
   }): Promise<any> {
     const updateData: Record<string, any> = {
       updatedAt: new Date(),
@@ -479,15 +482,34 @@ export class AdminStorage {
     if (data.address !== undefined) updateData.address = data.address;
     if (data.shortDescription !== undefined) updateData.shortDescription = data.shortDescription;
     if (data.description !== undefined) updateData.description = data.description;
+    if (data.website !== undefined) updateData.website = data.website;
+    if (data.coverImageUrl !== undefined) updateData.coverImageUrl = data.coverImageUrl;
     if (data.priceFrom !== undefined) updateData.priceFrom = data.priceFrom;
     if (data.currency !== undefined) updateData.currency = data.currency;
     if (data.completionDate !== undefined) {
       updateData.completionDate = data.completionDate ? new Date(data.completionDate) : null;
     }
-    if (data.coverImageUrl !== undefined) updateData.coverImageUrl = data.coverImageUrl;
 
     const [updated] = await db.update(projects).set(updateData).where(eq(projects.id, id)).returning();
     return updated;
+  }
+
+  // Управление связями проект-банк
+  async setProjectBanks(projectId: number, bankIds: number[]): Promise<void> {
+    // Удаляем все существующие связи
+    await db.delete(projectBanks).where(eq(projectBanks.projectId, projectId));
+
+    // Добавляем новые связи
+    if (bankIds.length > 0) {
+      await db.insert(projectBanks).values(
+        bankIds.map(bankId => ({ projectId, bankId }))
+      );
+    }
+  }
+
+  async getProjectBanks(projectId: number): Promise<number[]> {
+    const links = await db.select().from(projectBanks).where(eq(projectBanks.projectId, projectId));
+    return links.map(link => link.bankId);
   }
 
   async getDevelopers(

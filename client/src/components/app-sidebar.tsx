@@ -1,4 +1,4 @@
-import { Building2, Landmark, MapPin, Settings, Home, LogOut, Moon, Sun } from "lucide-react";
+import { Building2, Landmark, MapPin, Settings, Home, LogOut, LogIn, Moon, Sun } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import {
@@ -140,26 +140,37 @@ export function AppSidebar({ onSearchClick }: AppSidebarProps) {
           </SidebarMenuItem>
         </SidebarMenu>
 
-        {isAuthenticated && (
-          <>
-            <SidebarSeparator className="my-2" />
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => logout()}
-                  tooltip={t("nav.logout")}
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  data-testid="button-sidebar-logout"
-                >
-                  <LogOut className="h-5 w-5 shrink-0" />
+        <SidebarSeparator className="my-2" />
+        <SidebarMenu>
+          <SidebarMenuItem>
+            {isAuthenticated ? (
+              <SidebarMenuButton
+                onClick={() => logout()}
+                tooltip={t("nav.logout")}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                data-testid="button-sidebar-logout"
+              >
+                <LogOut className="h-5 w-5 shrink-0" />
+                <span className="group-data-[collapsible=icon]:hidden">
+                  {t("nav.logout")}
+                </span>
+              </SidebarMenuButton>
+            ) : (
+              <SidebarMenuButton
+                asChild
+                tooltip={t("nav.login")}
+                data-testid="button-sidebar-login"
+              >
+                <a href="/api/login">
+                  <LogIn className="h-5 w-5 shrink-0" />
                   <span className="group-data-[collapsible=icon]:hidden">
-                    {t("nav.logout")}
+                    {t("nav.login")}
                   </span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </>
-        )}
+                </a>
+              </SidebarMenuButton>
+            )}
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
   );

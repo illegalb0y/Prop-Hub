@@ -164,27 +164,15 @@ export function ProjectFilters({
           {trigger}
         </div>
       ) : (
-        <div className="flex items-center justify-between p-4 border-b bg-background">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              {hasActiveFilters && (
-                <span className="font-medium text-foreground">
-                  {activeFiltersCount} {t("filters.activeFilters")}
-                </span>
-              )}
-            </span>
-          </div>
-
-          <Button
-            variant="outline"
-            onClick={() => setOpen(true)}
-            className="gap-2"
-            data-testid="button-filter-sort"
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-            {t("filters.filterAndSort")}
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          onClick={() => setOpen(true)}
+          className="gap-2"
+          data-testid="button-filter-sort"
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+          {t("filters.filterAndSort")}
+        </Button>
       )}
 
       <SheetContent className="w-full sm:max-w-md p-0 flex flex-col !z-[9999]">

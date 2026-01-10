@@ -30,8 +30,15 @@
     "logout": "Ելք"
   },
   "header": {
-    "searchPlaceholder": "Որոնում...",
     "toggleSidebar": "Կողային նշաձողը"
+  },
+  "search": {
+    "button": "Որոնում",
+    "tooltip": "Բացել որոնումը",
+    "placeholder": "Որոնել նախագծեր...",
+    "noResults": "Արդյունք չի գտնվել",
+    "searchProjects": "Որոնել նախագծեր",
+    "altK": "Alt+K"
   },
   "theme": {
     "light": "Լուսավոր ռեժիմը",

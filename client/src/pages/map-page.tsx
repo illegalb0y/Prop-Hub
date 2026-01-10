@@ -20,11 +20,7 @@ import type {
   Bank,
 } from "@shared/schema";
 
-interface MapPageProps {
-  searchQuery: string;
-}
-
-export default function MapPage({ searchQuery }: MapPageProps) {
+export default function MapPage() {
   const [selectedCities, setSelectedCities] = useState<number[]>([]);
   const [selectedDistricts, setSelectedDistricts] = useState<number[]>([]);
   const [selectedDevelopers, setSelectedDevelopers] = useState<number[]>([]);
@@ -43,7 +39,6 @@ export default function MapPage({ searchQuery }: MapPageProps) {
 
   const queryParams = useMemo(() => {
     const params = new URLSearchParams();
-    if (searchQuery) params.set("q", searchQuery);
     selectedCities.forEach((id) => params.append("cityId", String(id)));
     selectedDistricts.forEach((id) => params.append("districtId", String(id)));
     selectedDevelopers.forEach((id) =>
@@ -53,7 +48,6 @@ export default function MapPage({ searchQuery }: MapPageProps) {
     params.set("sort", sortBy);
     return params.toString();
   }, [
-    searchQuery,
     selectedCities,
     selectedDistricts,
     selectedDevelopers,
@@ -86,23 +80,8 @@ export default function MapPage({ searchQuery }: MapPageProps) {
   return (
     <div className="h-full relative">
       <div className="absolute top-4 left-4 z-10">
-        <ProjectFilters
-          cities={cities}
-          districts={districts}
-          developers={developers}
-          banks={banks}
-          selectedCities={selectedCities}
-          selectedDistricts={selectedDistricts}
-          selectedDevelopers={selectedDevelopers}
-          selectedBanks={selectedBanks}
-          sortBy={sortBy}
-          onCitiesChange={setSelectedCities}
-          onDistrictsChange={setSelectedDistricts}
-          onDevelopersChange={setSelectedDevelopers}
-          onBanksChange={setSelectedBanks}
-          onSortChange={setSortBy}
-          onClearAll={handleClearFilters}
-          trigger={
+        <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+          <SheetTrigger asChild>
             <Button
               variant="secondary"
               className="shadow-lg font-mono"
@@ -119,8 +98,32 @@ export default function MapPage({ searchQuery }: MapPageProps) {
                 </span>
               )}
             </Button>
-          }
-        />
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[320px] p-0">
+            <SheetHeader className="p-4 border-b">
+              <SheetTitle>filters</SheetTitle>
+            </SheetHeader>
+            <div className="p-4 space-y-4">
+              <ProjectFilters
+                cities={cities}
+                districts={districts}
+                developers={developers}
+                banks={banks}
+                selectedCities={selectedCities}
+                selectedDistricts={selectedDistricts}
+                selectedDevelopers={selectedDevelopers}
+                selectedBanks={selectedBanks}
+                sortBy={sortBy}
+                onCitiesChange={setSelectedCities}
+                onDistrictsChange={setSelectedDistricts}
+                onDevelopersChange={setSelectedDevelopers}
+                onBanksChange={setSelectedBanks}
+                onSortChange={setSortBy}
+                onClearAll={handleClearFilters}
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
 
       <div className="absolute top-4 right-4 z-10 bg-background/90 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg">

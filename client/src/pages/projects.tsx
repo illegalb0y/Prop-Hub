@@ -10,15 +10,11 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { ProjectWithRelations, City, District, Developer, Bank } from "@shared/schema";
 
-interface ProjectsPageProps {
-  searchQuery: string;
-}
-
-export default function ProjectsPage({ searchQuery }: ProjectsPageProps) {
+export default function ProjectsPage() {
   const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
-  
+
   const [selectedCities, setSelectedCities] = useState<number[]>([]);
   const [selectedDistricts, setSelectedDistricts] = useState<number[]>([]);
   const [selectedDevelopers, setSelectedDevelopers] = useState<number[]>([]);
@@ -50,14 +46,13 @@ export default function ProjectsPage({ searchQuery }: ProjectsPageProps) {
 
   const queryParams = useMemo(() => {
     const params = new URLSearchParams();
-    if (searchQuery) params.set("q", searchQuery);
     selectedCities.forEach(id => params.append("cityId", String(id)));
     selectedDistricts.forEach(id => params.append("districtId", String(id)));
     selectedDevelopers.forEach(id => params.append("developerId", String(id)));
     selectedBanks.forEach(id => params.append("bankId", String(id)));
     params.set("sort", sortBy);
     return params.toString();
-  }, [searchQuery, selectedCities, selectedDistricts, selectedDevelopers, selectedBanks, sortBy]);
+  }, [selectedCities, selectedDistricts, selectedDevelopers, selectedBanks, sortBy]);
 
   const { data: projects = [], isLoading: projectsLoading } = useQuery<ProjectWithRelations[]>({
     queryKey: ["/api/projects", queryParams],

@@ -5,23 +5,12 @@ import { BankGridSkeleton } from "@/components/skeletons";
 import { EmptyState } from "@/components/empty-state";
 import type { Bank } from "@shared/schema";
 
-interface BanksPageProps {
-  searchQuery: string;
-}
-
-export default function BanksPage({ searchQuery }: BanksPageProps) {
+export default function BanksPage() {
   const { t } = useTranslation();
+
   const { data: banks = [], isLoading } = useQuery<Bank[]>({
     queryKey: ["/api/banks"],
   });
-
-  const filteredBanks = searchQuery
-    ? banks.filter((b) =>
-        b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        b.description?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : banks;
-
   return (
     <div className="h-full overflow-auto p-6">
       <div className="mb-6">
@@ -35,7 +24,7 @@ export default function BanksPage({ searchQuery }: BanksPageProps) {
 
       {isLoading ? (
         <BankGridSkeleton count={6} />
-      ) : filteredBanks.length === 0 ? (
+      ) : banks.length === 0 ? (
         <EmptyState
           icon="building"
           title={t("banks.noBanks")}
@@ -44,10 +33,10 @@ export default function BanksPage({ searchQuery }: BanksPageProps) {
       ) : (
         <>
           <p className="text-sm text-muted-foreground mb-4">
-            {filteredBanks.length} {t("banks.title").toLowerCase()}
+            {banks.length} {t("banks.title").toLowerCase()}
           </p>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {filteredBanks.map((bank) => (
+            {banks.map((bank) => (
               <BankCard key={bank.id} bank={bank} />
             ))}
           </div>

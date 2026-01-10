@@ -30,8 +30,15 @@
     "logout": "[ВЫЙТИ]"
   },
   "header": {
-    "searchPlaceholder": "Поиск...",
     "toggleSidebar": "Переключить боковую панель"
+  },
+  "search": {
+    "button": "Поиск",
+    "tooltip": "Открыть поиск",
+    "placeholder": "Поиск проектов...",
+    "noResults": "Ничего не найдено",
+    "searchProjects": "Поиск проектов",
+    "altK": "Alt+K"
   },
   "theme": {
     "light": "Светлая тема",

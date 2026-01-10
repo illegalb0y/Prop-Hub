@@ -14,15 +14,13 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
 interface AppSidebarProps {
-  searchQuery: string;
-  onSearchChange: (value: string) => void;
+  onSearchClick: () => void;
 }
 
-export function AppSidebar({ searchQuery, onSearchChange }: AppSidebarProps) {
+export function AppSidebar({ onSearchClick }: AppSidebarProps) {
   const [location] = useLocation();
   const { t } = useTranslation();
 
@@ -53,21 +51,28 @@ export function AppSidebar({ searchQuery, onSearchChange }: AppSidebarProps) {
       </SidebarHeader>
 
       <SidebarContent className="text-[18px]">
-        <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-          <SidebarGroupContent className="px-2 pt-0 pb-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder={t("header.searchPlaceholder")}
-                className="pl-9"
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                data-testid="input-sidebar-search"
-              />
-            </div>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={onSearchClick}
+                  tooltip={t("search.tooltip")}
+                  className="w-full justify-start"
+                  data-testid="button-sidebar-search"
+                >
+                  <Search className="h-5 w-5 shrink-0" />
+                  <span className="group-data-[collapsible=icon]:hidden flex items-center gap-2 flex-1">
+                    <span>{t("search.button")}</span>
+                    <span className="ml-auto text-xs text-muted-foreground">{t("search.altK")}</span>
+                  </span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <SidebarSeparator />
 
         <SidebarGroup>
           <SidebarGroupContent>

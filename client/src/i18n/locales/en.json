@@ -30,8 +30,15 @@
     "logout": "[LOG OUT]"
   },
   "header": {
-    "searchPlaceholder": "Search...",
     "toggleSidebar": "Toggle sidebar"
+  },
+  "search": {
+    "button": "Search",
+    "tooltip": "Open search",
+    "placeholder": "Search projects...",
+    "noResults": "No results found",
+    "searchProjects": "Search projects",
+    "altK": "Alt+K"
   },
   "theme": {
     "light": "Light mode",

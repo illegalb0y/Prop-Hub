@@ -1,8 +1,7 @@
-import { Heart, Map, User, Search, X, LogOut, Menu } from "lucide-react";
+import { Heart, Map, User, LogOut, Menu } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -15,12 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-interface HeaderProps {
-  searchQuery: string;
-  onSearchChange: (value: string) => void;
-}
-
-export function Header({ searchQuery, onSearchChange }: HeaderProps) {
+export function Header() {
   const { t } = useTranslation();
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const [location] = useLocation();
@@ -41,31 +35,6 @@ export function Header({ searchQuery, onSearchChange }: HeaderProps) {
         <SidebarTrigger data-testid="button-sidebar-toggle">
           <Menu className="h-6 w-6 stroke-[2.5px]" />
         </SidebarTrigger>
-      </div>
-
-      <div className="flex-1 max-w-xl">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder={t("header.searchPlaceholder")}
-            className="w-full rounded-full pl-10 pr-10"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            data-testid="input-header-search"
-          />
-          {searchQuery && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2"
-              onClick={() => onSearchChange("")}
-              data-testid="button-clear-search"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
       </div>
 
       <div className="flex items-center gap-2">

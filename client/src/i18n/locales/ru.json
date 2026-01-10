@@ -43,7 +43,9 @@
   "theme": {
     "light": "Светлая тема",
     "dark": "Тёмная тема",
-    "system": "Системная"
+    "system": "Системная",
+    "switchToDark": "Тёмный режим",
+    "switchToLight": "Светлый режим"
   },
   "language": {
     "select": "Язык",

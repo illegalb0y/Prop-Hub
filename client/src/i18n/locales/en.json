@@ -43,7 +43,9 @@
   "theme": {
     "light": "Light mode",
     "dark": "Dark mode",
-    "system": "System"
+    "system": "System",
+    "switchToDark": "Dark mode",
+    "switchToLight": "Light mode"
   },
   "language": {
     "select": "Language",

@@ -43,7 +43,9 @@
   "theme": {
     "light": "Լուսավոր ռեժիմը",
     "dark": "Մութ ռեժիմը",
-    "system": "Համակարգ"
+    "system": "Համակարգ",
+    "switchToDark": "Մութ ռեժիմը",
+    "switchToLight": "Լուսավոր ռեժիմը"
   },
   "language": {
     "select": "Լեզու",

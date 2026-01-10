@@ -1,4 +1,4 @@
-import { Building2, Landmark, MapPin, Settings, Home } from "lucide-react";
+import { Building2, Landmark, MapPin, Settings, Home, LogOut, Moon, Sun } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import {
@@ -13,8 +13,9 @@ import {
   SidebarFooter,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Search } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { useTheme } from "@/lib/theme-provider";
 
 interface AppSidebarProps {
   onSearchClick: () => void;
@@ -23,6 +24,8 @@ interface AppSidebarProps {
 export function AppSidebar({ onSearchClick }: AppSidebarProps) {
   const [location] = useLocation();
   const { t } = useTranslation();
+  const { isAuthenticated, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const navItems = [
     { title: t("nav.home"), url: "/", icon: Home },
@@ -109,23 +112,54 @@ export function AppSidebar({ onSearchClick }: AppSidebarProps) {
 
       <SidebarFooter className="p-2">
         <SidebarSeparator className="mb-2" />
-        <div className="flex items-center justify-between px-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-4">
-          <SidebarMenuButton
-            asChild
-            tooltip={t("nav.settings")}
-            className="group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center"
-          >
-            <Link href="/settings" data-testid="link-settings">
-              <Settings className="h-5 w-5 shrink-0" />
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip={t("nav.settings")}>
+              <Link href="/settings" data-testid="link-settings">
+                <Settings className="h-5 w-5 shrink-0" />
+                <span className="group-data-[collapsible=icon]:hidden">
+                  {t("nav.settings")}
+                </span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={toggleTheme}
+              tooltip={theme === "light" ? t("theme.switchToDark") : t("theme.switchToLight")}
+            >
+              {theme === "light" ? (
+                <Moon className="h-5 w-5 shrink-0" />
+              ) : (
+                <Sun className="h-5 w-5 shrink-0" />
+              )}
               <span className="group-data-[collapsible=icon]:hidden">
-                {t("nav.settings")}
+                {theme === "light" ? t("theme.switchToDark") : t("theme.switchToLight")}
               </span>
-            </Link>
-          </SidebarMenuButton>
-          <div className="group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-            <ThemeToggle />
-          </div>
-        </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+
+        {isAuthenticated && (
+          <>
+            <SidebarSeparator className="my-2" />
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => logout()}
+                  tooltip={t("nav.logout")}
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  data-testid="button-sidebar-logout"
+                >
+                  <LogOut className="h-5 w-5 shrink-0" />
+                  <span className="group-data-[collapsible=icon]:hidden">
+                    {t("nav.logout")}
+                  </span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </>
+        )}
       </SidebarFooter>
     </Sidebar>
   );

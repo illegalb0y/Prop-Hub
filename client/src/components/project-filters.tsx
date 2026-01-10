@@ -158,48 +158,48 @@ export function ProjectFilters({
     selectedBanks.length;
 
   return (
-    <>
-      <div className="flex items-center justify-between p-4 border-b bg-background">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">
-            {hasActiveFilters && (
-              <span className="font-medium text-foreground">
-                {activeFiltersCount} {t("filters.activeFilters")}
-              </span>
-            )}
-          </span>
+    <Sheet open={open} onOpenChange={setOpen}>
+      {trigger ? (
+        <div onClick={() => setOpen(true)} className="cursor-pointer">
+          {trigger}
         </div>
+      ) : (
+        <div className="flex items-center justify-between p-4 border-b bg-background">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              {hasActiveFilters && (
+                <span className="font-medium text-foreground">
+                  {activeFiltersCount} {t("filters.activeFilters")}
+                </span>
+              )}
+            </span>
+          </div>
 
-        <Sheet open={open} onOpenChange={setOpen}>
-          {trigger ? (
-            <div onClick={() => setOpen(true)} className="cursor-pointer">
-              {trigger}
-            </div>
-          ) : (
-            <Button
-              variant="outline"
-              onClick={() => setOpen(true)}
-              className="gap-2"
-              data-testid="button-filter-sort"
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-              {t("filters.filterAndSort")}
+          <Button
+            variant="outline"
+            onClick={() => setOpen(true)}
+            className="gap-2"
+            data-testid="button-filter-sort"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            {t("filters.filterAndSort")}
+          </Button>
+        </div>
+      )}
+
+      <SheetContent className="w-full sm:max-w-md p-0 flex flex-col !z-[9999]">
+        <SheetHeader className="px-6 py-5 border-b flex-row items-center justify-between space-y-0">
+          <SheetTitle className="text-2xl font-bold uppercase tracking-tight">
+            {t("filters.filterAndSort")}
+          </SheetTitle>
+          <SheetClose asChild>
+            <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-transparent">
+              <X className="h-5 w-5" />
             </Button>
-          )}
+          </SheetClose>
+        </SheetHeader>
 
-          <SheetContent className="w-full sm:max-w-md p-0 flex flex-col !z-[9999]">
-            <SheetHeader className="px-6 py-5 border-b flex-row items-center justify-between space-y-0">
-              <SheetTitle className="text-2xl font-bold uppercase tracking-tight">
-                {t("filters.filterAndSort")}
-              </SheetTitle>
-              <SheetClose asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-transparent">
-                  <X className="h-5 w-5" />
-                </Button>
-              </SheetClose>
-            </SheetHeader>
-
-            <ScrollArea className="flex-1 px-6">
+        <ScrollArea className="flex-1 px-6">
               <div className="py-6 space-y-6">
                 {/* Sort Section */}
                 <div className="space-y-4">
@@ -370,7 +370,5 @@ export function ProjectFilters({
             </div>
           </SheetContent>
         </Sheet>
-      </div>
-    </>
   );
 }

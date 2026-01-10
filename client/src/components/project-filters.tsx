@@ -1,5 +1,6 @@
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { X, ChevronDown, Filter } from "lucide-react";
+import { X, ChevronDown, Filter, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -144,6 +145,20 @@ export function ProjectFilters({
 }: ProjectFiltersProps) {
   const { t } = useTranslation();
 
+  // Temporary state for filters before applying
+  const [tempCities, setTempCities] = useState<number[]>(selectedCities);
+  const [tempDistricts, setTempDistricts] = useState<number[]>(selectedDistricts);
+  const [tempDevelopers, setTempDevelopers] = useState<number[]>(selectedDevelopers);
+  const [tempBanks, setTempBanks] = useState<number[]>(selectedBanks);
+
+  // Update temp state when external props change (e.g., from clear all)
+  useEffect(() => {
+    setTempCities(selectedCities);
+    setTempDistricts(selectedDistricts);
+    setTempDevelopers(selectedDevelopers);
+    setTempBanks(selectedBanks);
+  }, [selectedCities, selectedDistricts, selectedDevelopers, selectedBanks]);
+
   const sortOptions: { value: SortOption; label: string }[] = [
     { value: "newest", label: t("projects.sort.newest") },
     { value: "price_asc", label: t("projects.sort.priceAsc") },
@@ -152,15 +167,51 @@ export function ProjectFilters({
     { value: "name_asc", label: t("projects.sort.nameAsc") },
   ];
 
-  const filteredDistricts = selectedCities.length > 0
-    ? districts.filter((d) => selectedCities.includes(d.cityId))
+  // Filter districts based on selected cities in temporary state
+  const filteredDistricts = tempCities.length > 0
+    ? districts.filter((d) => tempCities.includes(d.cityId))
     : districts;
 
-  const hasFilters =
-    selectedCities.length > 0 ||
-    selectedDistricts.length > 0 ||
-    selectedDevelopers.length > 0 ||
-    selectedBanks.length > 0;
+  // When city changes, remove districts that don't belong to selected cities
+  const handleCityChange = (cityIds: number[]) => {
+    setTempCities(cityIds);
+    // Remove districts that are not in the selected cities
+    if (cityIds.length > 0) {
+      const validDistricts = districts
+        .filter((d) => cityIds.includes(d.cityId))
+        .map((d) => d.id);
+      setTempDistricts(tempDistricts.filter((id) => validDistricts.includes(id)));
+    }
+  };
+
+  // Check if there are any temporary filters selected
+  const hasTempFilters =
+    tempCities.length > 0 ||
+    tempDistricts.length > 0 ||
+    tempDevelopers.length > 0 ||
+    tempBanks.length > 0;
+
+  // Check if there are unapplied changes
+  const hasUnappliedChanges =
+    JSON.stringify(tempCities) !== JSON.stringify(selectedCities) ||
+    JSON.stringify(tempDistricts) !== JSON.stringify(selectedDistricts) ||
+    JSON.stringify(tempDevelopers) !== JSON.stringify(selectedDevelopers) ||
+    JSON.stringify(tempBanks) !== JSON.stringify(selectedBanks);
+
+  const handleApply = () => {
+    onCitiesChange(tempCities);
+    onDistrictsChange(tempDistricts);
+    onDevelopersChange(tempDevelopers);
+    onBanksChange(tempBanks);
+  };
+
+  const handleClearAll = () => {
+    setTempCities([]);
+    setTempDistricts([]);
+    setTempDevelopers([]);
+    setTempBanks([]);
+    onClearAll();
+  };
 
   return (
     <div className="flex flex-wrap items-center gap-3 p-4 border-b bg-background">
@@ -172,46 +223,61 @@ export function ProjectFilters({
       <MultiSelect
         label={t("filters.city")}
         items={cities}
-        selectedIds={selectedCities}
-        onChange={onCitiesChange}
+        selectedIds={tempCities}
+        onChange={handleCityChange}
         testId="filter-city"
       />
 
       <MultiSelect
         label={t("filters.district")}
         items={filteredDistricts}
-        selectedIds={selectedDistricts}
-        onChange={onDistrictsChange}
+        selectedIds={tempDistricts}
+        onChange={setTempDistricts}
         testId="filter-district"
       />
 
       <MultiSelect
         label={t("filters.developer")}
         items={developers}
-        selectedIds={selectedDevelopers}
-        onChange={onDevelopersChange}
+        selectedIds={tempDevelopers}
+        onChange={setTempDevelopers}
         testId="filter-developer"
       />
 
       <MultiSelect
         label={t("filters.bank")}
         items={banks}
-        selectedIds={selectedBanks}
-        onChange={onBanksChange}
+        selectedIds={tempBanks}
+        onChange={setTempBanks}
         testId="filter-bank"
       />
 
-      {hasFilters && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onClearAll}
-          className="text-muted-foreground"
-          data-testid="button-clear-filters"
-        >
-          <X className="h-4 w-4 mr-1" />
-          {t("filters.clearFilters")}
-        </Button>
+      {/* Apply and Clear All buttons - only show when filters are selected */}
+      {hasTempFilters && (
+        <>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleApply}
+            disabled={!hasUnappliedChanges}
+            className="text-muted-foreground"
+            data-testid="button-apply-filters"
+          >
+            <Check className="h-4 w-4 mr-1" />
+            {t("filters.apply") || "Apply"}
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleClearAll}
+            className="text-muted-foreground"
+            data-testid="button-clear-filters"
+          >
+            <X className="h-4 w-4 mr-1" />
+            {t("filters.clearFilters")}
+          </Button>
+        </>
       )}
 
       <div className="ml-auto">

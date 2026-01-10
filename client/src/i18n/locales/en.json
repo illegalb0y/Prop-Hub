@@ -51,6 +51,7 @@
     "bank": "Bank",
     "developer": "Developer",
     "clearFilters": "Clear all",
+    "apply": "Apply",
     "activeFilters": "Active filters",
     "selectCity": "Select city",
     "selectDistrict": "Select district",

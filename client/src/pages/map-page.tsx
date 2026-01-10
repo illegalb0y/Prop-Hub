@@ -86,8 +86,23 @@ export default function MapPage({ searchQuery }: MapPageProps) {
   return (
     <div className="h-full relative">
       <div className="absolute top-4 left-4 z-10">
-        <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-          <SheetTrigger asChild>
+        <ProjectFilters
+          cities={cities}
+          districts={districts}
+          developers={developers}
+          banks={banks}
+          selectedCities={selectedCities}
+          selectedDistricts={selectedDistricts}
+          selectedDevelopers={selectedDevelopers}
+          selectedBanks={selectedBanks}
+          sortBy={sortBy}
+          onCitiesChange={setSelectedCities}
+          onDistrictsChange={setSelectedDistricts}
+          onDevelopersChange={setSelectedDevelopers}
+          onBanksChange={setSelectedBanks}
+          onSortChange={setSortBy}
+          onClearAll={handleClearFilters}
+          trigger={
             <Button
               variant="secondary"
               className="shadow-lg font-mono"
@@ -104,32 +119,8 @@ export default function MapPage({ searchQuery }: MapPageProps) {
                 </span>
               )}
             </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-[320px] p-0">
-            <SheetHeader className="p-4 border-b">
-              <SheetTitle>filters</SheetTitle>
-            </SheetHeader>
-            <div className="p-4 space-y-4">
-              <ProjectFilters
-                cities={cities}
-                districts={districts}
-                developers={developers}
-                banks={banks}
-                selectedCities={selectedCities}
-                selectedDistricts={selectedDistricts}
-                selectedDevelopers={selectedDevelopers}
-                selectedBanks={selectedBanks}
-                sortBy={sortBy}
-                onCitiesChange={setSelectedCities}
-                onDistrictsChange={setSelectedDistricts}
-                onDevelopersChange={setSelectedDevelopers}
-                onBanksChange={setSelectedBanks}
-                onSortChange={setSortBy}
-                onClearAll={handleClearFilters}
-              />
-            </div>
-          </SheetContent>
-        </Sheet>
+          }
+        />
       </div>
 
       <div className="absolute top-4 right-4 z-10 bg-background/90 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg">

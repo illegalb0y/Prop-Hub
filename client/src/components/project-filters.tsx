@@ -34,6 +34,7 @@ interface ProjectFiltersProps {
   onBanksChange: (ids: number[]) => void;
   onSortChange: (sort: SortOption) => void;
   onClearAll: () => void;
+  trigger?: React.ReactNode;
 }
 
 export function ProjectFilters({
@@ -52,6 +53,7 @@ export function ProjectFilters({
   onBanksChange,
   onSortChange,
   onClearAll,
+  trigger,
 }: ProjectFiltersProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -169,15 +171,21 @@ export function ProjectFilters({
         </div>
 
         <Sheet open={open} onOpenChange={setOpen}>
-          <Button
-            variant="outline"
-            onClick={() => setOpen(true)}
-            className="gap-2"
-            data-testid="button-filter-sort"
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-            {t("filters.filterAndSort")}
-          </Button>
+          {trigger ? (
+            <div onClick={() => setOpen(true)} className="cursor-pointer">
+              {trigger}
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={() => setOpen(true)}
+              className="gap-2"
+              data-testid="button-filter-sort"
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              {t("filters.filterAndSort")}
+            </Button>
+          )}
 
           <SheetContent className="w-full sm:max-w-md p-0 flex flex-col !z-[9999]">
             <SheetHeader className="px-6 py-5 border-b flex-row items-center justify-between space-y-0">

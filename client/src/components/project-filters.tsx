@@ -251,31 +251,33 @@ export function ProjectFilters({
                   <h3 className="font-medium text-sm uppercase tracking-wider text-muted-foreground">
                     {t("filters.district")} {tempDistricts.length > 0 && `(${tempDistricts.length})`}
                   </h3>
-                  <div className="max-h-[200px] overflow-y-auto border border-border/40 rounded-md p-3 space-y-3">
-                    {filteredDistricts.length > 0 ? (
-                      filteredDistricts.map((district) => (
-                        <div key={district.id} className="flex items-center space-x-3">
-                          <Checkbox
-                            id={`district-${district.id}`}
-                            checked={tempDistricts.includes(district.id)}
-                            onCheckedChange={() => handleDistrictToggle(district.id)}
-                          />
-                          <Label
-                            htmlFor={`district-${district.id}`}
-                            className="text-sm font-normal cursor-pointer flex-1"
-                          >
-                            {district.name}
-                          </Label>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        {tempCities.length > 0
-                          ? t("common.noResults")
-                          : t("filters.selectCityFirst")}
-                      </p>
-                    )}
-                  </div>
+                  <ScrollArea className="h-[200px] border border-border/40 rounded-md">
+                    <div className="space-y-3 p-3">
+                      {filteredDistricts.length > 0 ? (
+                        filteredDistricts.map((district) => (
+                          <div key={district.id} className="flex items-center space-x-3">
+                            <Checkbox
+                              id={`district-${district.id}`}
+                              checked={tempDistricts.includes(district.id)}
+                              onCheckedChange={() => handleDistrictToggle(district.id)}
+                            />
+                            <Label
+                              htmlFor={`district-${district.id}`}
+                              className="text-sm font-normal cursor-pointer flex-1"
+                            >
+                              {district.name}
+                            </Label>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          {tempCities.length > 0
+                            ? t("common.noResults")
+                            : t("filters.selectCityFirst")}
+                        </p>
+                      )}
+                    </div>
+                  </ScrollArea>
                 </div>
 
                 <Separator />
@@ -285,23 +287,25 @@ export function ProjectFilters({
                   <h3 className="font-medium text-sm uppercase tracking-wider text-muted-foreground">
                     {t("filters.developer")} {tempDevelopers.length > 0 && `(${tempDevelopers.length})`}
                   </h3>
-                  <div className="max-h-[200px] overflow-y-auto border border-border/40 rounded-md p-3 space-y-3">
-                    {developers.map((developer) => (
-                      <div key={developer.id} className="flex items-center space-x-3">
-                        <Checkbox
-                          id={`developer-${developer.id}`}
-                          checked={tempDevelopers.includes(developer.id)}
-                          onCheckedChange={() => handleDeveloperToggle(developer.id)}
-                        />
-                        <Label
-                          htmlFor={`developer-${developer.id}`}
-                          className="text-sm font-normal cursor-pointer flex-1"
-                        >
-                          {developer.name}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
+                  <ScrollArea className="h-[200px] border border-border/40 rounded-md">
+                    <div className="space-y-3 p-3">
+                      {developers.map((developer) => (
+                        <div key={developer.id} className="flex items-center space-x-3">
+                          <Checkbox
+                            id={`developer-${developer.id}`}
+                            checked={tempDevelopers.includes(developer.id)}
+                            onCheckedChange={() => handleDeveloperToggle(developer.id)}
+                          />
+                          <Label
+                            htmlFor={`developer-${developer.id}`}
+                            className="text-sm font-normal cursor-pointer flex-1"
+                          >
+                            {developer.name}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 </div>
 
                 <Separator />
@@ -311,23 +315,25 @@ export function ProjectFilters({
                   <h3 className="font-medium text-sm uppercase tracking-wider text-muted-foreground">
                     {t("filters.bank")} {tempBanks.length > 0 && `(${tempBanks.length})`}
                   </h3>
-                  <div className="max-h-[200px] overflow-y-auto border border-border/40 rounded-md p-3 space-y-3">
-                    {banks.map((bank) => (
-                      <div key={bank.id} className="flex items-center space-x-3">
-                        <Checkbox
-                          id={`bank-${bank.id}`}
-                          checked={tempBanks.includes(bank.id)}
-                          onCheckedChange={() => handleBankToggle(bank.id)}
-                        />
-                        <Label
-                          htmlFor={`bank-${bank.id}`}
-                          className="text-sm font-normal cursor-pointer flex-1"
-                        >
-                          {bank.name}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
+                  <ScrollArea className="h-[200px] border border-border/40 rounded-md">
+                    <div className="space-y-3 p-3">
+                      {banks.map((bank) => (
+                        <div key={bank.id} className="flex items-center space-x-3">
+                          <Checkbox
+                            id={`bank-${bank.id}`}
+                            checked={tempBanks.includes(bank.id)}
+                            onCheckedChange={() => handleBankToggle(bank.id)}
+                          />
+                          <Label
+                            htmlFor={`bank-${bank.id}`}
+                            className="text-sm font-normal cursor-pointer flex-1"
+                          >
+                            {bank.name}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 </div>
               </div>
             </ScrollArea>

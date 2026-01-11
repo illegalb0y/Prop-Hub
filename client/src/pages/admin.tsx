@@ -27,6 +27,7 @@ import {
   Activity,
   Shield,
   Calendar as CalendarIcon,
+  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -93,6 +94,7 @@ type AdminSection =
   | "projects"
   | "developers"
   | "banks"
+  | "currency-rates"
   | "security"
   | "ip-bans"
   | "sessions"
@@ -270,6 +272,7 @@ const navigationItems = [
         icon: Building2,
       },
       { id: "banks" as AdminSection, label: "Banks", icon: Landmark },
+      { id: "currency-rates" as AdminSection, label: "Currency Rates", icon: DollarSign },
       { id: "import-logs" as AdminSection, label: "Data Import Logs", icon: FileText },
     ],
   },
@@ -329,6 +332,7 @@ export default function AdminPage() {
           {activeSection === "projects" && <ProjectsSection />}
           {activeSection === "developers" && <DevelopersSection />}
           {activeSection === "banks" && <BanksSection />}
+          {activeSection === "currency-rates" && <CurrencyRatesSection />}
           {activeSection === "security" && <SecuritySection />}
           {activeSection === "ip-bans" && <IpBansSection />}
           {activeSection === "sessions" && <SessionsSection />}
@@ -394,6 +398,196 @@ function AdminSidebar({
 
 function DashboardSection() {
   return <AnalyticsDashboard />;
+}
+
+function CurrencyRatesSection() {
+  const { toast } = useToast();
+
+  const { data: rates, isLoading, refetch } = useQuery({
+    queryKey: ["/api/exchange-rates"],
+    queryFn: async () => {
+      const res = await fetch("/api/exchange-rates");
+      if (!res.ok) throw new Error("Failed to fetch rates");
+      return res.json();
+    },
+    refetchInterval: 60000, // Автообновление каждую минуту
+  });
+
+  const handleRefresh = async () => {
+    try {
+      await refetch();
+      toast({ title: "Exchange rates refreshed" });
+    } catch (error) {
+      toast({ title: "Failed to refresh rates", variant: "destructive" });
+    }
+  };
+
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleString('ru-RU', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  };
+
+  const getTimeAgo = (timestamp: number) => {
+    const now = Date.now();
+    const diff = now - timestamp;
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (hours > 0) {
+      return `${hours}ч ${minutes}м назад`;
+    }
+    return `${minutes}м назад`;
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Currency Exchange Rates</h1>
+          <p className="text-muted-foreground mt-1">
+            Current USD/AMD exchange rates used by the application
+          </p>
+        </div>
+        <Button onClick={handleRefresh} disabled={isLoading} data-testid="button-refresh-rates">
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* USD to AMD Card */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <DollarSign className="h-5 w-5 text-green-600" />
+              USD → AMD
+            </CardTitle>
+            <CardDescription>US Dollar to Armenian Dram</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="text-4xl font-bold text-muted-foreground">Loading...</div>
+            ) : rates ? (
+              <>
+                <div className="text-5xl font-bold text-green-600">
+                  {rates.usdToAmd.toFixed(2)}
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  1 USD = {rates.usdToAmd.toFixed(2)} AMD
+                </p>
+              </>
+            ) : (
+              <div className="text-2xl font-bold text-destructive">Error loading</div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* AMD to USD Card */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <DollarSign className="h-5 w-5 text-blue-600" />
+              AMD → USD
+            </CardTitle>
+            <CardDescription>Armenian Dram to US Dollar</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="text-4xl font-bold text-muted-foreground">Loading...</div>
+            ) : rates ? (
+              <>
+                <div className="text-5xl font-bold text-blue-600">
+                  {rates.amdToUsd.toFixed(5)}
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  1 AMD = {rates.amdToUsd.toFixed(5)} USD
+                </p>
+              </>
+            ) : (
+              <div className="text-2xl font-bold text-destructive">Error loading</div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Rate Information Card */}
+      {rates && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Rate Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3">
+              <div className="flex justify-between items-center py-2 border-b">
+                <span className="font-medium">Data Source:</span>
+                <Badge variant={rates.source === 'rate.am' ? 'default' : 'secondary'}>
+                  {rates.source || 'Unknown'}
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b">
+                <span className="font-medium">Last Updated:</span>
+                <span className="text-muted-foreground">{formatDate(rates.timestamp)}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b">
+                <span className="font-medium">Time Ago:</span>
+                <span className="text-muted-foreground">{getTimeAgo(rates.timestamp)}</span>
+              </div>
+              <div className="flex justify-between items-center py-2">
+                <span className="font-medium">Cache Duration:</span>
+                <span className="text-muted-foreground">24 hours</span>
+              </div>
+            </div>
+
+            <div className="mt-4 p-4 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                <strong>Note:</strong> These exchange rates are cached on the server for 24 hours.
+                They are fetched from rate.am and represent the average of buy and sell rates.
+                All users see prices converted using these rates.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Example Conversions Card */}
+      {rates && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Example Conversions</CardTitle>
+            <CardDescription>Common price conversions for reference</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm text-muted-foreground">USD → AMD</h4>
+                {[100, 500, 1000, 5000, 10000].map(amount => (
+                  <div key={amount} className="flex justify-between py-1">
+                    <span>${amount.toLocaleString()}</span>
+                    <span className="font-medium">֏{(amount * rates.usdToAmd).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm text-muted-foreground">AMD → USD</h4>
+                {[50000, 100000, 500000, 1000000, 5000000].map(amount => (
+                  <div key={amount} className="flex justify-between py-1">
+                    <span>֏{amount.toLocaleString()}</span>
+                    <span className="font-medium">${(amount * rates.amdToUsd).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
 }
 
 function QuickExportButton({

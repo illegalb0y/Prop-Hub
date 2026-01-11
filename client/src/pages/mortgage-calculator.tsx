@@ -9,18 +9,19 @@ import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { BarChart3, LineChart } from "lucide-react";
-import { 
-  AreaChart, 
-  Area, 
+import {
+  AreaChart,
+  Area,
   BarChart,
   Bar,
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer 
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
 } from "recharts";
 
 interface MortgageParams {
@@ -173,7 +174,7 @@ export default function MortgageCalculatorPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold">
+                  <span className="text-2xl font-bold">
                     {formatCurrency(params.propertyValue, calculatorCurrency)}
                   </span>
                 </div>
@@ -204,10 +205,10 @@ export default function MortgageCalculatorPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold">
+                  <span className="text-2xl font-bold">
                     {formatCurrency(params.downPayment, calculatorCurrency)}
                   </span>
-                  <span className="text-xl text-muted-foreground">
+                  <span className="text-base text-muted-foreground">
                     ({downPaymentPercent.toFixed(1)}%)
                   </span>
                 </div>
@@ -215,13 +216,13 @@ export default function MortgageCalculatorPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>5%</span>
-                    <span>30%</span>
+                    <span>90%</span>
                   </div>
                   <Slider
                     value={[downPaymentPercent]}
                     onValueChange={([value]) => updateDownPaymentByPercent(value)}
                     min={5}
-                    max={30}
+                    max={90}
                     step={0.5}
                   />
                 </div>
@@ -244,8 +245,8 @@ export default function MortgageCalculatorPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold">{params.loanTerm}</span>
-                  <span className="text-xl text-muted-foreground">
+                  <span className="text-2xl font-bold">{params.loanTerm}</span>
+                  <span className="text-base text-muted-foreground">
                     {t("mortgage.years")}
                   </span>
                 </div>
@@ -275,7 +276,7 @@ export default function MortgageCalculatorPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold">{params.interestRate}%</span>
+                  <span className="text-2xl font-bold">{params.interestRate}%</span>
                   <span className="text-sm text-muted-foreground">
                     {t("mortgage.fixedRate")}
                   </span>
@@ -352,110 +353,109 @@ export default function MortgageCalculatorPage() {
           </div>
         </div>
 
-        {/* Нижняя секция - График и детализация */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* График погашения */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>{t("mortgage.amortizationSchedule")}</CardTitle>
-                  <CardDescription>{t("mortgage.yearlyBreakdown")}</CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant={chartType === "area" ? "default" : "outline"}
-                    size="icon"
-                    onClick={() => setChartType("area")}
-                  >
-                    <LineChart className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={chartType === "bar" ? "default" : "outline"}
-                    size="icon"
-                    onClick={() => setChartType("bar")}
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                  </Button>
-                </div>
+        {/* График погашения */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>{t("mortgage.amortizationSchedule")}</CardTitle>
+                <CardDescription>{t("mortgage.yearlyBreakdown")}</CardDescription>
               </div>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                {chartType === "area" ? (
-                  <AreaChart data={amortizationSchedule}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="year" 
-                      label={{ value: t("mortgage.year"), position: "insideBottom", offset: -5 }}
-                    />
-                    <YAxis 
-                      tickFormatter={(value) => formatCurrency(value, calculatorCurrency, { compact: true })}
-                    />
-                    <Tooltip 
-                      formatter={(value: number) => formatCurrency(value, calculatorCurrency)}
-                      labelFormatter={(label) => `${t("mortgage.year")} ${label}`}
-                    />
-                    <Legend />
-                    <Area 
-                      type="monotone" 
-                      dataKey="principal" 
-                      stackId="1"
-                      stroke="hsl(var(--primary))" 
-                      fill="hsl(var(--primary))" 
-                      name={t("mortgage.principal")}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="interest" 
-                      stackId="1"
-                      stroke="hsl(var(--destructive))" 
-                      fill="hsl(var(--destructive))" 
-                      name={t("mortgage.interest")}
-                    />
-                  </AreaChart>
-                ) : (
-                  <BarChart data={amortizationSchedule}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="year"
-                      label={{ value: t("mortgage.year"), position: "insideBottom", offset: -5 }}
-                    />
-                    <YAxis 
-                      tickFormatter={(value) => formatCurrency(value, calculatorCurrency, { compact: true })}
-                    />
-                    <Tooltip 
-                      formatter={(value: number) => formatCurrency(value, calculatorCurrency)}
-                      labelFormatter={(label) => `${t("mortgage.year")} ${label}`}
-                    />
-                    <Legend />
-                    <Bar 
-                      dataKey="principal" 
-                      stackId="a"
-                      fill="hsl(var(--primary))" 
-                      name={t("mortgage.principal")}
-                    />
-                    <Bar 
-                      dataKey="interest" 
-                      stackId="a"
-                      fill="hsl(var(--destructive))" 
-                      name={t("mortgage.interest")}
-                    />
-                  </BarChart>
-                )}
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+              <div className="flex gap-2">
+                <Button
+                  variant={chartType === "area" ? "default" : "outline"}
+                  size="icon"
+                  onClick={() => setChartType("area")}
+                >
+                  <LineChart className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={chartType === "bar" ? "default" : "outline"}
+                  size="icon"
+                  onClick={() => setChartType("bar")}
+                >
+                  <BarChart3 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={400}>
+              {chartType === "area" ? (
+                <AreaChart data={amortizationSchedule}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="year"
+                    label={{ value: t("mortgage.year"), position: "insideBottom", offset: -5 }}
+                  />
+                  <YAxis
+                    tickFormatter={(value) => formatCurrency(value, calculatorCurrency, { compact: true })}
+                  />
+                  <Tooltip
+                    formatter={(value: number) => formatCurrency(value, calculatorCurrency)}
+                    labelFormatter={(label) => `${t("mortgage.year")} ${label}`}
+                  />
+                  <Legend />
+                  <Area
+                    type="monotone"
+                    dataKey="principal"
+                    stackId="1"
+                    stroke="hsl(var(--primary))"
+                    fill="hsl(var(--primary))"
+                    name={t("mortgage.principal")}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="interest"
+                    stackId="1"
+                    stroke="hsl(var(--destructive))"
+                    fill="hsl(var(--destructive))"
+                    name={t("mortgage.interest")}
+                  />
+                </AreaChart>
+              ) : (
+                <BarChart data={amortizationSchedule}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="year"
+                    label={{ value: t("mortgage.year"), position: "insideBottom", offset: -5 }}
+                  />
+                  <YAxis
+                    tickFormatter={(value) => formatCurrency(value, calculatorCurrency, { compact: true })}
+                  />
+                  <Tooltip
+                    formatter={(value: number) => formatCurrency(value, calculatorCurrency)}
+                    labelFormatter={(label) => `${t("mortgage.year")} ${label}`}
+                  />
+                  <Legend />
+                  <Bar
+                    dataKey="principal"
+                    stackId="a"
+                    fill="hsl(var(--primary))"
+                    name={t("mortgage.principal")}
+                  />
+                  <Bar
+                    dataKey="interest"
+                    stackId="a"
+                    fill="hsl(var(--destructive))"
+                    name={t("mortgage.interest")}
+                  />
+                </BarChart>
+              )}
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
-          {/* Таблица детализации */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("mortgage.detailedSchedule")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+        {/* Таблица детализации */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("mortgage.detailedSchedule")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[400px]">
+              <div className="space-y-2 pr-4">
                 {amortizationSchedule.map((item) => (
-                  <div 
+                  <div
                     key={item.year}
                     className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent transition-colors"
                   >
@@ -478,9 +478,9 @@ export default function MortgageCalculatorPage() {
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -180,6 +180,9 @@
     "principal": "Principal",
     "interest": "Interest",
     "detailedSchedule": "Detailed Payment Schedule",
-    "remainingBalance": "Remaining Balance"
+    "remainingBalance": "Remaining Balance",
+    "reset": "Reset",
+    "calculate": "Calculate",
+    "clickCalculate": "Click 'Calculate' to see results"
   }
 }

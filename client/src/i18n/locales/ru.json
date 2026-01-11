@@ -180,6 +180,9 @@
     "principal": "Основной долг",
     "interest": "Проценты",
     "detailedSchedule": "Детальный график платежей",
-    "remainingBalance": "Остаток долга"
+    "remainingBalance": "Остаток долга",
+    "reset": "Сбросить",
+    "calculate": "Рассчитать",
+    "clickCalculate": "Нажмите 'Рассчитать' для просмотра результатов"
   }
 }

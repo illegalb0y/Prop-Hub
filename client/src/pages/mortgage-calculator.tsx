@@ -43,14 +43,26 @@ export default function MortgageCalculatorPage() {
   const { t } = useTranslation();
   const [calculatorCurrency, setCalculatorCurrency] = useState<"USD" | "EUR" | "AMD">("USD");
 
-  const [params, setParams] = useState<MortgageParams>({
+  const DEFAULT_PARAMS: MortgageParams = {
     propertyValue: 500000,
     downPayment: 100000,
     loanTerm: 20,
     interestRate: 8,
-  });
+  };
+
+  const [params, setParams] = useState<MortgageParams>(DEFAULT_PARAMS);
+  const [activeParams, setActiveParams] = useState<MortgageParams>(DEFAULT_PARAMS);
 
   const [chartType, setChartType] = useState<"area" | "bar">("area");
+
+  const handleCalculate = () => {
+    setActiveParams(params);
+  };
+
+  const handleReset = () => {
+    setParams(DEFAULT_PARAMS);
+    setActiveParams(DEFAULT_PARAMS);
+  };
 
   // Расчет процента первоначального взноса
   const downPaymentPercent = useMemo(() => {
@@ -65,9 +77,9 @@ export default function MortgageCalculatorPage() {
 
   // Расчет ежемесячного платежа по формуле аннуитета
   const monthlyPayment = useMemo(() => {
-    const loanAmount = params.propertyValue - params.downPayment;
-    const monthlyRate = params.interestRate / 12 / 100;
-    const numPayments = params.loanTerm * 12;
+    const loanAmount = activeParams.propertyValue - activeParams.downPayment;
+    const monthlyRate = activeParams.interestRate / 12 / 100;
+    const numPayments = activeParams.loanTerm * 12;
 
     if (monthlyRate === 0) {
       return loanAmount / numPayments;
@@ -79,18 +91,18 @@ export default function MortgageCalculatorPage() {
       (Math.pow(1 + monthlyRate, numPayments) - 1);
 
     return monthlyPayment;
-  }, [params]);
+  }, [activeParams]);
 
   // Генерация графика погашения по годам
   const amortizationSchedule = useMemo<AmortizationData[]>(() => {
-    const loanAmount = params.propertyValue - params.downPayment;
-    const monthlyRate = params.interestRate / 12 / 100;
-    const numPayments = params.loanTerm * 12;
+    const loanAmount = activeParams.propertyValue - activeParams.downPayment;
+    const monthlyRate = activeParams.interestRate / 12 / 100;
+    const numPayments = activeParams.loanTerm * 12;
     const schedule: AmortizationData[] = [];
 
     let balance = loanAmount;
 
-    for (let year = 1; year <= params.loanTerm; year++) {
+    for (let year = 1; year <= activeParams.loanTerm; year++) {
       let yearlyPrincipal = 0;
       let yearlyInterest = 0;
 
@@ -115,7 +127,7 @@ export default function MortgageCalculatorPage() {
     }
 
     return schedule;
-  }, [params, monthlyPayment]);
+  }, [activeParams, monthlyPayment]);
 
   // Максимальные значения для слайдеров в зависимости от валюты
   const maxPropertyValue = useMemo(() => {
@@ -322,6 +334,24 @@ export default function MortgageCalculatorPage() {
                 />
               </CardContent>
             </Card>
+
+            <div className="flex gap-4 pt-4">
+              <Button 
+                onClick={handleCalculate} 
+                className="flex-1 h-12 text-lg font-semibold"
+                data-testid="button-calculate"
+              >
+                {t("mortgage.calculate")}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={handleReset}
+                className="h-12 px-6"
+                data-testid="button-reset"
+              >
+                {t("mortgage.reset")}
+              </Button>
+            </div>
           </div>
 
           {/* Правая колонка - Результаты */}

@@ -181,6 +181,9 @@
     "principal": "Հիմնական գումար",
     "interest": "Տոկոսներ",
     "detailedSchedule": "Մանրամասն վճարումների ժամանակացույց",
-    "remainingBalance": "Մնացած պարտք"
+    "remainingBalance": "Մնացած պարտք",
+    "reset": "Վերականգնել",
+    "calculate": "Հաշվարկել",
+    "clickCalculate": "Սեղմեք 'Հաշվարկել' արդյունքները տեսնելու համար"
   }
 }

@@ -349,134 +349,137 @@ export default function MortgageCalculatorPage() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        </div>
 
-            {/* График погашения */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>{t("mortgage.amortizationSchedule")}</CardTitle>
-                    <CardDescription>{t("mortgage.yearlyBreakdown")}</CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant={chartType === "area" ? "default" : "outline"}
-                      size="icon"
-                      onClick={() => setChartType("area")}
-                    >
-                      <LineChart className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant={chartType === "bar" ? "default" : "outline"}
-                      size="icon"
-                      onClick={() => setChartType("bar")}
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                    </Button>
-                  </div>
+        {/* Нижняя секция - График и детализация */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* График погашения */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>{t("mortgage.amortizationSchedule")}</CardTitle>
+                  <CardDescription>{t("mortgage.yearlyBreakdown")}</CardDescription>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={400}>
-                  {chartType === "area" ? (
-                    <AreaChart data={amortizationSchedule}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="year" 
-                        label={{ value: t("mortgage.year"), position: "insideBottom", offset: -5 }}
-                      />
-                      <YAxis 
-                        tickFormatter={(value) => formatCurrency(value, currency, { compact: true })}
-                      />
-                      <Tooltip 
-                        formatter={(value: number) => formatCurrency(value, currency)}
-                        labelFormatter={(label) => `${t("mortgage.year")} ${label}`}
-                      />
-                      <Legend />
-                      <Area 
-                        type="monotone" 
-                        dataKey="principal" 
-                        stackId="1"
-                        stroke="hsl(var(--primary))" 
-                        fill="hsl(var(--primary))" 
-                        name={t("mortgage.principal")}
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="interest" 
-                        stackId="1"
-                        stroke="hsl(var(--destructive))" 
-                        fill="hsl(var(--destructive))" 
-                        name={t("mortgage.interest")}
-                      />
-                    </AreaChart>
-                  ) : (
-                    <BarChart data={amortizationSchedule}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="year"
-                        label={{ value: t("mortgage.year"), position: "insideBottom", offset: -5 }}
-                      />
-                      <YAxis 
-                        tickFormatter={(value) => formatCurrency(value, currency, { compact: true })}
-                      />
-                      <Tooltip 
-                        formatter={(value: number) => formatCurrency(value, currency)}
-                        labelFormatter={(label) => `${t("mortgage.year")} ${label}`}
-                      />
-                      <Legend />
-                      <Bar 
-                        dataKey="principal" 
-                        stackId="a"
-                        fill="hsl(var(--primary))" 
-                        name={t("mortgage.principal")}
-                      />
-                      <Bar 
-                        dataKey="interest" 
-                        stackId="a"
-                        fill="hsl(var(--destructive))" 
-                        name={t("mortgage.interest")}
-                      />
-                    </BarChart>
-                  )}
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+                <div className="flex gap-2">
+                  <Button
+                    variant={chartType === "area" ? "default" : "outline"}
+                    size="icon"
+                    onClick={() => setChartType("area")}
+                  >
+                    <LineChart className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={chartType === "bar" ? "default" : "outline"}
+                    size="icon"
+                    onClick={() => setChartType("bar")}
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                {chartType === "area" ? (
+                  <AreaChart data={amortizationSchedule}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="year" 
+                      label={{ value: t("mortgage.year"), position: "insideBottom", offset: -5 }}
+                    />
+                    <YAxis 
+                      tickFormatter={(value) => formatCurrency(value, currency, { compact: true })}
+                    />
+                    <Tooltip 
+                      formatter={(value: number) => formatCurrency(value, currency)}
+                      labelFormatter={(label) => `${t("mortgage.year")} ${label}`}
+                    />
+                    <Legend />
+                    <Area 
+                      type="monotone" 
+                      dataKey="principal" 
+                      stackId="1"
+                      stroke="hsl(var(--primary))" 
+                      fill="hsl(var(--primary))" 
+                      name={t("mortgage.principal")}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="interest" 
+                      stackId="1"
+                      stroke="hsl(var(--destructive))" 
+                      fill="hsl(var(--destructive))" 
+                      name={t("mortgage.interest")}
+                    />
+                  </AreaChart>
+                ) : (
+                  <BarChart data={amortizationSchedule}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="year"
+                      label={{ value: t("mortgage.year"), position: "insideBottom", offset: -5 }}
+                    />
+                    <YAxis 
+                      tickFormatter={(value) => formatCurrency(value, currency, { compact: true })}
+                    />
+                    <Tooltip 
+                      formatter={(value: number) => formatCurrency(value, currency)}
+                      labelFormatter={(label) => `${t("mortgage.year")} ${label}`}
+                    />
+                    <Legend />
+                    <Bar 
+                      dataKey="principal" 
+                      stackId="a"
+                      fill="hsl(var(--primary))" 
+                      name={t("mortgage.principal")}
+                    />
+                    <Bar 
+                      dataKey="interest" 
+                      stackId="a"
+                      fill="hsl(var(--destructive))" 
+                      name={t("mortgage.interest")}
+                    />
+                  </BarChart>
+                )}
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
 
-            {/* Таблица детализации */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("mortgage.detailedSchedule")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {amortizationSchedule.map((item) => (
-                    <div 
-                      key={item.year}
-                      className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent transition-colors"
-                    >
-                      <div className="flex-1">
-                        <div className="font-semibold">
-                          {t("mortgage.year")} {item.year}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {t("mortgage.remainingBalance")}: {formatCurrency(item.balance, currency)}
-                        </div>
+          {/* Таблица детализации */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("mortgage.detailedSchedule")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                {amortizationSchedule.map((item) => (
+                  <div 
+                    key={item.year}
+                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent transition-colors"
+                  >
+                    <div className="flex-1">
+                      <div className="font-semibold">
+                        {t("mortgage.year")} {item.year}
                       </div>
-                      <div className="text-right">
-                        <div className="font-semibold">
-                          {formatCurrency(item.totalPayment, currency)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {formatCurrency(item.principal, currency)} + {formatCurrency(item.interest, currency)}
-                        </div>
+                      <div className="text-sm text-muted-foreground">
+                        {t("mortgage.remainingBalance")}: {formatCurrency(item.balance, currency)}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                    <div className="text-right">
+                      <div className="font-semibold">
+                        {formatCurrency(item.totalPayment, currency)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatCurrency(item.principal, currency)} + {formatCurrency(item.interest, currency)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

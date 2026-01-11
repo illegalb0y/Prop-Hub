@@ -1493,7 +1493,7 @@ function ProjectsSection() {
                 <SelectTrigger data-testid="select-project-developer">
                   <SelectValue placeholder="Select Developer" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[300px] overflow-y-auto">
                   {developers?.map((dev) => (
                     <SelectItem key={dev.id} value={dev.id.toString()}>
                       {dev.name}
@@ -1518,7 +1518,7 @@ function ProjectsSection() {
                 <SelectTrigger data-testid="select-project-city">
                   <SelectValue placeholder="Select City" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[300px] overflow-y-auto">
                   {cities?.map((city) => (
                     <SelectItem key={city.id} value={city.id.toString()}>
                       {city.name}
@@ -1540,7 +1540,7 @@ function ProjectsSection() {
                 <SelectTrigger data-testid="select-project-district">
                   <SelectValue placeholder="Select District" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[300px] overflow-y-auto">
                   {districts?.map((district) => (
                     <SelectItem key={district.id} value={district.id.toString()}>
                       {district.name}

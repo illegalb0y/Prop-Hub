@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
+import { CurrencySwitcher } from "@/components/ui/currency-switcher";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import {
   DropdownMenu,
@@ -38,6 +39,8 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-2">
+        <CurrencySwitcher />
+
         <LanguageSwitcher />
 
         <Button variant="ghost" size="icon" asChild data-testid="button-favorites">

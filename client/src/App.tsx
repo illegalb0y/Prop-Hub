@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/lib/theme-provider";
+import { CurrencyProvider } from "@/lib/currency-provider";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Header } from "@/components/header";
@@ -67,21 +68,23 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <TooltipProvider>
-          <SidebarProvider style={sidebarStyle}>
-            <div className="flex h-screen w-full">
-              <AppSidebar onSearchClick={() => setSearchOpen(true)} />
-              <SidebarInset className="flex flex-col flex-1">
-                <Header />
-                <main className="flex-1 overflow-hidden">
-                  <Router />
-                </main>
-              </SidebarInset>
-            </div>
-            <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
-          </SidebarProvider>
-          <Toaster />
-        </TooltipProvider>
+        <CurrencyProvider>
+          <TooltipProvider>
+            <SidebarProvider style={sidebarStyle}>
+              <div className="flex h-screen w-full">
+                <AppSidebar onSearchClick={() => setSearchOpen(true)} />
+                <SidebarInset className="flex flex-col flex-1">
+                  <Header />
+                  <main className="flex-1 overflow-hidden">
+                    <Router />
+                  </main>
+                </SidebarInset>
+              </div>
+              <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+            </SidebarProvider>
+            <Toaster />
+          </TooltipProvider>
+        </CurrencyProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

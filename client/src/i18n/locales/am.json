@@ -134,9 +134,16 @@
   "settings": {
     "title": "Կառավարում",
     "appearance": "Արտաքին տեսքը",
+    "currency": "Արժույթ",
+    "selectCurrency": "Ընտրեք նախընտրելի արժույթը գների ցուցադրման համար",
     "language": "Լեզու",
     "selectLanguage": "Ընտրել լեզուն",
     "theme": "Ռեժիմը"
+  },
+  "currency": {
+    "title": "Արժույթ",
+    "usd": "ԱՄՆ դոլար",
+    "amd": "Հայկական դրամ"
   },
   "auth": {
     "loginTitle": "Բարի գալուստ",

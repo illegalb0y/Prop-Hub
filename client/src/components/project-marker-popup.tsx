@@ -7,6 +7,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { useCurrency } from "@/lib/currency-provider";
+import type { SupportedCurrency } from "@/lib/currency";
 
 interface ProjectMarkerPopupProps {
   project: ProjectWithRelations;
@@ -19,6 +21,7 @@ export function ProjectMarkerPopup({
 }: ProjectMarkerPopupProps) {
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
+  const { formatPrice } = useCurrency();
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const favoritesQuery = useQuery<any[]>({
@@ -97,11 +100,7 @@ export function ProjectMarkerPopup({
             <p className="text-xs font-normal text-muted-foreground truncate flex-1">
               from{" "}
               <span className="text-foreground">
-                {new Intl.NumberFormat("en-US", {
-                  style: "currency",
-                  currency: project.currency || "USD",
-                  maximumFractionDigits: 0,
-                }).format(project.priceFrom)}
+                {formatPrice(project.priceFrom, (project.currency as SupportedCurrency) || "USD")}
               </span>
             </p>
           )}

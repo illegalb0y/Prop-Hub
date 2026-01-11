@@ -133,9 +133,16 @@
   "settings": {
     "title": "Настройки",
     "appearance": "Внешний вид",
+    "currency": "Валюта",
+    "selectCurrency": "Выберите предпочтительную валюту для отображения цен",
     "language": "Язык",
     "selectLanguage": "Выберите язык",
     "theme": "Тема"
+  },
+  "currency": {
+    "title": "Валюта",
+    "usd": "Доллар США",
+    "amd": "Армянский драм"
   },
   "auth": {
     "loginTitle": "С возвращением",

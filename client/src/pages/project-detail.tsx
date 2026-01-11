@@ -12,8 +12,10 @@ import { EmptyState } from "@/components/empty-state";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrency } from "@/lib/currency-provider";
 import { format } from "date-fns";
 import type { ProjectWithRelations, Bank } from "@shared/schema";
+import type { SupportedCurrency } from "@/lib/currency";
 
 export default function ProjectDetailPage() {
   const { t } = useTranslation();
@@ -21,6 +23,7 @@ export default function ProjectDetailPage() {
   const projectId = params?.id ? parseInt(params.id) : null;
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const { formatPrice } = useCurrency();
 
   const { data: project, isLoading, error } = useQuery<ProjectWithRelations>({
     queryKey: ["/api/projects", projectId],
@@ -94,11 +97,7 @@ export default function ProjectDetailPage() {
   }
 
   const formattedPrice = project.priceFrom
-    ? new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: project.currency || "USD",
-        maximumFractionDigits: 0,
-      }).format(project.priceFrom)
+    ? formatPrice(project.priceFrom, (project.currency as SupportedCurrency) || "USD")
     : null;
 
   const formattedDate = project.completionDate

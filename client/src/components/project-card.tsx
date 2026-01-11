@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { ProjectWithRelations } from "@shared/schema";
 import { format } from "date-fns";
+import { useCurrency } from "@/lib/currency-provider";
+import type { SupportedCurrency } from "@/lib/currency";
 
 interface ProjectCardProps {
   project: ProjectWithRelations;
@@ -19,12 +21,10 @@ export function ProjectCard({
   isFavorite = false,
   showFavoriteButton = true,
 }: ProjectCardProps) {
+  const { formatPrice } = useCurrency();
+
   const formattedPrice = project.priceFrom
-    ? new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: project.currency || "USD",
-        maximumFractionDigits: 0,
-      }).format(project.priceFrom)
+    ? formatPrice(project.priceFrom, (project.currency as SupportedCurrency) || "USD")
     : null;
 
   const formattedDate = project.completionDate
@@ -55,7 +55,7 @@ export function ProjectCard({
               <Building2 className="h-12 w-12 text-muted-foreground/50" />
             </div>
           )}
-          
+
           {showFavoriteButton && (
             <Button
               variant="ghost"

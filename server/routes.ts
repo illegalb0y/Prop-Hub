@@ -7,6 +7,7 @@ import { checkUserNotBanned } from "./middleware/rbac";
 import { projectFiltersSchema, idParamSchema, favoriteSchema, historySchema } from "./middleware/validation";
 import { registerAdminRoutes } from "./admin-routes";
 import { trackAnalytics } from "./middleware/analytics-tracking";
+import { handleExchangeRatesRequest } from "./exchange-rates";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -18,6 +19,9 @@ export async function registerRoutes(
 
   // Analytics tracking - отслеживаем активность пользователей
   app.use(trackAnalytics);
+
+  // Exchange rates endpoint - курсы валют
+  app.get("/api/exchange-rates", handleExchangeRatesRequest);
 
   app.get("/api/cities", async (req, res) => {
     try {

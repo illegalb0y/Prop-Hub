@@ -10,7 +10,9 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { useCurrency } from "@/lib/currency-provider";
 import type { ProjectWithRelations } from "@shared/schema";
+import type { SupportedCurrency } from "@/lib/currency";
 
 interface SearchDialogProps {
   open: boolean;
@@ -18,8 +20,9 @@ interface SearchDialogProps {
 }
 
 export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
+  const { formatPrice: formatPriceCurrency } = useCurrency();
   const [searchValue, setSearchValue] = useState("");
 
   const { data: projects = [] } = useQuery<ProjectWithRelations[]>({
@@ -45,18 +48,6 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
       )
       .slice(0, 10); // Ограничиваем до 10 результатов
   }, [projects, searchValue]);
-
-  // Форматирование цены
-  const formatPrice = (price: number | null, currency: string = "USD") => {
-    if (!price) return t("common.noResults");
-
-    return new Intl.NumberFormat(i18n.language, {
-      style: "currency",
-      currency: currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
 
   // Обработчик выбора проекта
   const handleSelectProject = (projectId: number) => {
@@ -100,7 +91,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{project.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {t("projects.priceFrom")} {formatPrice(project.priceFrom, project.currency)}
+                    {t("projects.priceFrom")} {project.priceFrom ? formatPriceCurrency(project.priceFrom, (project.currency as SupportedCurrency) || "USD") : "—"}
                   </p>
                 </div>
               </CommandItem>

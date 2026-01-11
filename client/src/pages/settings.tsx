@@ -16,15 +16,24 @@ import {
   getCurrentLanguage,
   type SupportedLanguage,
 } from "@/i18n";
-import { Globe, Palette } from "lucide-react";
+import { useCurrency } from "@/lib/currency-provider";
+import { SUPPORTED_CURRENCIES, CURRENCY_SYMBOLS, CURRENCY_NAMES, type SupportedCurrency } from "@/lib/currency";
+import { Globe, Palette, DollarSign } from "lucide-react";
 
 export default function SettingsPage() {
   const { t } = useTranslation();
   const currentLang = getCurrentLanguage();
+  const { currentCurrency, setCurrency } = useCurrency();
 
   const handleLanguageChange = (lang: string) => {
     if (SUPPORTED_LANGUAGES.includes(lang as SupportedLanguage) && lang !== currentLang) {
       setLanguage(lang as SupportedLanguage);
+    }
+  };
+
+  const handleCurrencyChange = (currency: string) => {
+    if (SUPPORTED_CURRENCIES.includes(currency as SupportedCurrency) && currency !== currentCurrency) {
+      setCurrency(currency as SupportedCurrency);
     }
   };
 
@@ -40,6 +49,33 @@ export default function SettingsPage() {
       </div>
 
       <div className="space-y-6 max-w-2xl">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              <CardTitle>{t("settings.currency")}</CardTitle>
+            </div>
+            <CardDescription>{t("settings.selectCurrency")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Select value={currentCurrency} onValueChange={handleCurrencyChange}>
+              <SelectTrigger className="w-48" data-testid="select-currency">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SUPPORTED_CURRENCIES.map((currency) => (
+                  <SelectItem key={currency} value={currency} data-testid={`option-currency-${currency}`}>
+                    <span className="flex items-center gap-2">
+                      <span className="text-lg">{CURRENCY_SYMBOLS[currency]}</span>
+                      <span>{CURRENCY_NAMES[currency]}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">

@@ -133,9 +133,16 @@
   "settings": {
     "title": "Settings",
     "appearance": "Appearance",
+    "currency": "Currency",
+    "selectCurrency": "Choose your preferred currency for displaying prices",
     "language": "Language",
     "selectLanguage": "Select language",
     "theme": "Theme"
+  },
+  "currency": {
+    "title": "Currency",
+    "usd": "US Dollar",
+    "amd": "Armenian Dram"
   },
   "auth": {
     "loginTitle": "Welcome back",

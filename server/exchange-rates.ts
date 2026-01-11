@@ -22,11 +22,17 @@ const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 часа
 
 /**
  * Получает курсы валют с rate.am через парсинг HTML
- * Извлекает "Average" значение из таблицы внизу страницы
+ * Извлекает averageRates из встроенного JSON в странице
  */
 async function fetchRatesFromRateAm(): Promise<ExchangeRates> {
   try {
-    const response = await fetch('https://rate.am/');
+    const response = await fetch('https://www.rate.am/en/', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+      }
+    });
 
     if (!response.ok) {
       throw new Error(`rate.am returned status ${response.status}`);
@@ -34,37 +40,30 @@ async function fetchRatesFromRateAm(): Promise<ExchangeRates> {
 
     const html = await response.text();
 
-    // Находим секцию со строкой "Average" внизу таблицы
-    const averageSection = html.match(/Average[\s\S]{0,2000}/);
-
-    if (!averageSection) {
-      throw new Error('Could not find Average section on rate.am');
+    // Извлекаем USD CLEARING rates напрямую из averageRates секции
+    // Формат: averageRates...USD...CLEARING...buy:"379.05"...sell:"383.67"
+    const usdMatch = html.match(/averageRates.*?USD.*?CLEARING.*?buy.*?:\\"([0-9.]+)\\".*?sell.*?:\\"([0-9.]+)\\"/s);
+    const eurMatch = html.match(/averageRates.*?EUR.*?CLEARING.*?buy.*?:\\"([0-9.]+)\\".*?sell.*?:\\"([0-9.]+)\\"/s);
+    
+    if (!usdMatch) {
+      throw new Error('Could not find USD CLEARING rates in averageRates section');
+    }
+    
+    if (!eurMatch) {
+      throw new Error('Could not find EUR CLEARING rates in averageRates section');
     }
 
-    const averageText = averageSection[0];
+    const usdBuyRate = parseFloat(usdMatch[1]);
+    const usdSellRate = parseFloat(usdMatch[2]);
+    const eurBuyRate = parseFloat(eurMatch[1]);
+    const eurSellRate = parseFloat(eurMatch[2]);
 
-    // Извлекаем все числа из строки Average (будет последовательность: USD Buy, USD Sell, EUR Buy, EUR Sell)
-    // Используем более точный паттерн для поиска чисел с плавающей точкой
-    const numbersMatch = averageText.matchAll(/(\d+(?:\.\d+)?)/g);
-    const numbers = Array.from(numbersMatch).map(match => parseFloat(match[1]));
-
-    console.log('Extracted numbers from Average row:', numbers);
-
-    if (numbers.length < 4) {
-      throw new Error(`Not enough exchange rate values found. Got ${numbers.length}, expected at least 4`);
-    }
-
-    // Первые два числа - USD Buy и Sell
-    const usdBuyRate = numbers[0];
-    const usdSellRate = numbers[1];
+    console.log(`USD rates from rate.am - Buy: ${usdBuyRate}, Sell: ${usdSellRate}`);
+    console.log(`EUR rates from rate.am - Buy: ${eurBuyRate}, Sell: ${eurSellRate}`);
 
     // Вычисляем средний курс USD/AMD
     const usdToAmd = (usdBuyRate + usdSellRate) / 2;
     const amdToUsd = 1 / usdToAmd;
-
-    // Следующие два числа - EUR Buy и Sell
-    const eurBuyRate = numbers[2];
-    const eurSellRate = numbers[3];
 
     // Вычисляем средний курс EUR/AMD
     const eurToAmd = (eurBuyRate + eurSellRate) / 2;

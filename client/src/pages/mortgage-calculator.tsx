@@ -40,7 +40,7 @@ interface AmortizationData {
 
 export default function MortgageCalculatorPage() {
   const { t } = useTranslation();
-  const { currency, setCurrency } = useCurrency();
+  const [calculatorCurrency, setCalculatorCurrency] = useState<"USD" | "EUR" | "AMD">("USD");
 
   const [params, setParams] = useState<MortgageParams>({
     propertyValue: 500000,
@@ -118,16 +118,16 @@ export default function MortgageCalculatorPage() {
 
   // Максимальные значения для слайдеров в зависимости от валюты
   const maxPropertyValue = useMemo(() => {
-    switch (currency) {
+    switch (calculatorCurrency) {
       case "AMD": return 500000000; // 500M AMD
       case "EUR": return 1000000; // 1M EUR
       case "USD":
       default: return 2000000; // 2M USD
     }
-  }, [currency]);
+  }, [calculatorCurrency]);
 
   const handleCurrencyChange = (newCurrency: string) => {
-    setCurrency(newCurrency as "USD" | "EUR" | "AMD");
+    setCalculatorCurrency(newCurrency as "USD" | "EUR" | "AMD");
   };
 
   return (
@@ -153,7 +153,7 @@ export default function MortgageCalculatorPage() {
                 <CardDescription>{t("mortgage.currencyDescription")}</CardDescription>
               </CardHeader>
               <CardContent>
-                <Select value={currency} onValueChange={handleCurrencyChange}>
+                <Select value={calculatorCurrency} onValueChange={handleCurrencyChange}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -174,7 +174,7 @@ export default function MortgageCalculatorPage() {
               <CardContent className="space-y-4">
                 <div className="flex items-baseline gap-2">
                   <span className="text-4xl font-bold">
-                    {formatCurrency(params.propertyValue, currency)}
+                    {formatCurrency(params.propertyValue, calculatorCurrency)}
                   </span>
                 </div>
                 <Slider
@@ -182,7 +182,7 @@ export default function MortgageCalculatorPage() {
                   onValueChange={([value]) => setParams(prev => ({ ...prev, propertyValue: value }))}
                   min={10000}
                   max={maxPropertyValue}
-                  step={currency === "AMD" ? 1000000 : 10000}
+                  step={calculatorCurrency === "AMD" ? 1000000 : 10000}
                   className="mt-2"
                 />
                 <Input
@@ -205,7 +205,7 @@ export default function MortgageCalculatorPage() {
               <CardContent className="space-y-4">
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-bold">
-                    {formatCurrency(params.downPayment, currency)}
+                    {formatCurrency(params.downPayment, calculatorCurrency)}
                   </span>
                   <span className="text-xl text-muted-foreground">
                     ({downPaymentPercent.toFixed(1)}%)
@@ -309,7 +309,7 @@ export default function MortgageCalculatorPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-5xl font-bold">
-                  {formatCurrency(monthlyPayment, currency)}
+                  {formatCurrency(monthlyPayment, calculatorCurrency)}
                 </div>
                 <p className="text-sm mt-2 opacity-90">
                   {t("mortgage.perMonth")}
@@ -326,7 +326,7 @@ export default function MortgageCalculatorPage() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{t("mortgage.loanAmount")}:</span>
                   <span className="font-semibold">
-                    {formatCurrency(params.propertyValue - params.downPayment, currency)}
+                    {formatCurrency(params.propertyValue - params.downPayment, calculatorCurrency)}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -334,7 +334,7 @@ export default function MortgageCalculatorPage() {
                   <span className="font-semibold">
                     {formatCurrency(
                       amortizationSchedule.reduce((sum, item) => sum + item.interest, 0),
-                      currency
+                      calculatorCurrency
                     )}
                   </span>
                 </div>
@@ -343,7 +343,7 @@ export default function MortgageCalculatorPage() {
                   <span className="font-bold text-lg">
                     {formatCurrency(
                       params.downPayment + amortizationSchedule.reduce((sum, item) => sum + item.totalPayment, 0),
-                      currency
+                      calculatorCurrency
                     )}
                   </span>
                 </div>
@@ -390,10 +390,10 @@ export default function MortgageCalculatorPage() {
                       label={{ value: t("mortgage.year"), position: "insideBottom", offset: -5 }}
                     />
                     <YAxis 
-                      tickFormatter={(value) => formatCurrency(value, currency, { compact: true })}
+                      tickFormatter={(value) => formatCurrency(value, calculatorCurrency, { compact: true })}
                     />
                     <Tooltip 
-                      formatter={(value: number) => formatCurrency(value, currency)}
+                      formatter={(value: number) => formatCurrency(value, calculatorCurrency)}
                       labelFormatter={(label) => `${t("mortgage.year")} ${label}`}
                     />
                     <Legend />
@@ -422,10 +422,10 @@ export default function MortgageCalculatorPage() {
                       label={{ value: t("mortgage.year"), position: "insideBottom", offset: -5 }}
                     />
                     <YAxis 
-                      tickFormatter={(value) => formatCurrency(value, currency, { compact: true })}
+                      tickFormatter={(value) => formatCurrency(value, calculatorCurrency, { compact: true })}
                     />
                     <Tooltip 
-                      formatter={(value: number) => formatCurrency(value, currency)}
+                      formatter={(value: number) => formatCurrency(value, calculatorCurrency)}
                       labelFormatter={(label) => `${t("mortgage.year")} ${label}`}
                     />
                     <Legend />
@@ -464,15 +464,15 @@ export default function MortgageCalculatorPage() {
                         {t("mortgage.year")} {item.year}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {t("mortgage.remainingBalance")}: {formatCurrency(item.balance, currency)}
+                        {t("mortgage.remainingBalance")}: {formatCurrency(item.balance, calculatorCurrency)}
                       </div>
                     </div>
                     <div className="text-right">
                       <div className="font-semibold">
-                        {formatCurrency(item.totalPayment, currency)}
+                        {formatCurrency(item.totalPayment, calculatorCurrency)}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {formatCurrency(item.principal, currency)} + {formatCurrency(item.interest, currency)}
+                        {formatCurrency(item.principal, calculatorCurrency)} + {formatCurrency(item.interest, calculatorCurrency)}
                       </div>
                     </div>
                   </div>

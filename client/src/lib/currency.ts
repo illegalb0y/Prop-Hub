@@ -63,7 +63,7 @@ export class CurrencyService {
   static async fetchRates(): Promise<ExchangeRates> {
     // Проверяем кеш
     const cached = this.getCachedRates();
-    if (cached && !this.isStale(cached)) {
+    if (cached && !this.isStale(cached) && cached.source !== 'fallback') {
       console.log('Using cached exchange rates');
       return cached;
     }

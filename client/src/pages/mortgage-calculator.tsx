@@ -1,0 +1,484 @@
+import { useState, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import { useCurrency } from "@/lib/currency-provider";
+import { formatCurrency } from "@/lib/format";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { BarChart3, LineChart } from "lucide-react";
+import { 
+  AreaChart, 
+  Area, 
+  BarChart,
+  Bar,
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer 
+} from "recharts";
+
+interface MortgageParams {
+  propertyValue: number;
+  downPayment: number;
+  loanTerm: number;
+  interestRate: number;
+}
+
+interface AmortizationData {
+  year: number;
+  principal: number;
+  interest: number;
+  balance: number;
+  totalPayment: number;
+}
+
+export default function MortgageCalculatorPage() {
+  const { t } = useTranslation();
+  const { currency, setCurrency } = useCurrency();
+
+  const [params, setParams] = useState<MortgageParams>({
+    propertyValue: 500000,
+    downPayment: 100000,
+    loanTerm: 20,
+    interestRate: 8,
+  });
+
+  const [chartType, setChartType] = useState<"area" | "bar">("area");
+
+  // Расчет процента первоначального взноса
+  const downPaymentPercent = useMemo(() => {
+    return (params.downPayment / params.propertyValue) * 100;
+  }, [params.downPayment, params.propertyValue]);
+
+  // Обновление первоначального взноса по проценту
+  const updateDownPaymentByPercent = useCallback((percent: number) => {
+    const newDownPayment = (params.propertyValue * percent) / 100;
+    setParams(prev => ({ ...prev, downPayment: Math.round(newDownPayment) }));
+  }, [params.propertyValue]);
+
+  // Расчет ежемесячного платежа по формуле аннуитета
+  const monthlyPayment = useMemo(() => {
+    const loanAmount = params.propertyValue - params.downPayment;
+    const monthlyRate = params.interestRate / 12 / 100;
+    const numPayments = params.loanTerm * 12;
+
+    if (monthlyRate === 0) {
+      return loanAmount / numPayments;
+    }
+
+    const monthlyPayment = 
+      loanAmount * 
+      (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
+      (Math.pow(1 + monthlyRate, numPayments) - 1);
+
+    return monthlyPayment;
+  }, [params]);
+
+  // Генерация графика погашения по годам
+  const amortizationSchedule = useMemo<AmortizationData[]>(() => {
+    const loanAmount = params.propertyValue - params.downPayment;
+    const monthlyRate = params.interestRate / 12 / 100;
+    const numPayments = params.loanTerm * 12;
+    const schedule: AmortizationData[] = [];
+
+    let balance = loanAmount;
+
+    for (let year = 1; year <= params.loanTerm; year++) {
+      let yearlyPrincipal = 0;
+      let yearlyInterest = 0;
+
+      for (let month = 1; month <= 12; month++) {
+        const interestPayment = balance * monthlyRate;
+        const principalPayment = monthlyPayment - interestPayment;
+
+        yearlyInterest += interestPayment;
+        yearlyPrincipal += principalPayment;
+        balance -= principalPayment;
+
+        if (balance < 0) balance = 0;
+      }
+
+      schedule.push({
+        year,
+        principal: Math.round(yearlyPrincipal),
+        interest: Math.round(yearlyInterest),
+        balance: Math.round(balance),
+        totalPayment: Math.round(yearlyPrincipal + yearlyInterest),
+      });
+    }
+
+    return schedule;
+  }, [params, monthlyPayment]);
+
+  // Максимальные значения для слайдеров в зависимости от валюты
+  const maxPropertyValue = useMemo(() => {
+    switch (currency) {
+      case "AMD": return 500000000; // 500M AMD
+      case "EUR": return 1000000; // 1M EUR
+      case "USD":
+      default: return 2000000; // 2M USD
+    }
+  }, [currency]);
+
+  const handleCurrencyChange = (newCurrency: string) => {
+    setCurrency(newCurrency as "USD" | "EUR" | "AMD");
+  };
+
+  return (
+    <div className="h-full overflow-y-auto">
+      <div className="container mx-auto p-6 space-y-6">
+        {/* Заголовок */}
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {t("mortgage.title")}
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            {t("mortgage.description")}
+          </p>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Левая колонка - Параметры ввода */}
+          <div className="space-y-6">
+            {/* Валюта */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("mortgage.currencyLabel")}</CardTitle>
+                <CardDescription>{t("mortgage.currencyDescription")}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Select value={currency} onValueChange={handleCurrencyChange}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD - {t("currency.usd")}</SelectItem>
+                    <SelectItem value="EUR">EUR - {t("currency.eur")}</SelectItem>
+                    <SelectItem value="AMD">AMD - {t("currency.amd")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+
+            {/* Стоимость недвижимости */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("mortgage.propertyValue")}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-bold">
+                    {formatCurrency(params.propertyValue, currency)}
+                  </span>
+                </div>
+                <Slider
+                  value={[params.propertyValue]}
+                  onValueChange={([value]) => setParams(prev => ({ ...prev, propertyValue: value }))}
+                  min={10000}
+                  max={maxPropertyValue}
+                  step={currency === "AMD" ? 1000000 : 10000}
+                  className="mt-2"
+                />
+                <Input
+                  type="number"
+                  value={params.propertyValue}
+                  onChange={(e) => setParams(prev => ({ 
+                    ...prev, 
+                    propertyValue: Number(e.target.value) || 0 
+                  }))}
+                  className="mt-2"
+                />
+              </CardContent>
+            </Card>
+
+            {/* Первоначальный взнос */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("mortgage.downPayment")}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold">
+                    {formatCurrency(params.downPayment, currency)}
+                  </span>
+                  <span className="text-xl text-muted-foreground">
+                    ({downPaymentPercent.toFixed(1)}%)
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>5%</span>
+                    <span>30%</span>
+                  </div>
+                  <Slider
+                    value={[downPaymentPercent]}
+                    onValueChange={([value]) => updateDownPaymentByPercent(value)}
+                    min={5}
+                    max={30}
+                    step={0.5}
+                  />
+                </div>
+
+                <Input
+                  type="number"
+                  value={params.downPayment}
+                  onChange={(e) => setParams(prev => ({ 
+                    ...prev, 
+                    downPayment: Number(e.target.value) || 0 
+                  }))}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Срок кредита */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("mortgage.loanTerm")}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-bold">{params.loanTerm}</span>
+                  <span className="text-xl text-muted-foreground">
+                    {t("mortgage.years")}
+                  </span>
+                </div>
+                <Select 
+                  value={params.loanTerm.toString()} 
+                  onValueChange={(value) => setParams(prev => ({ ...prev, loanTerm: Number(value) }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5 {t("mortgage.years")}</SelectItem>
+                    <SelectItem value="10">10 {t("mortgage.years")}</SelectItem>
+                    <SelectItem value="15">15 {t("mortgage.years")}</SelectItem>
+                    <SelectItem value="20">20 {t("mortgage.years")}</SelectItem>
+                    <SelectItem value="25">25 {t("mortgage.years")}</SelectItem>
+                    <SelectItem value="30">30 {t("mortgage.years")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+
+            {/* Процентная ставка */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("mortgage.interestRate")}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-bold">{params.interestRate}%</span>
+                  <span className="text-sm text-muted-foreground">
+                    {t("mortgage.fixedRate")}
+                  </span>
+                </div>
+                <Slider
+                  value={[params.interestRate]}
+                  onValueChange={([value]) => setParams(prev => ({ ...prev, interestRate: value }))}
+                  min={1}
+                  max={15}
+                  step={0.1}
+                />
+                <Input
+                  type="number"
+                  value={params.interestRate}
+                  onChange={(e) => setParams(prev => ({ 
+                    ...prev, 
+                    interestRate: Number(e.target.value) || 0 
+                  }))}
+                  step={0.1}
+                />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Правая колонка - Результаты */}
+          <div className="space-y-6">
+            {/* Ежемесячный платеж */}
+            <Card className="bg-primary text-primary-foreground">
+              <CardHeader>
+                <CardTitle className="text-2xl">{t("mortgage.monthlyPayment")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-5xl font-bold">
+                  {formatCurrency(monthlyPayment, currency)}
+                </div>
+                <p className="text-sm mt-2 opacity-90">
+                  {t("mortgage.perMonth")}
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Сводная информация */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("mortgage.summary")}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t("mortgage.loanAmount")}:</span>
+                  <span className="font-semibold">
+                    {formatCurrency(params.propertyValue - params.downPayment, currency)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t("mortgage.totalInterest")}:</span>
+                  <span className="font-semibold">
+                    {formatCurrency(
+                      amortizationSchedule.reduce((sum, item) => sum + item.interest, 0),
+                      currency
+                    )}
+                  </span>
+                </div>
+                <div className="flex justify-between pt-3 border-t">
+                  <span className="text-muted-foreground font-semibold">{t("mortgage.totalCost")}:</span>
+                  <span className="font-bold text-lg">
+                    {formatCurrency(
+                      params.downPayment + amortizationSchedule.reduce((sum, item) => sum + item.totalPayment, 0),
+                      currency
+                    )}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* График погашения */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>{t("mortgage.amortizationSchedule")}</CardTitle>
+                    <CardDescription>{t("mortgage.yearlyBreakdown")}</CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={chartType === "area" ? "default" : "outline"}
+                      size="icon"
+                      onClick={() => setChartType("area")}
+                    >
+                      <LineChart className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={chartType === "bar" ? "default" : "outline"}
+                      size="icon"
+                      onClick={() => setChartType("bar")}
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={400}>
+                  {chartType === "area" ? (
+                    <AreaChart data={amortizationSchedule}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="year" 
+                        label={{ value: t("mortgage.year"), position: "insideBottom", offset: -5 }}
+                      />
+                      <YAxis 
+                        tickFormatter={(value) => formatCurrency(value, currency, { compact: true })}
+                      />
+                      <Tooltip 
+                        formatter={(value: number) => formatCurrency(value, currency)}
+                        labelFormatter={(label) => `${t("mortgage.year")} ${label}`}
+                      />
+                      <Legend />
+                      <Area 
+                        type="monotone" 
+                        dataKey="principal" 
+                        stackId="1"
+                        stroke="hsl(var(--primary))" 
+                        fill="hsl(var(--primary))" 
+                        name={t("mortgage.principal")}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="interest" 
+                        stackId="1"
+                        stroke="hsl(var(--destructive))" 
+                        fill="hsl(var(--destructive))" 
+                        name={t("mortgage.interest")}
+                      />
+                    </AreaChart>
+                  ) : (
+                    <BarChart data={amortizationSchedule}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="year"
+                        label={{ value: t("mortgage.year"), position: "insideBottom", offset: -5 }}
+                      />
+                      <YAxis 
+                        tickFormatter={(value) => formatCurrency(value, currency, { compact: true })}
+                      />
+                      <Tooltip 
+                        formatter={(value: number) => formatCurrency(value, currency)}
+                        labelFormatter={(label) => `${t("mortgage.year")} ${label}`}
+                      />
+                      <Legend />
+                      <Bar 
+                        dataKey="principal" 
+                        stackId="a"
+                        fill="hsl(var(--primary))" 
+                        name={t("mortgage.principal")}
+                      />
+                      <Bar 
+                        dataKey="interest" 
+                        stackId="a"
+                        fill="hsl(var(--destructive))" 
+                        name={t("mortgage.interest")}
+                      />
+                    </BarChart>
+                  )}
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Таблица детализации */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("mortgage.detailedSchedule")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {amortizationSchedule.map((item) => (
+                    <div 
+                      key={item.year}
+                      className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent transition-colors"
+                    >
+                      <div className="flex-1">
+                        <div className="font-semibold">
+                          {t("mortgage.year")} {item.year}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {t("mortgage.remainingBalance")}: {formatCurrency(item.balance, currency)}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold">
+                          {formatCurrency(item.totalPayment, currency)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {formatCurrency(item.principal, currency)} + {formatCurrency(item.interest, currency)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

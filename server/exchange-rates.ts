@@ -3,12 +3,17 @@ import type { Request, Response } from 'express';
 export interface ExchangeRates {
   usdToAmd: number;
   amdToUsd: number;
+  usdToEur: number;
+  eurToUsd: number;
+  eurToAmd: number;
+  amdToEur: number;
   timestamp: number;
   source: string;
 }
 
-// Fallback курс на случай, если rate.am недоступен
+// Fallback курсы на случай, если rate.am недоступен
 const FALLBACK_RATE = 380;
+const FALLBACK_EUR_RATE = 0.92; // Примерный курс USD/EUR
 
 // Кеш для хранения курсов (в production лучше использовать Redis или database)
 let cachedRates: ExchangeRates | null = null;
@@ -29,27 +34,60 @@ async function fetchRatesFromRateAm(): Promise<ExchangeRates> {
 
     const html = await response.text();
 
-    // Парсим HTML для извлечения среднего курса
-    // Ищем строку "Average" и извлекаем значения Buy и Sell для USD
-    const averageMatch = html.match(/Average[\s\S]*?USD[\s\S]*?(\d+(?:\.\d+)?)[\s\S]*?(\d+(?:\.\d+)?)/);
+    // Находим секцию со строкой "Average" внизу таблицы
+    const averageSection = html.match(/Average[\s\S]{0,2000}/);
 
-    if (!averageMatch) {
-      throw new Error('Could not find average exchange rate on rate.am');
+    if (!averageSection) {
+      throw new Error('Could not find Average section on rate.am');
     }
 
-    const buyRate = parseFloat(averageMatch[1]);
-    const sellRate = parseFloat(averageMatch[2]);
+    const averageText = averageSection[0];
 
-    // Вычисляем средний курс
-    const usdToAmd = (buyRate + sellRate) / 2;
+    // Извлекаем все числа из строки Average (будет последовательность: USD Buy, USD Sell, EUR Buy, EUR Sell)
+    // Используем более точный паттерн для поиска чисел с плавающей точкой
+    const numbersMatch = averageText.matchAll(/(\d+(?:\.\d+)?)/g);
+    const numbers = Array.from(numbersMatch).map(match => parseFloat(match[1]));
+
+    console.log('Extracted numbers from Average row:', numbers);
+
+    if (numbers.length < 4) {
+      throw new Error(`Not enough exchange rate values found. Got ${numbers.length}, expected at least 4`);
+    }
+
+    // Первые два числа - USD Buy и Sell
+    const usdBuyRate = numbers[0];
+    const usdSellRate = numbers[1];
+
+    // Вычисляем средний курс USD/AMD
+    const usdToAmd = (usdBuyRate + usdSellRate) / 2;
     const amdToUsd = 1 / usdToAmd;
 
-    return {
-      usdToAmd: Math.round(usdToAmd * 100) / 100, // Округляем до 2 знаков
-      amdToUsd: Math.round(amdToUsd * 100000) / 100000, // Округляем до 5 знаков
+    // Следующие два числа - EUR Buy и Sell
+    const eurBuyRate = numbers[2];
+    const eurSellRate = numbers[3];
+
+    // Вычисляем средний курс EUR/AMD
+    const eurToAmd = (eurBuyRate + eurSellRate) / 2;
+    const amdToEur = 1 / eurToAmd;
+
+    // Вычисляем USD/EUR через AMD
+    const eurToUsd = eurToAmd * amdToUsd;
+    const usdToEur = 1 / eurToUsd;
+
+    const rates = {
+      usdToAmd: Math.round(usdToAmd * 100) / 100,
+      amdToUsd: Math.round(amdToUsd * 100000) / 100000,
+      usdToEur: Math.round(usdToEur * 100000) / 100000,
+      eurToUsd: Math.round(eurToUsd * 100) / 100,
+      eurToAmd: Math.round(eurToAmd * 100) / 100,
+      amdToEur: Math.round(amdToEur * 100000) / 100000,
       timestamp: Date.now(),
       source: 'rate.am'
     };
+
+    console.log('Parsed exchange rates:', rates);
+
+    return rates;
   } catch (error) {
     console.error('Error fetching rates from rate.am:', error);
     throw error;
@@ -60,9 +98,14 @@ async function fetchRatesFromRateAm(): Promise<ExchangeRates> {
  * Возвращает резервные курсы валют
  */
 function getFallbackRates(): ExchangeRates {
+  const eurToAmd = (1 / FALLBACK_EUR_RATE) * FALLBACK_RATE;
   return {
     usdToAmd: FALLBACK_RATE,
     amdToUsd: Math.round((1 / FALLBACK_RATE) * 100000) / 100000,
+    usdToEur: FALLBACK_EUR_RATE,
+    eurToUsd: Math.round((1 / FALLBACK_EUR_RATE) * 100) / 100,
+    eurToAmd: Math.round(eurToAmd * 100) / 100,
+    amdToEur: Math.round((1 / eurToAmd) * 100000) / 100000,
     timestamp: Date.now(),
     source: 'fallback'
   };

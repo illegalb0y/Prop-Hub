@@ -21,6 +21,7 @@
     "projects": "Նախագծեր",
     "developers": "Կառուցապատողները",
     "banks": "Բանկեր",
+    "mortgageCalculator": "Հիփոթեքային հաշվիչ",
     "map": "Քարտեզ",
     "favorites": "նախընտրած",
     "account": "Իմ Էջ",
@@ -143,6 +144,7 @@
   "currency": {
     "title": "Արժույթ",
     "usd": "ԱՄՆ դոլար",
+    "eur": "Եվրո",
     "amd": "Հայկական դրամ"
   },
   "auth": {
@@ -155,5 +157,30 @@
     "title": "Քարտեզ",
     "viewOnMap": "Դիտել քարտեզի վրա",
     "location": "Հասցեն"
+  },
+  "mortgage": {
+    "title": "Հիփոթեքային հաշվիչ",
+    "description": "Հաշվարկեք ձեր ամսական վարկային վճարումը և դիտեք մարման ժամանակացույցը",
+    "currencyLabel": "Արժույթ",
+    "currencyDescription": "Ընտրեք արժույթը հաշվարկների համար",
+    "propertyValue": "Գույքի արժեքը",
+    "downPayment": "Առաջին վճարում",
+    "loanTerm": "Վարկի ժամկետը",
+    "interestRate": "Տոկոսադրույքը",
+    "years": "տարի",
+    "fixedRate": "Ֆիքսված դրույք",
+    "monthlyPayment": "Ամսական վճարում",
+    "perMonth": "ամսական",
+    "summary": "Վարկի ամփոփում",
+    "loanAmount": "Վարկի գումարը",
+    "totalInterest": "Ընդհանուր տոկոսներ",
+    "totalCost": "Ընդհանուր արժեք",
+    "amortizationSchedule": "Մարման ժամանակացույց",
+    "yearlyBreakdown": "Տարեկան բաժանում հիմնական գումարի և տոկոսների",
+    "year": "Տարի",
+    "principal": "Հիմնական գումար",
+    "interest": "Տոկոսներ",
+    "detailedSchedule": "Մանրամասն վճարումների ժամանակացույց",
+    "remainingBalance": "Մնացած պարտք"
   }
 }

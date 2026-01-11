@@ -1,4 +1,4 @@
-import { Building2, Landmark, MapPin, Settings, Home, LogOut, LogIn, Moon, Sun } from "lucide-react";
+import { Building2, Landmark, MapPin, Settings, Home, LogOut, LogIn, Moon, Sun, Calculator } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import {
@@ -32,6 +32,7 @@ export function AppSidebar({ onSearchClick }: AppSidebarProps) {
     { title: t("nav.projects"), url: "/projects", icon: MapPin },
     { title: t("nav.developers"), url: "/developers", icon: Building2 },
     { title: t("nav.banks"), url: "/banks", icon: Landmark },
+    { title: t("nav.mortgageCalculator"), url: "/mortgage-calculator", icon: Calculator },
   ];
 
   return (

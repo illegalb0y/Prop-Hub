@@ -21,6 +21,7 @@
     "projects": "Projects",
     "developers": "Developers",
     "banks": "Banks",
+    "mortgageCalculator": "Mortgage Calculator",
     "map": "Map",
     "favorites": "Favorites",
     "account": "My account",
@@ -142,6 +143,7 @@
   "currency": {
     "title": "Currency",
     "usd": "US Dollar",
+    "eur": "Euro",
     "amd": "Armenian Dram"
   },
   "auth": {
@@ -154,5 +156,30 @@
     "title": "Map",
     "viewOnMap": "View on map",
     "location": "Location"
+  },
+  "mortgage": {
+    "title": "Mortgage Calculator",
+    "description": "Calculate your monthly mortgage payment and view amortization schedule",
+    "currencyLabel": "Currency",
+    "currencyDescription": "Select currency for calculations",
+    "propertyValue": "Property Value",
+    "downPayment": "Down Payment",
+    "loanTerm": "Loan Term",
+    "interestRate": "Interest Rate",
+    "years": "years",
+    "fixedRate": "Fixed Rate",
+    "monthlyPayment": "Estimated Monthly Payment",
+    "perMonth": "per month",
+    "summary": "Loan Summary",
+    "loanAmount": "Loan Amount",
+    "totalInterest": "Total Interest",
+    "totalCost": "Total Cost",
+    "amortizationSchedule": "Amortization Schedule",
+    "yearlyBreakdown": "Yearly breakdown of principal and interest",
+    "year": "Year",
+    "principal": "Principal",
+    "interest": "Interest",
+    "detailedSchedule": "Detailed Payment Schedule",
+    "remainingBalance": "Remaining Balance"
   }
 }

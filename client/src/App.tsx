@@ -23,6 +23,7 @@ import FavoritesPage from "@/pages/favorites";
 import AccountPage from "@/pages/account";
 import SettingsPage from "@/pages/settings";
 import AdminPage from "@/pages/admin";
+import MortgageCalculatorPage from "@/pages/mortgage-calculator";
 
 function Router() {
   return (
@@ -35,6 +36,7 @@ function Router() {
       <Route path="/banks" component={BanksPage} />
       <Route path="/banks/:id" component={BankDetailPage} />
       <Route path="/map" component={MapPage} />
+      <Route path="/mortgage-calculator" component={MortgageCalculatorPage} />
       <Route path="/favorites" component={FavoritesPage} />
       <Route path="/account" component={AccountPage} />
       <Route path="/settings" component={SettingsPage} />

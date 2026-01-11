@@ -1,20 +1,26 @@
-export type SupportedCurrency = 'USD' | 'AMD';
+export type SupportedCurrency = 'USD' | 'EUR' | 'AMD';
 
-export const SUPPORTED_CURRENCIES: readonly SupportedCurrency[] = ['USD', 'AMD'] as const;
+export const SUPPORTED_CURRENCIES: readonly SupportedCurrency[] = ['USD', 'EUR', 'AMD'] as const;
 
 export const CURRENCY_SYMBOLS: Record<SupportedCurrency, string> = {
   USD: '$',
+  EUR: '€',
   AMD: '֏'
 };
 
 export const CURRENCY_NAMES: Record<SupportedCurrency, string> = {
   USD: 'US Dollar',
+  EUR: 'Euro',
   AMD: 'Armenian Dram'
 };
 
 export interface ExchangeRates {
   usdToAmd: number;
   amdToUsd: number;
+  usdToEur: number;
+  eurToUsd: number;
+  eurToAmd: number;
+  amdToEur: number;
   timestamp: number;
   source?: string;
 }
@@ -111,6 +117,26 @@ export class CurrencyService {
     // AMD -> USD
     if (fromCurrency === 'AMD' && toCurrency === 'USD') {
       return Math.round(amount * rates.amdToUsd);
+    }
+
+    // USD -> EUR
+    if (fromCurrency === 'USD' && toCurrency === 'EUR') {
+      return Math.round(amount * rates.usdToEur);
+    }
+
+    // EUR -> USD
+    if (fromCurrency === 'EUR' && toCurrency === 'USD') {
+      return Math.round(amount * rates.eurToUsd);
+    }
+
+    // EUR -> AMD
+    if (fromCurrency === 'EUR' && toCurrency === 'AMD') {
+      return Math.round(amount * rates.eurToAmd);
+    }
+
+    // AMD -> EUR
+    if (fromCurrency === 'AMD' && toCurrency === 'EUR') {
+      return Math.round(amount * rates.amdToEur);
     }
 
     return amount;
@@ -210,9 +236,14 @@ export class CurrencyService {
    * Возвращает резервные курсы
    */
   private static getFallbackRates(): ExchangeRates {
+    const FALLBACK_EUR_RATE = 0.92; // Примерный курс EUR/USD
     return {
       usdToAmd: this.FALLBACK_RATE,
       amdToUsd: 1 / this.FALLBACK_RATE,
+      usdToEur: FALLBACK_EUR_RATE,
+      eurToUsd: 1 / FALLBACK_EUR_RATE,
+      eurToAmd: (1 / FALLBACK_EUR_RATE) * this.FALLBACK_RATE,
+      amdToEur: (1 / this.FALLBACK_RATE) * FALLBACK_EUR_RATE,
       timestamp: Date.now(),
       source: 'fallback'
     };

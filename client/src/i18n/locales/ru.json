@@ -21,6 +21,7 @@
     "projects": "Проекты",
     "developers": "Застройщики",
     "banks": "Банки",
+    "mortgageCalculator": "Ипотечный калькулятор",
     "map": "Карта",
     "favorites": "Избранное",
     "account": "Мой аккаунт",
@@ -142,6 +143,7 @@
   "currency": {
     "title": "Валюта",
     "usd": "Доллар США",
+    "eur": "Евро",
     "amd": "Армянский драм"
   },
   "auth": {
@@ -154,5 +156,30 @@
     "title": "Карта",
     "viewOnMap": "Показать на карте",
     "location": "Местоположение"
+  },
+  "mortgage": {
+    "title": "Ипотечный калькулятор",
+    "description": "Рассчитайте ежемесячный платеж по ипотеке и посмотрите график погашения",
+    "currencyLabel": "Валюта",
+    "currencyDescription": "Выберите валюту для расчетов",
+    "propertyValue": "Стоимость недвижимости",
+    "downPayment": "Первоначальный взнос",
+    "loanTerm": "Срок кредита",
+    "interestRate": "Процентная ставка",
+    "years": "лет",
+    "fixedRate": "Фиксированная ставка",
+    "monthlyPayment": "Ежемесячный платеж",
+    "perMonth": "в месяц",
+    "summary": "Сводка по кредиту",
+    "loanAmount": "Сумма кредита",
+    "totalInterest": "Общая сумма процентов",
+    "totalCost": "Общая стоимость",
+    "amortizationSchedule": "График погашения",
+    "yearlyBreakdown": "Разбивка по годам основного долга и процентов",
+    "year": "Год",
+    "principal": "Основной долг",
+    "interest": "Проценты",
+    "detailedSchedule": "Детальный график платежей",
+    "remainingBalance": "Остаток долга"
   }
 }

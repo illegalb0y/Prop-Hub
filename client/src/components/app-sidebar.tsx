@@ -61,7 +61,7 @@ export function AppSidebar({ onSearchClick }: AppSidebarProps) {
                 <SidebarMenuButton
                   onClick={onSearchClick}
                   tooltip={t("search.tooltip")}
-                  className="w-full justify-start"
+                  className="w-full justify-start text-base"
                   data-testid="button-sidebar-search"
                 >
                   <Search className="h-5 w-5 shrink-0" />
@@ -91,6 +91,7 @@ export function AppSidebar({ onSearchClick }: AppSidebarProps) {
                       asChild
                       isActive={isActive}
                       tooltip={item.title}
+                      className="text-base"
                     >
                       <Link
                         href={item.url}
@@ -114,7 +115,7 @@ export function AppSidebar({ onSearchClick }: AppSidebarProps) {
         <SidebarSeparator className="mb-2" />
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip={t("nav.settings")}>
+            <SidebarMenuButton asChild tooltip={t("nav.settings")} className="text-base">
               <Link href="/settings" data-testid="link-settings">
                 <Settings className="h-5 w-5 shrink-0" />
                 <span className="group-data-[collapsible=icon]:hidden">
@@ -127,6 +128,7 @@ export function AppSidebar({ onSearchClick }: AppSidebarProps) {
             <SidebarMenuButton
               onClick={toggleTheme}
               tooltip={theme === "light" ? t("theme.switchToDark") : t("theme.switchToLight")}
+              className="text-base"
             >
               {theme === "light" ? (
                 <Moon className="h-5 w-5 shrink-0" />

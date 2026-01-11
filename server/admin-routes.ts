@@ -752,6 +752,18 @@ export function registerAdminRoutes(app: Express) {
     }
   });
 
+  // Get developers for a specific bank
+  app.get("/api/admin/banks/:id/developers", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { id } = idParamSchema.parse(req.params);
+      const developers = await adminStorage.getBankDevelopers(id);
+      res.json(developers);
+    } catch (error) {
+      console.error("Error fetching bank developers:", error);
+      res.status(500).json({ message: "Failed to fetch bank developers" });
+    }
+  });
+
   app.post("/api/admin/banks/bulk-delete", isAuthenticated, isAdmin, adminRateLimit, async (req: Request, res: Response) => {
     try {
       const { ids } = z.object({ ids: z.array(z.number()) }).parse(req.body);

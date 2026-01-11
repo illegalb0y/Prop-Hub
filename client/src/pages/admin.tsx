@@ -789,6 +789,7 @@ function ProjectsSection() {
   const [lastImportJobId, setLastImportJobId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     developerId: "",
@@ -1578,7 +1579,7 @@ function ProjectsSection() {
 
             <div className="space-y-2">
               <Label htmlFor="proj-completion">Completion date</Label>
-              <Popover>
+              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -1587,7 +1588,7 @@ function ProjectsSection() {
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {formData.completionDate
-                      ? format(new Date(formData.completionDate), "dd.MM.yyyy")
+                      ? format(new Date(formData.completionDate + "T00:00:00"), "dd.MM.yyyy")
                       : "Choose the date"}
                   </Button>
                 </PopoverTrigger>
@@ -1596,17 +1597,21 @@ function ProjectsSection() {
                     mode="single"
                     selected={
                       formData.completionDate
-                        ? new Date(formData.completionDate)
+                        ? new Date(formData.completionDate + "T00:00:00")
                         : undefined
                     }
-                    onSelect={(date) =>
-                      setFormData({
-                        ...formData,
-                        completionDate: date
-                          ? date.toISOString().split("T")[0]
-                          : "",
-                      })
-                    }
+                    onSelect={(date) => {
+                      if (date) {
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        setFormData({
+                          ...formData,
+                          completionDate: `${year}-${month}-${day}`,
+                        });
+                        setCalendarOpen(false);
+                      }
+                    }}
                     disabled={(date) => date < new Date()}
                     initialFocus
                   />

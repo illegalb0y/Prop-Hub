@@ -12,10 +12,12 @@ import {
   SidebarHeader,
   SidebarFooter,
   SidebarSeparator,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Search } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/lib/theme-provider";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface AppSidebarProps {
   onSearchClick: () => void;
@@ -26,6 +28,15 @@ export function AppSidebar({ onSearchClick }: AppSidebarProps) {
   const { t } = useTranslation();
   const { isAuthenticated, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const isMobile = useIsMobile();
+  const { setOpenMobile } = useSidebar();
+
+  const handleSearchClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+    onSearchClick();
+  };
 
   const navItems = [
     { title: t("nav.home"), url: "/", icon: Home },
@@ -60,7 +71,7 @@ export function AppSidebar({ onSearchClick }: AppSidebarProps) {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  onClick={onSearchClick}
+                  onClick={handleSearchClick}
                   tooltip={t("search.tooltip")}
                   className="w-full justify-start text-base"
                   data-testid="button-sidebar-search"
@@ -68,7 +79,9 @@ export function AppSidebar({ onSearchClick }: AppSidebarProps) {
                   <Search className="h-5 w-5 shrink-0" />
                   <span className="group-data-[collapsible=icon]:hidden flex items-center gap-2 flex-1">
                     <span>{t("search.button")}</span>
-                    <span className="ml-auto text-xs text-muted-foreground">{t("search.altK")}</span>
+                    {!isMobile && (
+                      <span className="ml-auto text-xs text-muted-foreground">{t("search.altK")}</span>
+                    )}
                   </span>
                 </SidebarMenuButton>
               </SidebarMenuItem>

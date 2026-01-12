@@ -38,6 +38,12 @@ export function AppSidebar({ onSearchClick }: AppSidebarProps) {
     onSearchClick();
   };
 
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   const navItems = [
     { title: t("nav.home"), url: "/", icon: Home },
     { title: t("nav.projects"), url: "/projects", icon: MapPin },
@@ -51,6 +57,7 @@ export function AppSidebar({ onSearchClick }: AppSidebarProps) {
       <SidebarHeader className="p-4">
         <Link
           href="/"
+          onClick={handleLinkClick}
           className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
         >
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
@@ -109,6 +116,7 @@ export function AppSidebar({ onSearchClick }: AppSidebarProps) {
                     >
                       <Link
                         href={item.url}
+                        onClick={handleLinkClick}
                         data-testid={`link-nav-${item.url.slice(1) || "home"}`}
                       >
                         <item.icon className="h-5 w-5 shrink-0" />
@@ -130,7 +138,7 @@ export function AppSidebar({ onSearchClick }: AppSidebarProps) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip={t("nav.settings")} className="text-base">
-              <Link href="/settings" data-testid="link-settings">
+              <Link href="/settings" onClick={handleLinkClick} data-testid="link-settings">
                 <Settings className="h-5 w-5 shrink-0" />
                 <span className="group-data-[collapsible=icon]:hidden">
                   {t("nav.settings")}

@@ -87,13 +87,31 @@ export default function MortgageCalculatorPage() {
       return loanAmount / numPayments;
     }
 
-    const monthlyPayment = 
-      loanAmount * 
-      (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
+    const monthlyPayment =
+      loanAmount *
+      (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) /
       (Math.pow(1 + monthlyRate, numPayments) - 1);
 
     return monthlyPayment;
   }, [activeParams]);
+
+  // Расчет ежемесячного платежа для мобильной версии (в реальном времени)
+  const monthlyPaymentLive = useMemo(() => {
+    const loanAmount = params.propertyValue - params.downPayment;
+    const monthlyRate = params.interestRate / 12 / 100;
+    const numPayments = params.loanTerm * 12;
+
+    if (monthlyRate === 0) {
+      return loanAmount / numPayments;
+    }
+
+    const payment =
+      loanAmount *
+      (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) /
+      (Math.pow(1 + monthlyRate, numPayments) - 1);
+
+    return payment;
+  }, [params]);
 
   // Генерация графика погашения по годам
   const amortizationSchedule = useMemo<AmortizationData[]>(() => {
@@ -194,19 +212,21 @@ export default function MortgageCalculatorPage() {
                     <span className="text-2xl font-bold text-muted-foreground leading-none">
                       {calculatorCurrency === "AMD" ? "" : (calculatorCurrency === "EUR" ? "€" : "$")}
                     </span>
-                    <span className="text-2xl font-bold leading-none">
-                      {params.propertyValue.toLocaleString()}
-                    </span>
+                    <Input
+                      type="text"
+                      value={params.propertyValue.toLocaleString()}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "");
+                        setParams(prev => ({
+                          ...prev,
+                          propertyValue: Number(val) || 0
+                        }));
+                      }}
+                      className="h-auto p-0 text-2xl font-bold border-none bg-white dark:bg-transparent focus-visible:ring-0 shadow-none leading-none flex-1"
+                    />
                     {calculatorCurrency === "AMD" && (
                       <span className="text-2xl font-bold text-muted-foreground ml-1 leading-none">֏</span>
                     )}
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="ml-auto h-6 rounded-full px-2 text-xs"
-                    >
-                      ⓘ {downPaymentPercent.toFixed(1)}%
-                    </Button>
                   </div>
 
                   <div>
@@ -223,10 +243,10 @@ export default function MortgageCalculatorPage() {
                       )}
                       <Button
                         size="sm"
-                        variant="default"
-                        className="ml-auto h-6 rounded-full px-2 text-xs bg-black text-white hover:bg-black/90"
+                        variant="secondary"
+                        className="ml-auto h-6 rounded-full px-2 text-xs"
                       >
-                        {downPaymentPercent.toFixed(0)}%
+                        ⓘ {downPaymentPercent.toFixed(1)}%
                       </Button>
                     </div>
                     <Slider
@@ -340,32 +360,49 @@ export default function MortgageCalculatorPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <div className="text-2xl font-bold">{params.loanTerm}</div>
-                    <div className="text-xs text-muted-foreground">{t("mortgage.years")}</div>
+                    <Select
+                      value={params.loanTerm.toString()}
+                      onValueChange={(value) => setParams(prev => ({ ...prev, loanTerm: Number(value) }))}
+                    >
+                      <SelectTrigger className="h-auto border-0 p-0 bg-white dark:bg-transparent hover:bg-white dark:hover:bg-transparent focus:ring-0">
+                        <div className="text-left w-full">
+                          <div className="text-xl font-bold whitespace-nowrap">{params.loanTerm} {t("mortgage.years")}</div>
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent className="bg-white">
+                        <SelectItem value="5">5 {t("mortgage.years")}</SelectItem>
+                        <SelectItem value="10">10 {t("mortgage.years")}</SelectItem>
+                        <SelectItem value="15">15 {t("mortgage.years")}</SelectItem>
+                        <SelectItem value="20">20 {t("mortgage.years")}</SelectItem>
+                        <SelectItem value="25">25 {t("mortgage.years")}</SelectItem>
+                        <SelectItem value="30">30 {t("mortgage.years")}</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </CardContent>
                 </Card>
 
                 {/* Процентная ставка */}
                 <Card>
                   <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-xs font-medium text-muted-foreground">
-                        {t("mortgage.interestRate")}
-                      </CardTitle>
-                      <Button
-                        size="sm"
-                        variant="default"
-                        className="h-5 rounded-full px-2 text-xs bg-black text-white hover:bg-black/90"
-                      >
-                        {downPaymentPercent.toFixed(0)}%
-                      </Button>
-                    </div>
+                    <CardTitle className="text-xs font-medium text-muted-foreground">
+                      {t("mortgage.interestRate")}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <div className="text-2xl font-bold">
-                      {calculatorCurrency === "USD" ? "$" : calculatorCurrency === "EUR" ? "€" : ""}
-                      {(monthlyPayment / 1000).toFixed(0)}k
-                      {calculatorCurrency === "AMD" ? "֏" : ""}
+                    <div className="flex items-baseline gap-1 overflow-hidden">
+                      <Input
+                        type="text"
+                        value={params.interestRate.toFixed(1)}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^\d.]/g, "");
+                          setParams(prev => ({
+                            ...prev,
+                            interestRate: Number(val) || 0
+                          }));
+                        }}
+                        className="h-auto p-0 text-2xl font-bold border-none bg-white dark:bg-transparent focus-visible:ring-0 shadow-none leading-none flex-1 min-w-0"
+                      />
+                      <span className="text-2xl font-bold leading-none flex-shrink-0">%</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -478,7 +515,7 @@ export default function MortgageCalculatorPage() {
                   </div>
                   <div className="mt-3 flex items-baseline gap-2">
                     <span className="text-4xl font-bold">
-                      {formatCurrency(monthlyPayment, calculatorCurrency)}
+                      {formatCurrency(monthlyPaymentLive, calculatorCurrency)}
                     </span>
                     <span className="text-sm text-white/70">/ {t("mortgage.perMonth")}</span>
                   </div>

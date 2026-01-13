@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useCurrency } from "@/lib/currency-provider";
 import { formatCurrency } from "@/lib/format";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,7 @@ interface AmortizationData {
 
 export default function MortgageCalculatorPage() {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const [calculatorCurrency, setCalculatorCurrency] = useState<"USD" | "EUR" | "AMD">("USD");
 
   const DEFAULT_PARAMS: MortgageParams = {
@@ -161,11 +163,11 @@ export default function MortgageCalculatorPage() {
           <div className="space-y-6">
             {/* Валюта */}
             <Card>
-              <CardHeader className="pb-3">
+              <CardHeader>
                 <CardTitle className="text-base">{t("mortgage.currencyLabel")}</CardTitle>
-                <CardDescription className="text-sm">{t("mortgage.currencyDescription")}</CardDescription>
+                <CardDescription>{t("mortgage.currencyDescription")}</CardDescription>
               </CardHeader>
-              <CardContent className="pt-0">
+              <CardContent>
                 <Select value={calculatorCurrency} onValueChange={handleCurrencyChange}>
                   <SelectTrigger>
                     <SelectValue />
@@ -181,12 +183,12 @@ export default function MortgageCalculatorPage() {
 
             {/* Стоимость недвижимости */}
             <Card>
-              <CardHeader className="pb-3">
+              <CardHeader>
                 <CardTitle className="text-base">{t("mortgage.propertyValue")}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 pt-0">
-                <div className="flex items-center gap-1 border-b pb-1 focus-within:border-primary transition-colors">
-                  <span className="text-2xl font-bold text-muted-foreground">
+              <CardContent className="space-y-4">
+                <div className="flex items-baseline gap-1 border-b pb-1 focus-within:border-primary transition-colors">
+                  <span className="text-xl font-bold text-muted-foreground leading-none">
                     {calculatorCurrency === "AMD" ? "" : (calculatorCurrency === "EUR" ? "€" : "$")}
                   </span>
                   <Input
@@ -194,15 +196,15 @@ export default function MortgageCalculatorPage() {
                     value={params.propertyValue.toLocaleString()}
                     onChange={(e) => {
                       const val = e.target.value.replace(/\D/g, "");
-                      setParams(prev => ({ 
-                        ...prev, 
-                        propertyValue: Number(val) || 0 
+                      setParams(prev => ({
+                        ...prev,
+                        propertyValue: Number(val) || 0
                       }));
                     }}
-                    className="h-auto p-0 text-2xl font-bold border-none bg-transparent focus-visible:ring-0 shadow-none"
+                    className="h-auto p-0 text-xl font-bold border-none bg-transparent focus-visible:ring-0 shadow-none leading-none"
                   />
                   {calculatorCurrency === "AMD" && (
-                    <span className="text-2xl font-bold text-muted-foreground ml-1">֏</span>
+                    <span className="text-xl font-bold text-muted-foreground ml-1 leading-none">֏</span>
                   )}
                 </div>
                 <Slider
@@ -217,13 +219,13 @@ export default function MortgageCalculatorPage() {
 
             {/* Первоначальный взнос */}
             <Card>
-              <CardHeader className="pb-3">
+              <CardHeader>
                 <CardTitle className="text-base">{t("mortgage.downPayment")}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 pt-0">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1 border-b pb-1 focus-within:border-primary transition-colors flex-1">
-                    <span className="text-2xl font-bold text-muted-foreground">
+              <CardContent className="space-y-4">
+                <div className="flex items-baseline justify-between gap-4">
+                  <div className="flex items-baseline gap-1 border-b pb-1 focus-within:border-primary transition-colors flex-1">
+                    <span className="text-xl font-bold text-muted-foreground leading-none">
                       {calculatorCurrency === "AMD" ? "" : (calculatorCurrency === "EUR" ? "€" : "$")}
                     </span>
                     <Input
@@ -231,18 +233,18 @@ export default function MortgageCalculatorPage() {
                       value={params.downPayment.toLocaleString()}
                       onChange={(e) => {
                         const val = e.target.value.replace(/\D/g, "");
-                        setParams(prev => ({ 
-                          ...prev, 
-                          downPayment: Number(val) || 0 
+                        setParams(prev => ({
+                          ...prev,
+                          downPayment: Number(val) || 0
                         }));
                       }}
-                      className="h-auto p-0 text-2xl font-bold border-none bg-transparent focus-visible:ring-0 shadow-none"
+                      className="h-auto p-0 text-xl font-bold border-none bg-transparent focus-visible:ring-0 shadow-none leading-none"
                     />
                     {calculatorCurrency === "AMD" && (
-                      <span className="text-2xl font-bold text-muted-foreground ml-1">֏</span>
+                      <span className="text-xl font-bold text-muted-foreground ml-1 leading-none">֏</span>
                     )}
                   </div>
-                  <span className="text-base text-muted-foreground ml-4">
+                  <span className="text-base text-muted-foreground whitespace-nowrap leading-none">
                     ({downPaymentPercent.toFixed(1)}%)
                   </span>
                 </div>
@@ -261,67 +263,67 @@ export default function MortgageCalculatorPage() {
 
             {/* Срок кредита */}
             <Card>
-              <CardHeader className="pb-3">
+              <CardHeader>
                 <CardTitle className="text-base">{t("mortgage.loanTerm")}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 pt-0">
-                <div className="flex items-center gap-2 border-b pb-1 focus-within:border-primary transition-colors">
-                  <Input
-                    type="text"
-                    value={params.loanTerm}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, "");
-                      setParams(prev => ({ 
-                        ...prev, 
-                        loanTerm: Number(val) || 0 
-                      }));
-                    }}
-                    className="h-auto w-16 p-0 text-2xl font-bold border-none bg-transparent focus-visible:ring-0 shadow-none"
-                  />
-                  <span className="text-base text-muted-foreground">
-                    {t("mortgage.years")}
-                  </span>
-                </div>
-                <Select 
-                  value={params.loanTerm.toString()} 
-                  onValueChange={(value) => setParams(prev => ({ ...prev, loanTerm: Number(value) }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="5">5 {t("mortgage.years")}</SelectItem>
-                    <SelectItem value="10">10 {t("mortgage.years")}</SelectItem>
-                    <SelectItem value="15">15 {t("mortgage.years")}</SelectItem>
-                    <SelectItem value="20">20 {t("mortgage.years")}</SelectItem>
-                    <SelectItem value="25">25 {t("mortgage.years")}</SelectItem>
-                    <SelectItem value="30">30 {t("mortgage.years")}</SelectItem>
-                  </SelectContent>
-                </Select>
+              <CardContent>
+                {isMobile ? (
+                  <div className="grid grid-cols-4 gap-2">
+                    {[10, 15, 20, 30].map((years) => (
+                      <Button
+                        key={years}
+                        variant={params.loanTerm === years ? "default" : "outline"}
+                        onClick={() => setParams(prev => ({ ...prev, loanTerm: years }))}
+                        className="h-12 text-base font-semibold"
+                      >
+                        {years}
+                      </Button>
+                    ))}
+                  </div>
+                ) : (
+                  <Select
+                    value={params.loanTerm.toString()}
+                    onValueChange={(value) => setParams(prev => ({ ...prev, loanTerm: Number(value) }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5 {t("mortgage.years")}</SelectItem>
+                      <SelectItem value="10">10 {t("mortgage.years")}</SelectItem>
+                      <SelectItem value="15">15 {t("mortgage.years")}</SelectItem>
+                      <SelectItem value="20">20 {t("mortgage.years")}</SelectItem>
+                      <SelectItem value="25">25 {t("mortgage.years")}</SelectItem>
+                      <SelectItem value="30">30 {t("mortgage.years")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </CardContent>
             </Card>
 
             {/* Процентная ставка */}
             <Card>
-              <CardHeader className="pb-3">
+              <CardHeader>
                 <CardTitle className="text-base">{t("mortgage.interestRate")}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 pt-0">
-                <div className="flex items-center gap-1 border-b pb-1 focus-within:border-primary transition-colors">
-                  <Input
-                    type="text"
-                    value={params.interestRate}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^\d.]/g, "");
-                      setParams(prev => ({ 
-                        ...prev, 
-                        interestRate: Number(val) || 0 
-                      }));
-                    }}
-                    className="h-auto w-20 p-0 text-2xl font-bold border-none bg-transparent focus-visible:ring-0 shadow-none"
-                  />
-                  <span className="text-2xl font-bold text-muted-foreground">%</span>
-                  <span className="text-sm text-muted-foreground ml-auto">
+              <CardContent className="space-y-4">
+                <div className="flex items-baseline justify-between gap-4">
+                  <div className="flex items-baseline gap-1 border-b pb-1 focus-within:border-primary transition-colors flex-1">
+                    <span className="text-xl font-bold text-muted-foreground leading-none">%</span>
+                    <Input
+                      type="text"
+                      value={params.interestRate.toFixed(1)}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^\d.]/g, "");
+                        setParams(prev => ({
+                          ...prev,
+                          interestRate: Number(val) || 0
+                        }));
+                      }}
+                      className="h-auto p-0 text-xl font-bold border-none bg-transparent focus-visible:ring-0 shadow-none leading-none"
+                    />
+                  </div>
+                  <span className="text-sm text-muted-foreground whitespace-nowrap leading-none">
                     {t("mortgage.fixedRate")}
                   </span>
                 </div>

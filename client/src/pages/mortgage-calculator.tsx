@@ -249,14 +249,36 @@ export default function MortgageCalculatorPage() {
                         ⓘ {downPaymentPercent.toFixed(1)}%
                       </Button>
                     </div>
-                    <Slider
-                      value={[downPaymentPercent]}
-                      onValueChange={([value]) => updateDownPaymentByPercent(value)}
-                      min={5}
-                      max={90}
-                      step={0.5}
-                      className="mb-1"
-                    />
+                    <div className="relative mb-1">
+                      <style>{`
+                        .mobile-down-payment-slider [data-radix-slider-track] {
+                          height: 14px;
+                          background: repeating-linear-gradient(
+                            45deg,
+                            hsl(var(--secondary)),
+                            hsl(var(--secondary)) 4px,
+                            transparent 4px,
+                            transparent 8px
+                          );
+                        }
+                        .mobile-down-payment-slider [data-radix-slider-range] {
+                          background: hsl(var(--primary));
+                          height: 14px;
+                        }
+                        .mobile-down-payment-slider [data-radix-slider-thumb] {
+                          width: 24px;
+                          height: 24px;
+                        }
+                      `}</style>
+                      <Slider
+                        value={[downPaymentPercent]}
+                        onValueChange={([value]) => updateDownPaymentByPercent(value)}
+                        min={5}
+                        max={90}
+                        step={0.5}
+                        className="mobile-down-payment-slider"
+                      />
+                    </div>
                     <div className="flex justify-between text-xs text-muted-foreground">
                       <span>5%</span>
                       <span>90%</span>

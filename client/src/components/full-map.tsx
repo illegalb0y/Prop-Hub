@@ -123,13 +123,15 @@ export function FullMap({ projects }: FullMapProps) {
   );
 
   const { data: districtBorders } = useQuery<GeoJSON.FeatureCollection>({
-    queryKey: ["/api/geo/district-borders", YEREVAN_CITY_ID],
+    queryKey: ["/api/geo/district-borders", YEREVAN_CITY_ID, "v2"],
     queryFn: async () => {
       const res = await fetch(
-        `/api/geo/district-borders?cityId=${YEREVAN_CITY_ID}`,
+        `/api/geo/district-borders?cityId=${YEREVAN_CITY_ID}&_v=2`,
       );
-      return res.json();
+      const data = await res.json();
+      return data;
     },
+    staleTime: 0, // Force refetch
   });
 
   const center: [number, number] =
@@ -181,9 +183,9 @@ export function FullMap({ projects }: FullMapProps) {
         {/* Добавляем компонент для настройки zoom контролов */}
         <ZoomControlSetup />
 
-        {districtBorders && (
+        {districtBorders && districtBorders.features && districtBorders.features.length > 0 && (
           <GeoJSON
-            key="district-borders"
+            key={`district-borders-${districtBorders.features.length}`}
             data={districtBorders}
             style={defaultStyle}
             onEachFeature={onEachFeature}

@@ -57,18 +57,22 @@ export async function registerRoutes(
 
       const featureCollection = {
         type: "FeatureCollection",
-        features: geometries.map((geo) => ({
-          type: "Feature",
-          id: geo.id,
-          properties: {
-            districtId: geo.districtId,
-            name: geo.district.name,
-          },
-          geometry: geo.geojson,
-        })),
+        features: geometries.map((geo) => {
+          const storedGeojson = geo.geojson as any;
+          const geometry = storedGeojson.geometry || storedGeojson;
+          return {
+            type: "Feature",
+            id: geo.id,
+            properties: {
+              districtId: geo.districtId,
+              name: geo.district.name,
+            },
+            geometry: geometry,
+          };
+        }),
       };
 
-      res.setHeader("Cache-Control", "public, max-age=86400");
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
       res.json(featureCollection);
     } catch (error) {
       console.error("Error fetching district borders:", error);

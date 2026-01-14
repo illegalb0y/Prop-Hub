@@ -6,196 +6,187 @@ import * as path from "path";
 
 const YEREVAN_CITY_ID = 6;
 
-const districtNameMapping: Record<string, string> = {
-  "Achapnyak": "Achapnyak",
-  "Arabkir": "Arabkir",
-  "Avan": "Avan",
-  "Davtashen": "Davtashen",
-  "Erebuni": "Erebuni",
-  "Kentron": "Kentron",
-  "Malatia-Sebastia": "Malatia-Sebastia",
-  "Nor Nork": "Nor Nork",
-  "Nork-Marash": "Nork-Marash",
-  "Nubarashen": "Nubarashen",
-  "Kanaker-Zeytun": "Qanaqer-Zeytun",
-  "Qanaqer-Zeytun": "Qanaqer-Zeytun",
-  "Shengavit": "Shengavit",
-  "Nor-Nork": "Nor Nork",
-  "Nork Marash": "Nork-Marash",
-  "Malatia Sebastia": "Malatia-Sebastia",
-  "Ачапняк": "Achapnyak",
-  "Арабкир": "Arabkir",
-  "Аван": "Avan",
-  "Давташен": "Davtashen",
-  "Эребуни": "Erebuni",
-  "Кентрон": "Kentron",
-  "Малатия-Себастия": "Malatia-Sebastia",
-  "Нор Норк": "Nor Nork",
-  "Норк-Мараш": "Nork-Marash",
-  "Нубарашен": "Nubarashen",
-  "Канакер-Зейтун": "Qanaqer-Zeytun",
-  "Шенгавит": "Shengavit",
+const districtSearchNames: Record<string, string[]> = {
+  "Achapnyak": ["Achapnyak district Yerevan", "Ajapnyak Yerevan", " Աdelays համdelays", "Achapnyak Yerevan Armenia"],
+  "Arabkir": ["Arabkir district Yerevan", "Arabkir Yerevan Armenia"],
+  "Avan": ["Avan district Yerevan", "Avan Yerevan Armenia"],
+  "Davtashen": ["Davtashen district Yerevan", "Davtashen Yerevan Armenia"],
+  "Erebuni": ["Erebuni district Yerevan", "Erebuni Yerevan Armenia"],
+  "Kentron": ["Kentron district Yerevan", "Kentron Yerevan Armenia", "Center district Yerevan"],
+  "Malatia-Sebastia": ["Malatia-Sebastia district Yerevan", "Malatia Sebastia Yerevan Armenia"],
+  "Nor Nork": ["Nor Nork district Yerevan", "Nor Nork Yerevan Armenia"],
+  "Nork-Marash": ["Nork-Marash district Yerevan", "Nork Marash Yerevan Armenia"],
+  "Nubarashen": ["Nubarashen district Yerevan", "Nubarashen Yerevan Armenia"],
+  "Qanaqer-Zeytun": ["Kanaker-Zeytun district Yerevan", "Kanaker Zeytun Yerevan Armenia", "Qanaqer-Zeytun Yerevan"],
+  "Shengavit": ["Shengavit district Yerevan", "Shengavit Yerevan Armenia"],
 };
 
-interface OSMElement {
+interface NominatimResult {
+  place_id: number;
+  osm_type: string;
+  osm_id: number;
+  lat: string;
+  lon: string;
+  class: string;
   type: string;
-  id: number;
-  tags?: {
-    name?: string;
-    "name:en"?: string;
-    "name:hy"?: string;
-    admin_level?: string;
-    boundary?: string;
-  };
-  members?: Array<{
-    type: string;
-    ref: number;
-    role: string;
-    geometry?: Array<{ lat: number; lon: number }>;
-  }>;
-  geometry?: Array<{ lat: number; lon: number }>;
+  display_name: string;
+  name?: string;
+  boundingbox: string[];
+  geojson?: GeoJSON.Geometry;
 }
 
-interface OverpassResponse {
-  elements: OSMElement[];
-}
+async function searchNominatim(query: string): Promise<NominatimResult[]> {
+  const url = `https://nominatim.openstreetmap.org/search?${new URLSearchParams({
+    q: query,
+    format: "json",
+    polygon_geojson: "1",
+    limit: "5",
+    countrycodes: "am",
+  })}`;
 
-async function fetchDistrictBoundaries(): Promise<OverpassResponse> {
-  const overpassQuery = `
-[out:json][timeout:60];
-area["name"="Yerevan"]["admin_level"="4"]->.yerevan;
-(
-  relation["admin_level"="9"]["boundary"="administrative"](area.yerevan);
-);
-out body;
->;
-out skel qt;
-`;
-
-  console.log("Fetching district boundaries from Overpass API...");
-  
-  const response = await fetch("https://overpass-api.de/api/interpreter", {
-    method: "POST",
+  const response = await fetch(url, {
     headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": "YerevanRealEstate/1.0 (development)",
     },
-    body: `data=${encodeURIComponent(overpassQuery)}`,
   });
 
   if (!response.ok) {
-    throw new Error(`Overpass API error: ${response.status} ${response.statusText}`);
+    throw new Error(`Nominatim error: ${response.status}`);
   }
 
   return response.json();
 }
 
-async function fetchDistrictBoundariesWithGeometry(): Promise<OverpassResponse> {
-  const overpassQuery = `
-[out:json][timeout:120];
-area["name"="Yerevan"]["admin_level"="4"]->.yerevan;
-relation["admin_level"="9"]["boundary"="administrative"](area.yerevan);
-out geom;
-`;
+async function fetchDistrictFromNominatim(
+  districtName: string,
+  searchQueries: string[]
+): Promise<{ geometry: GeoJSON.Geometry; osmId: number; osmType: string } | null> {
+  for (const query of searchQueries) {
+    console.log(`  Trying: "${query}"`);
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1100));
+      
+      const results = await searchNominatim(query);
+      
+      const adminResult = results.find(r => 
+        (r.class === "boundary" && r.type === "administrative") ||
+        (r.class === "place" && (r.type === "suburb" || r.type === "neighbourhood" || r.type === "quarter"))
+      );
 
-  console.log("Fetching district boundaries with geometry from Overpass API...");
-  
-  const response = await fetch("https://overpass-api.de/api/interpreter", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: `data=${encodeURIComponent(overpassQuery)}`,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Overpass API error: ${response.status} ${response.statusText}`);
-  }
-
-  return response.json();
-}
-
-function extractPolygonFromRelation(relation: OSMElement): number[][][] | null {
-  if (!relation.members) return null;
-
-  const outerWays = relation.members.filter(
-    (m) => m.role === "outer" && m.geometry && m.geometry.length > 0
-  );
-
-  if (outerWays.length === 0) return null;
-
-  const coordinates: number[][][] = [];
-  
-  for (const way of outerWays) {
-    if (way.geometry) {
-      const ring = way.geometry.map((point) => [point.lon, point.lat]);
-      if (ring.length > 0) {
-        if (ring[0][0] !== ring[ring.length - 1][0] || ring[0][1] !== ring[ring.length - 1][1]) {
-          ring.push([...ring[0]]);
-        }
-        coordinates.push(ring);
+      if (adminResult && adminResult.geojson) {
+        console.log(`  Found: ${adminResult.display_name} (${adminResult.osm_type}/${adminResult.osm_id})`);
+        return {
+          geometry: adminResult.geojson,
+          osmId: adminResult.osm_id,
+          osmType: adminResult.osm_type,
+        };
       }
+    } catch (error) {
+      console.log(`  Error with query "${query}": ${error}`);
     }
   }
-
-  if (coordinates.length === 0) return null;
   
-  if (coordinates.length === 1) {
-    return coordinates;
-  }
-  
-  const mergedRing = mergeWaySegments(outerWays.map(w => w.geometry!));
-  if (mergedRing && mergedRing.length > 0) {
-    return [mergedRing.map(p => [p.lon, p.lat])];
-  }
-
-  return coordinates;
+  return null;
 }
 
-function mergeWaySegments(segments: Array<Array<{ lat: number; lon: number }>>): Array<{ lat: number; lon: number }> | null {
-  if (segments.length === 0) return null;
+async function fetchDistrictFromOverpass(osmId: number, osmType: string): Promise<GeoJSON.Geometry | null> {
+  const typeChar = osmType === "relation" ? "rel" : osmType === "way" ? "way" : "node";
+  
+  const query = `[out:json][timeout:60];${typeChar}(${osmId});out geom;`;
+  
+  try {
+    const response = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `data=${encodeURIComponent(query)}`,
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    if (!data.elements || data.elements.length === 0) {
+      return null;
+    }
+
+    const element = data.elements[0];
+    if (element.type === "relation" && element.members) {
+      const coordinates = extractPolygonFromMembers(element.members);
+      if (coordinates) {
+        return { type: "Polygon", coordinates };
+      }
+    }
+  } catch (error) {
+    console.log(`  Overpass error: ${error}`);
+  }
+  
+  return null;
+}
+
+function extractPolygonFromMembers(members: any[]): number[][][] | null {
+  const outerWays = members.filter(m => m.role === "outer" && m.geometry?.length > 0);
+  
+  if (outerWays.length === 0) return null;
+
+  const segments = outerWays.map(w => w.geometry);
+  const mergedRing = mergeWaySegments(segments);
+  
+  if (mergedRing && mergedRing.length > 2) {
+    const coords = mergedRing.map((p: any) => [p.lon, p.lat]);
+    if (coords[0][0] !== coords[coords.length-1][0] || coords[0][1] !== coords[coords.length-1][1]) {
+      coords.push([...coords[0]]);
+    }
+    return [coords];
+  }
+  
+  return null;
+}
+
+function mergeWaySegments(segments: any[]): any[] | null {
+  if (!segments || segments.length === 0) return null;
   if (segments.length === 1) return segments[0];
 
-  const remainingSegments = [...segments];
-  const result: Array<{ lat: number; lon: number }> = [...remainingSegments.shift()!];
+  const remaining = segments.map(s => [...s]);
+  const result = [...remaining.shift()!];
+  const threshold = 0.00001;
 
-  const maxIterations = remainingSegments.length * remainingSegments.length;
   let iterations = 0;
+  const maxIterations = remaining.length * remaining.length * 2;
 
-  while (remainingSegments.length > 0 && iterations < maxIterations) {
+  while (remaining.length > 0 && iterations < maxIterations) {
     iterations++;
     let found = false;
 
-    for (let i = 0; i < remainingSegments.length; i++) {
-      const segment = remainingSegments[i];
-      const resultStart = result[0];
-      const resultEnd = result[result.length - 1];
-      const segmentStart = segment[0];
-      const segmentEnd = segment[segment.length - 1];
+    for (let i = 0; i < remaining.length; i++) {
+      const seg = remaining[i];
+      const rEnd = result[result.length - 1];
+      const rStart = result[0];
+      const sStart = seg[0];
+      const sEnd = seg[seg.length - 1];
 
-      const threshold = 0.0001;
-
-      if (Math.abs(resultEnd.lat - segmentStart.lat) < threshold && 
-          Math.abs(resultEnd.lon - segmentStart.lon) < threshold) {
-        result.push(...segment.slice(1));
-        remainingSegments.splice(i, 1);
+      if (Math.abs(rEnd.lat - sStart.lat) < threshold && Math.abs(rEnd.lon - sStart.lon) < threshold) {
+        result.push(...seg.slice(1));
+        remaining.splice(i, 1);
         found = true;
         break;
-      } else if (Math.abs(resultEnd.lat - segmentEnd.lat) < threshold && 
-                 Math.abs(resultEnd.lon - segmentEnd.lon) < threshold) {
-        result.push(...segment.slice(0, -1).reverse());
-        remainingSegments.splice(i, 1);
+      }
+      if (Math.abs(rEnd.lat - sEnd.lat) < threshold && Math.abs(rEnd.lon - sEnd.lon) < threshold) {
+        result.push(...seg.slice(0, -1).reverse());
+        remaining.splice(i, 1);
         found = true;
         break;
-      } else if (Math.abs(resultStart.lat - segmentEnd.lat) < threshold && 
-                 Math.abs(resultStart.lon - segmentEnd.lon) < threshold) {
-        result.unshift(...segment.slice(0, -1));
-        remainingSegments.splice(i, 1);
+      }
+      if (Math.abs(rStart.lat - sEnd.lat) < threshold && Math.abs(rStart.lon - sEnd.lon) < threshold) {
+        result.unshift(...seg.slice(0, -1));
+        remaining.splice(i, 1);
         found = true;
         break;
-      } else if (Math.abs(resultStart.lat - segmentStart.lat) < threshold && 
-                 Math.abs(resultStart.lon - segmentStart.lon) < threshold) {
-        result.unshift(...segment.slice(1).reverse());
-        remainingSegments.splice(i, 1);
+      }
+      if (Math.abs(rStart.lat - sStart.lat) < threshold && Math.abs(rStart.lon - sStart.lon) < threshold) {
+        result.unshift(...seg.slice(1).reverse());
+        remaining.splice(i, 1);
         found = true;
         break;
       }
@@ -204,126 +195,96 @@ function mergeWaySegments(segments: Array<Array<{ lat: number; lon: number }>>):
     if (!found) break;
   }
 
-  if (result.length > 0 && 
-      (result[0].lat !== result[result.length - 1].lat || 
-       result[0].lon !== result[result.length - 1].lon)) {
-    result.push({ ...result[0] });
-  }
-
   return result;
 }
 
-function calculateBounds(coordinates: number[][][]): { minLat: number; minLng: number; maxLat: number; maxLng: number } {
+function calculateBounds(geometry: GeoJSON.Geometry): { minLat: number; minLng: number; maxLat: number; maxLng: number } {
   let minLat = Infinity, minLng = Infinity;
   let maxLat = -Infinity, maxLng = -Infinity;
 
-  for (const ring of coordinates) {
-    for (const [lng, lat] of ring) {
+  function processCoords(coords: any) {
+    if (typeof coords[0] === "number") {
+      const [lng, lat] = coords;
       minLat = Math.min(minLat, lat);
       maxLat = Math.max(maxLat, lat);
       minLng = Math.min(minLng, lng);
       maxLng = Math.max(maxLng, lng);
+    } else {
+      for (const c of coords) {
+        processCoords(c);
+      }
     }
+  }
+
+  if ("coordinates" in geometry) {
+    processCoords(geometry.coordinates);
   }
 
   return { minLat, minLng, maxLat, maxLng };
 }
 
-function normalizeDistrictName(name: string): string {
-  if (districtNameMapping[name]) {
-    return districtNameMapping[name];
-  }
-  
-  const normalized = name
-    .replace(/['']/g, "'")
-    .replace(/\s+/g, " ")
-    .trim();
-  
-  if (districtNameMapping[normalized]) {
-    return districtNameMapping[normalized];
-  }
-  
-  return normalized;
-}
-
 async function main() {
   try {
-    console.log("Starting Yerevan district boundary fetch...\n");
+    console.log("Starting Yerevan district boundary fetch via Nominatim...\n");
 
     const existingDistricts = await db
       .select()
       .from(districts)
       .where(eq(districts.cityId, YEREVAN_CITY_ID));
 
-    console.log(`Found ${existingDistricts.length} districts in database:`);
-    existingDistricts.forEach(d => console.log(`  - ${d.name} (ID: ${d.id})`));
-    console.log();
+    console.log(`Found ${existingDistricts.length} districts in database:\n`);
 
-    const osmData = await fetchDistrictBoundariesWithGeometry();
-    
     const dataDir = path.join(process.cwd(), "data");
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
     }
 
-    fs.writeFileSync(
-      path.join(dataDir, "yerevan-districts-osm-raw.json"),
-      JSON.stringify(osmData, null, 2)
-    );
-    console.log("Saved raw OSM data to data/yerevan-districts-osm-raw.json\n");
-
-    const relations = osmData.elements.filter(
-      (e) => e.type === "relation" && e.tags?.boundary === "administrative"
-    );
-
-    console.log(`Found ${relations.length} administrative relations in OSM data:`);
-    relations.forEach(r => {
-      const name = r.tags?.["name:en"] || r.tags?.name || "Unknown";
-      console.log(`  - ${name} (OSM ID: ${r.id})`);
-    });
-    console.log();
-
     const features: GeoJSON.Feature[] = [];
     const importResults: Array<{ district: string; status: string; error?: string }> = [];
 
-    for (const relation of relations) {
-      const osmName = relation.tags?.["name:en"] || relation.tags?.name || "";
-      const normalizedName = normalizeDistrictName(osmName);
-      
-      console.log(`Processing: ${osmName} -> ${normalizedName}`);
+    for (const dbDistrict of existingDistricts) {
+      console.log(`\nProcessing: ${dbDistrict.name} (ID: ${dbDistrict.id})`);
 
-      const dbDistrict = existingDistricts.find(
-        d => d.name.toLowerCase() === normalizedName.toLowerCase()
-      );
-
-      if (!dbDistrict) {
-        console.log(`  Warning: No matching district found in database for "${osmName}"`);
-        importResults.push({ district: osmName, status: "no_match" });
+      const searchQueries = districtSearchNames[dbDistrict.name];
+      if (!searchQueries) {
+        console.log(`  Warning: No search queries defined for "${dbDistrict.name}"`);
+        importResults.push({ district: dbDistrict.name, status: "no_queries" });
         continue;
       }
 
-      const coordinates = extractPolygonFromRelation(relation);
-      
-      if (!coordinates || coordinates.length === 0) {
-        console.log(`  Warning: Could not extract polygon for "${osmName}"`);
-        importResults.push({ district: osmName, status: "no_geometry" });
+      const result = await fetchDistrictFromNominatim(dbDistrict.name, searchQueries);
+
+      if (!result) {
+        console.log(`  Could not find geometry for "${dbDistrict.name}"`);
+        importResults.push({ district: dbDistrict.name, status: "not_found" });
         continue;
       }
 
-      const bounds = calculateBounds(coordinates);
+      let geometry = result.geometry;
+
+      if (geometry.type !== "Polygon" && geometry.type !== "MultiPolygon") {
+        console.log(`  Geometry type is ${geometry.type}, trying Overpass for full geometry...`);
+        const fullGeom = await fetchDistrictFromOverpass(result.osmId, result.osmType);
+        if (fullGeom) {
+          geometry = fullGeom;
+        } else {
+          console.log(`  Could not get polygon geometry for "${dbDistrict.name}"`);
+          importResults.push({ district: dbDistrict.name, status: "no_polygon" });
+          continue;
+        }
+      }
+
+      const bounds = calculateBounds(geometry);
 
       const feature: GeoJSON.Feature = {
         type: "Feature",
         properties: {
           id: dbDistrict.id,
           name: dbDistrict.name,
-          osmId: relation.id,
-          osmName: osmName,
+          osmId: result.osmId,
+          osmType: result.osmType,
         },
-        geometry: {
-          type: "Polygon",
-          coordinates: coordinates,
-        },
+        geometry: geometry,
       };
 
       features.push(feature);
@@ -334,12 +295,12 @@ async function main() {
         .where(eq(districtGeometries.districtId, dbDistrict.id));
 
       const geojsonData = {
-        type: "Feature",
+        type: "Feature" as const,
         properties: {
           id: dbDistrict.id,
           name: dbDistrict.name,
         },
-        geometry: feature.geometry,
+        geometry: geometry,
       };
 
       if (existingGeometry.length > 0) {
@@ -355,7 +316,7 @@ async function main() {
             updatedAt: new Date(),
           })
           .where(eq(districtGeometries.districtId, dbDistrict.id));
-        
+
         console.log(`  Updated geometry for ${dbDistrict.name}`);
         importResults.push({ district: dbDistrict.name, status: "updated" });
       } else {
@@ -369,7 +330,7 @@ async function main() {
           maxLng: bounds.maxLng,
           source: "OpenStreetMap",
         });
-        
+
         console.log(`  Inserted geometry for ${dbDistrict.name}`);
         importResults.push({ district: dbDistrict.name, status: "inserted" });
       }
@@ -384,24 +345,24 @@ async function main() {
       path.join(dataDir, "yerevan-districts.geojson"),
       JSON.stringify(featureCollection, null, 2)
     );
-    console.log("\nSaved processed GeoJSON to data/yerevan-districts.geojson");
+    console.log("\n\nSaved processed GeoJSON to data/yerevan-districts.geojson");
 
     console.log("\n=== Import Summary ===");
     const inserted = importResults.filter(r => r.status === "inserted").length;
     const updated = importResults.filter(r => r.status === "updated").length;
-    const noMatch = importResults.filter(r => r.status === "no_match").length;
-    const noGeometry = importResults.filter(r => r.status === "no_geometry").length;
+    const notFound = importResults.filter(r => r.status === "not_found").length;
+    const noPolygon = importResults.filter(r => r.status === "no_polygon").length;
 
     console.log(`Inserted: ${inserted}`);
     console.log(`Updated: ${updated}`);
-    console.log(`No match in DB: ${noMatch}`);
-    console.log(`No geometry: ${noGeometry}`);
+    console.log(`Not found: ${notFound}`);
+    console.log(`No polygon: ${noPolygon}`);
 
     const finalCount = await db
       .select()
       .from(districtGeometries)
       .where(eq(districtGeometries.cityId, YEREVAN_CITY_ID));
-    
+
     console.log(`\nTotal district geometries in database for Yerevan: ${finalCount.length}`);
 
     process.exit(0);

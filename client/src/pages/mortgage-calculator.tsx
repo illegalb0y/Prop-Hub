@@ -430,50 +430,78 @@ export default function MortgageCalculatorPage() {
                             if (digitsOnly.length === 2) {
                               // Две цифры (например, 8.5) → одна цифра (8.0)
                               setParams(prev => ({ ...prev, interestRate: Number(digitsOnly[0]) }));
+                              // Курсор после точки (позиция 2 в формате "X.0")
+                              setTimeout(() => {
+                                if (interestRateInputRef.current) {
+                                  interestRateInputRef.current.focus();
+                                  interestRateInputRef.current.setSelectionRange(2, 2);
+                                }
+                              }, 0);
                             } else if (digitsOnly.length === 1 && Number(digitsOnly[0]) !== 0) {
                               // Одна цифра (например, 8.0) → ноль (0.0)
                               setParams(prev => ({ ...prev, interestRate: 0 }));
+                              // Курсор в начало (позиция 0 в формате "0.0")
+                              setTimeout(() => {
+                                if (interestRateInputRef.current) {
+                                  interestRateInputRef.current.focus();
+                                  interestRateInputRef.current.setSelectionRange(0, 0);
+                                }
+                              }, 0);
                             }
                             // Если уже 0.0, ничего не делаем
+                          } else if (/^\d$/.test(e.key)) {
+                            // Обработка ввода цифр
+                            e.preventDefault();
+                            const digit = e.key;
+                            const currentValue = params.interestRate;
+                            const digitsOnly = currentValue.toString().replace(/\D/g, "");
 
-                            // Сохраняем фокус на поле ввода
+                            if (digitsOnly.length === 0 || (digitsOnly.length === 1 && digitsOnly[0] === '0')) {
+                              // Вводим первую цифру X
+                              setParams(prev => ({ ...prev, interestRate: Number(digit) }));
+                              // Курсор после точки для ввода Y
+                              setTimeout(() => {
+                                if (interestRateInputRef.current) {
+                                  interestRateInputRef.current.focus();
+                                  interestRateInputRef.current.setSelectionRange(2, 2);
+                                }
+                              }, 0);
+                            } else if (digitsOnly.length === 1) {
+                              // Вводим вторую цифру Y
+                              const formattedValue = `${digitsOnly[0]}.${digit}`;
+                              setParams(prev => ({ ...prev, interestRate: Number(formattedValue) }));
+                              // Курсор в конец
+                              setTimeout(() => {
+                                if (interestRateInputRef.current) {
+                                  interestRateInputRef.current.focus();
+                                  const len = interestRateInputRef.current.value.length;
+                                  interestRateInputRef.current.setSelectionRange(len, len);
+                                }
+                              }, 0);
+                            }
+                            // Если уже 2 цифры, ничего не делаем (ограничение)
+                          }
+                        }}
+                        onClick={(e) => {
+                          // При клике устанавливаем курсор в правильную позицию
+                          const target = e.target as HTMLInputElement;
+                          const currentValue = params.interestRate;
+                          const digitsOnly = currentValue.toString().replace(/\D/g, "");
+
+                          if (digitsOnly.length === 0 || (digitsOnly.length === 1 && digitsOnly[0] === '0')) {
+                            // Если 0.0, курсор в начало
+                            setTimeout(() => target.setSelectionRange(0, 0), 0);
+                          } else if (digitsOnly.length === 1) {
+                            // Если X.0, курсор после точки
+                            setTimeout(() => target.setSelectionRange(2, 2), 0);
+                          } else {
+                            // Если X.Y, курсор в конец
                             setTimeout(() => {
-                              if (interestRateInputRef.current) {
-                                interestRateInputRef.current.focus();
-                                // Перемещаем курсор в начало (перед первой цифрой)
-                                interestRateInputRef.current.setSelectionRange(0, 0);
-                              }
+                              const len = target.value.length;
+                              target.setSelectionRange(len, len);
                             }, 0);
                           }
                         }}
-                        onChange={(e) => {
-                          const input = e.target.value;
-                          // Удаляем все кроме цифр
-                          const digitsOnly = input.replace(/\D/g, "");
-
-                          // Ограничиваем максимум 2 цифры
-                          const limitedDigits = digitsOnly.slice(0, 2);
-
-                          if (limitedDigits.length === 0) {
-                            setParams(prev => ({ ...prev, interestRate: 0 }));
-                          } else if (limitedDigits.length === 1) {
-                            // Одна цифра - это целое число, отображается как X.0
-                            setParams(prev => ({ ...prev, interestRate: Number(limitedDigits) }));
-                          } else {
-                            // Две цифры - первая до точки, вторая после
-                            const formattedValue = `${limitedDigits[0]}.${limitedDigits[1]}`;
-                            setParams(prev => ({ ...prev, interestRate: Number(formattedValue) }));
-                          }
-
-                          // После ввода новой цифры, перемещаем курсор перед дробной частью
-                          setTimeout(() => {
-                            if (interestRateInputRef.current) {
-                              // Формат всегда X.Y, ставим курсор перед Y (позиция 2)
-                              interestRateInputRef.current.setSelectionRange(0, 0);
-                            }
-                          }, 0);
-                        }}
-                        onFocus={(e) => e.target.select()}
                         className="h-auto p-0 text-2xl font-bold border-none bg-white dark:bg-transparent focus-visible:ring-0 shadow-none leading-none flex-1 min-w-0"
                       />
                       <span className="text-2xl font-bold leading-none flex-shrink-0">%</span>

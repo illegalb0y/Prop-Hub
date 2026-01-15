@@ -440,9 +440,8 @@ export default function MortgageCalculatorPage() {
                             setTimeout(() => {
                               if (interestRateInputRef.current) {
                                 interestRateInputRef.current.focus();
-                                // Устанавливаем курсор в конец
-                                const len = interestRateInputRef.current.value.length;
-                                interestRateInputRef.current.setSelectionRange(len, len);
+                                // Перемещаем курсор в начало (перед первой цифрой)
+                                interestRateInputRef.current.setSelectionRange(0, 0);
                               }
                             }, 0);
                           }
@@ -466,12 +465,11 @@ export default function MortgageCalculatorPage() {
                             setParams(prev => ({ ...prev, interestRate: Number(formattedValue) }));
                           }
 
-                          // После ввода или удаления цифры, всегда перемещаем курсор в конец
-                          // Это гарантирует, что "input line" всегда будет после цифр
+                          // После ввода новой цифры, перемещаем курсор перед дробной частью
                           setTimeout(() => {
                             if (interestRateInputRef.current) {
-                              const len = interestRateInputRef.current.value.length;
-                              interestRateInputRef.current.setSelectionRange(len, len);
+                              // Формат всегда X.Y, ставим курсор перед Y (позиция 2)
+                              interestRateInputRef.current.setSelectionRange(0, 0);
                             }
                           }, 0);
                         }}

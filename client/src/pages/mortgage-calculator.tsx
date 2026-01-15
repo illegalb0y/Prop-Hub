@@ -392,7 +392,7 @@ export default function MortgageCalculatorPage() {
                           <div className="text-xl font-bold whitespace-nowrap">{params.loanTerm} {t("mortgage.years")}</div>
                         </div>
                       </SelectTrigger>
-                      <SelectContent className="bg-white">
+                      <SelectContent>
                         <SelectItem value="5">5 {t("mortgage.years")}</SelectItem>
                         <SelectItem value="10">10 {t("mortgage.years")}</SelectItem>
                         <SelectItem value="15">15 {t("mortgage.years")}</SelectItem>

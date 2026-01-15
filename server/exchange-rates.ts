@@ -13,7 +13,7 @@ export interface ExchangeRates {
 
 // Fallback курсы на случай, если rate.am недоступен
 const FALLBACK_RATE = 380;
-const FALLBACK_EUR_RATE = 0.92; // Примерный курс USD/EUR
+const FALLBACK_EUR_RATE = 0.89; // Примерный курс USD/EUR
 
 // Кеш для хранения курсов (в production лучше использовать Redis или database)
 let cachedRates: ExchangeRates | null = null;
